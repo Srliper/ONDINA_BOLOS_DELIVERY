@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { MessageCircle, ArrowUpRight, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { formatBRL } from '@/lib/format'
+import { WHATSAPP_NUMBER } from '@/lib/whatsapp'
 import { partyFlavors, coffeeFlavors, simpleFlavors, portions } from '@/lib/bakery-menu'
 
 const types = [
@@ -15,7 +17,7 @@ const zones = [
   { id: 'rural', label: 'Bairros rurais próximos', fee: 15 },
 ]
 const kg: Record<string, number> = { '1 kg': 1, '1,5 kg': 1.5, '2 kg': 2, '3 kg': 3, '4 kg': 4 }
-const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const brl = formatBRL
 
 export function CakeBuilder() {
   const [type, setType] = useState<(typeof types)[number]['id']>('festa')
@@ -45,7 +47,7 @@ export function CakeBuilder() {
       notes ? `• Observações: ${notes}` : '',
       `Valor estimado: ${brl(total)}`,
     ].filter(Boolean)
-    return `https://api.whatsapp.com/send?phone=5515997115450&text=${encodeURIComponent(lines.join('\n'))}`
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`
   }, [current, flavor, type, size, delivery, zone, fee, box, date, name, notes, total])
 
   return (
@@ -104,7 +106,7 @@ export function CakeBuilder() {
             {box && <li><Check size={15} />Caixa para viagem</li>}
           </ul>
           <p className="summary-label">Valor estimado</p>
-          <p className="summary-total">{brl(total)}</p>
+          <p className="summary-total" key={total}>{brl(total)}</p>
           <Button asChild variant="bakery"><a href={link} target="_blank" rel="noreferrer" aria-disabled={!flavor} onClick={e => { if (!flavor) e.preventDefault() }}><MessageCircle />Enviar pedido<ArrowUpRight /></a></Button>
           {!flavor && <p className="summary-hint">Escolha um sabor para enviar.</p>}
           <p className="summary-hint">O pedido é confirmado pelo WhatsApp.</p>

@@ -46,12 +46,14 @@
 .bakery-hero { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:65px; padding-top:44px; padding-bottom:68px; }
 .hero-eyebrow { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--rose-ink); margin-bottom:22px; text-transform:uppercase; }
 .bakery-hero h1 { font-family:var(--font-serif); font-size:64px; font-weight:500; line-height:1.12; margin:0; }
-.bakery-hero h1 span { display:block; color:var(--primary); font-style:italic; }
+.hero-line { display:block; }
+.hero-accent { color:var(--primary); font-style:italic; }
 .hero-description { font-size:15px; color:var(--muted-foreground); line-height:1.85; max-width:390px; margin:25px 0 27px; }
 .hero-cta { display:flex; flex-wrap:wrap; gap:18px; align-items:center; }
 .hero-note { display:flex; align-items:center; gap:7px; font-size:11px; color:var(--muted-foreground); }
 .hero-photo-wrap { position:relative; }
-.hero-photo { width:100%; aspect-ratio:4/5; max-height:540px; object-fit:cover; border-radius:40px; box-shadow:var(--hero-shadow); }
+.hero-photo-frame { border-radius:40px; overflow:hidden; box-shadow:var(--hero-shadow); }
+.hero-photo { display:block; width:100%; aspect-ratio:4/5; max-height:540px; object-fit:cover; }
 .hero-caption { position:absolute; bottom:-20px; left:-20px; padding:20px 23px; background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:var(--hero-shadow); }
 .hero-caption small { color:var(--rose-ink); font-size:10px; text-transform:uppercase; }
 .hero-caption p { font-family:var(--font-serif); font-size:22px; margin-top:4px; }
@@ -64,10 +66,11 @@
 .bakery-filter[aria-pressed=true] { background:var(--secondary); border-color:var(--primary); color:var(--rose-ink); }
 .bakery-filter:hover { background:var(--secondary); }
 .cake-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:42px 26px; }
-.cake-image { width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:24px; background:var(--secondary); transition:transform .3s; }
-.cake-item:hover .cake-image { transform:translateY(-3px); }
+.cake-image { width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:24px; background:var(--secondary); }
 .cake-category { font-size:9px; color:var(--rose-ink); text-transform:uppercase; margin-top:18px; margin-bottom:6px; }
 .cake-item h3 { font-family:var(--font-serif); font-size:21px; line-height:1.3; min-height:54px; }
+.cake-price { font-size:12px; color:var(--muted-foreground); margin:2px 0 6px; }
+.cake-price strong { color:var(--rose-ink); font-size:14px; font-weight:600; }
 .bakery-order { color:var(--muted-foreground); padding:0; justify-content:flex-start; height:32px; font-size:11px; border-radius:0; }
 .bakery-order:hover { color:var(--rose-ink); }
 .photo-note { font-size:11px; color:var(--muted-foreground); margin-top:32px; }
@@ -111,7 +114,7 @@
 .footer-bottom { border-top:1px solid oklch(0.987 0.008 55 / 15%); margin-top:42px; padding-top:20px; display:flex; justify-content:space-between; font-size:10px; opacity:.55; }
 @media(min-width:1440px) { .hero-photo { max-height:570px; } }
 @media(max-width:900px) { .bakery-container{width:calc(100% - 48px)} .bakery-hero {gap:32px} .bakery-hero h1 {font-size:46px} .catalog-heading {align-items:flex-start; flex-direction:column} .cake-grid {grid-template-columns:repeat(2,minmax(0,1fr))} .nav-actions {gap:15px} .footer-columns {gap:24px} }
-@media(max-width:600px) { .bakery-container {width:calc(100% - 36px)} .bakery-nav-inner {height:76px} .brand img {width:40px;height:40px} .brand-name {font-size:21px} .nav-actions {gap:10px} .nav-catalog,.nav-location {display:none!important} .nav-actions .bakery-button {padding:0 15px;height:38px;font-size:11px} .bakery-hero {grid-template-columns:1fr; gap:30px; padding-top:30px;padding-bottom:45px} .bakery-hero h1 {font-size:44px} .hero-eyebrow {margin-bottom:14px} .hero-description {margin:18px 0 20px;font-size:13px} .hero-photo {aspect-ratio:5/4;max-height:350px;border-radius:26px;object-position:center 60%} .hero-caption {left:12px;bottom:-15px;padding:12px 17px;border-radius:12px} .hero-caption p {font-size:19px} .catalog {padding-top:30px;padding-bottom:45px} .catalog h2 {font-size:33px} .catalog-filters {gap:5px;flex-wrap:wrap} .bakery-filter {padding:0 11px;font-size:10px} .cake-grid {gap:28px 14px} .cake-image {border-radius:16px} .cake-item h3 {font-size:18px;min-height:48px} .cake-category {font-size:8px;margin-top:12px} .bakery-order {font-size:10px} .footer-columns {grid-template-columns:1fr;gap:30px} .bakery-footer {padding-top:40px} .footer-bottom {gap:15px} }
+@media(max-width:600px) { .bakery-container {width:calc(100% - 36px)} .bakery-nav-inner {height:76px} .brand img {width:40px;height:40px} .brand-name {font-size:21px} .nav-actions {gap:10px} .nav-catalog,.nav-location {display:none!important} .nav-actions .bakery-button {padding:0 15px;height:38px;font-size:11px} .bakery-hero {grid-template-columns:1fr; gap:30px; padding-top:30px;padding-bottom:45px} .bakery-hero h1 {font-size:44px} .hero-eyebrow {margin-bottom:14px} .hero-description {margin:18px 0 20px;font-size:13px} .hero-photo {aspect-ratio:5/4;max-height:350px;object-position:center 60%} .hero-photo-frame {border-radius:26px} .hero-caption {left:12px;bottom:-15px;padding:12px 17px;border-radius:12px} .hero-caption p {font-size:19px} .catalog {padding-top:30px;padding-bottom:45px} .catalog h2 {font-size:33px} .catalog-filters {gap:5px;flex-wrap:wrap} .bakery-filter {padding:0 11px;font-size:10px} .cake-grid {gap:28px 14px} .cake-image {border-radius:16px} .cake-item h3 {font-size:18px;min-height:48px} .cake-category {font-size:8px;margin-top:12px} .bakery-order {font-size:10px} .footer-columns {grid-template-columns:1fr;gap:30px} .bakery-footer {padding-top:40px} .footer-bottom {gap:15px} }
 @media(max-width:600px) { .bakery-hero { padding-top:24px; gap:22px; padding-bottom:30px; } .bakery-hero h1 {font-size:38px} .hero-description {line-height:1.65; margin:15px 0} .hero-photo {height:230px; aspect-ratio:auto;} .hero-cta {gap:12px} .hero-note {font-size:10px} }
 @media(prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after {transition:none!important;animation:none!important} }
 
@@ -144,3 +147,95 @@
 .summary-hint { font-size:12.5px; color:var(--muted-foreground); margin-top:8px; }
 @media (max-width:860px) { .builder-grid { grid-template-columns:1fr; } .builder-summary { position:static; } .field-row { grid-template-columns:1fr; } .builder h2 { font-size:28px; } }
 .zone-pick { margin-top:12px; }
+
+/* ==========================================================================
+   Movimento
+   Um único momento automático (a abertura do topo, como quem levanta a
+   cúpula de um bolo) e, no resto, movimento que responde ao cliente:
+   filtro, toque, cursor, rolagem e total do pedido.
+   Tudo fica estático com "reduzir movimento" ativo no sistema.
+   ========================================================================== */
+:root {
+ --ease-out: cubic-bezier(.22,1,.36,1);
+ --ease-in-out: cubic-bezier(.76,0,.24,1);
+ --spring: cubic-bezier(.34,1.56,.64,1);
+}
+
+/* Elementos que existem com ou sem animação */
+.hero-photo-wrap { isolation:isolate; }
+.hero-seal { position:absolute; top:-30px; right:-30px; width:118px; height:118px; z-index:2; overflow:visible; }
+.hero-seal-disc { fill:var(--card); stroke:var(--border); stroke-width:1; }
+.hero-seal text { font-family:var(--font-serif); font-style:italic; font-size:11.5px; fill:var(--rose-ink); }
+.hero-seal .hero-seal-mark { font-size:30px; fill:var(--foreground); font-weight:500; }
+.scroll-progress { position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--rose-ink); transform-origin:0 50%; scale:0 1; pointer-events:none; }
+.cake-media { position:relative; display:block; overflow:hidden; border-radius:24px; isolation:isolate; }
+.cake-media:focus-visible { outline:2px solid var(--rose-ink); outline-offset:3px; }
+.brand img { transition:scale .4s var(--ease-out); }
+.bakery-nav { transition:box-shadow .4s var(--ease-out), background-color .4s; }
+[data-scrolled=true] .bakery-nav { background:oklch(0.987 0.008 55 / 98%); box-shadow:0 10px 30px oklch(0.301 0.064 43 / 7%); }
+[data-scrolled=true] .brand img { scale:.88; }
+@media(max-width:900px) { .hero-seal { right:-12px; } }
+@media(max-width:600px) { .hero-seal { width:84px; height:84px; top:-18px; right:-8px; } .cake-media { border-radius:16px; } }
+
+@media (prefers-reduced-motion: no-preference) {
+ /* 1. Abertura do topo -------------------------------------------------- */
+ .hero-eyebrow { animation:rise .7s var(--ease-out) .05s both; }
+ .hero-line { overflow:hidden; padding:0 .08em .1em; margin:0 -.08em -.1em; }
+ .hero-line > span { display:block; animation:line-up 1.05s var(--ease-out) both; animation-delay:calc(.18s + var(--line, 0) * .12s); }
+ .hero-line:nth-child(2) > span { --line:1; }
+ .hero-line:nth-child(3) > span { --line:2; }
+ .hero-description { animation:rise .8s var(--ease-out) .6s both; }
+ .hero-cta { animation:rise .8s var(--ease-out) .72s both; }
+ .hero-photo-frame { animation:unveil 1.35s var(--ease-in-out) .1s both; }
+ .hero-photo { scale:1.08; animation:settle 2.4s var(--ease-out) .1s both; }
+ .hero-caption { animation:land .9s var(--spring) 1.1s both, float 7s ease-in-out 2s infinite; }
+ .hero-seal { animation:seal-in 1s var(--spring) 1.3s both; }
+ .hero-seal-ring { transform-origin:60px 60px; animation:spin 32s linear 1.3s infinite; }
+
+ /* CTA principal: um brilho discreto de tempos em tempos */
+ .hero-shimmer { position:relative; overflow:hidden; isolation:isolate; }
+ .hero-shimmer::after { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(110deg, transparent 30%, oklch(1 0 0 / 55%) 50%, transparent 70%); translate:-120% 0; animation:shimmer 6s var(--ease-in-out) 2.4s infinite; }
+
+ /* 2. Rolagem: profundidade e progresso ---------------------------------- */
+ .motion .hero-photo { translate:0 calc(var(--scroll-y, 0) * .004%); }
+ .motion .hero-seal { translate:0 calc(var(--scroll-y, 0) * -.1px); }
+ .hero-photo-wrap[data-tilt] { transform:perspective(1100px) rotateY(calc(var(--tilt-x, 0) * 5deg)) rotateX(calc(var(--tilt-y, 0) * -5deg)); transition:transform .7s var(--ease-out); }
+ @supports (animation-timeline: scroll()) {
+  .scroll-progress { animation:progress linear both; animation-timeline:scroll(root); }
+ }
+
+ /* 3. Catálogo: entra em sequência ao aparecer e a cada troca de filtro --- */
+ .motion .cake-item[data-reveal] { opacity:0; translate:0 22px; transition:opacity .6s var(--ease-out), translate .8s var(--ease-out); transition-delay:min(calc(var(--i, 0) * 70ms), 560ms); }
+ .motion .cake-item[data-reveal] .cake-image { scale:1.08; transition:scale 1.1s var(--ease-out); transition-delay:inherit; }
+ .motion .cake-item[data-reveal].is-in { opacity:1; translate:0 0; }
+ .motion .cake-item[data-reveal].is-in .cake-image { scale:1; transition-delay:0s; transition-duration:.9s; }
+ .motion .cake-item.is-in .cake-media:hover .cake-image,
+ .motion .cake-item.is-in .cake-media:focus-visible .cake-image { scale:1.06; }
+ .cake-media::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(115deg, transparent 35%, oklch(1 0 0 / 38%) 50%, transparent 65%); translate:-130% 0; transition:translate 1s var(--ease-out); }
+ .cake-media:hover::after, .cake-media:focus-visible::after { translate:130% 0; }
+
+ /* 4. Respostas ao toque ------------------------------------------------- */
+ .bakery-button { transition:background-color .2s, color .2s, scale .18s var(--ease-out); }
+ .bakery-button:active { scale:.96; }
+ .bakery-filter { transition:background-color .25s, border-color .25s, color .25s, scale .18s var(--ease-out); }
+ .bakery-filter:active { scale:.95; }
+ .bakery-order svg { transition:translate .3s var(--ease-out); }
+ .bakery-order:hover svg { translate:2px -2px; }
+ .choice, .chip { transition:border-color .2s, background-color .2s, box-shadow .2s, scale .18s var(--ease-out); }
+ .choice:active, .chip:active { scale:.97; }
+ .choice.is-on, .chip.is-on { animation:pick .35s var(--spring); }
+ .summary-total { animation:tick .5s var(--spring); }
+}
+
+@keyframes rise { from { opacity:0; translate:0 14px; } }
+@keyframes line-up { from { translate:0 108%; } }
+@keyframes unveil { from { clip-path:inset(100% -90px -90px -90px); } to { clip-path:inset(-90px); } }
+@keyframes settle { from { scale:1.28; } }
+@keyframes land { from { opacity:0; translate:0 26px; scale:.92; } }
+@keyframes float { 50% { translate:0 -7px; } }
+@keyframes seal-in { from { opacity:0; scale:.4; } }
+@keyframes spin { to { rotate:360deg; } }
+@keyframes shimmer { 0% { translate:-120% 0; } 28%, 100% { translate:120% 0; } }
+@keyframes progress { to { scale:1 1; } }
+@keyframes pick { 40% { scale:1.04; } }
+@keyframes tick { from { opacity:.25; translate:0 8px; } }
