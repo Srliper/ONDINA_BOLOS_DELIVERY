@@ -9,6 +9,8 @@ export interface Product {
   price: number
   /** Como o preço é cobrado, ex.: "o quilo", "até 13 fatias". */
   priceUnit: string
+  /** Unidade da quantidade no carrinho: bolos de festa são pedidos por quilo. */
+  unit: 'kg' | 'un'
   image: string
   category: ProductCategory
   isFeatured: boolean

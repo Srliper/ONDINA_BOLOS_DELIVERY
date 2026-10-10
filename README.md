@@ -1,24 +1,64 @@
-# Sweet Deliveries
+# Ondina Bolos
 
-foque em gerar as img de bolos para delivery o app deve ter estes produtos  +55 15 99711-5450 este é o numero oficial...:..este é a localização  https://maps.app.goo.gl/DtPo1uTkxT1tYZCe9.... https://api.whatsapp.com/send?phone=5515997115450&text=Ol%C3%A1%20Ondina%20Bolos%20%F0%9F%8D%B0&fbclid=PAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA85MzY2MTk3NDMzOTI0NTkAAacBuk0d5WrPYJtoDXxMqZh5Y9nhpkxgeUkuDj0Lpt0toquTV1r_eV-xp9PCMA_aem_kImlkVpHugwiA5bvSniybg
+Site de delivery da Ondina Bolos, confeitaria em São Miguel Arcanjo (SP). O cliente escolhe os bolos, monta o carrinho e envia o pedido pronto pelo WhatsApp.
 
-This project was built with [Lovable](https://lovable.dev).
+Feito com TanStack Start (React 19), Tailwind CSS 4, Radix UI e Sonner. Não depende do Lovable nem de nenhuma plataforma específica.
 
-## Build with Lovable
+## Rodar no computador
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/60b82b52-9cfb-4924-a71f-1aa9d9aca8da).
+Precisa de [Bun](https://bun.sh) (ou Node 22.12+ com npm).
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+```bash
+bun install
+bun run dev        # http://localhost:3000
 ```
+
+| Comando             | O que faz                                  |
+| ------------------- | ------------------------------------------ |
+| `bun run dev`       | Servidor de desenvolvimento                |
+| `bun run build`     | Gera a versão de produção em `.output/`    |
+| `bun run start`     | Roda a versão de produção (Node)           |
+| `bun run test`      | Testes (mensagem do WhatsApp e carrinho)   |
+| `bun run typecheck` | Checagem de tipos do TypeScript            |
+
+## Publicar (deploy)
+
+O build usa o [Nitro](https://nitro.build), que detecta o provedor automaticamente. Em todos os casos, configure a variável opcional `VITE_SITE_URL` com o endereço final do site (ex.: `https://ondinabolos.com.br`) para o Google e as prévias de link no WhatsApp/Instagram ficarem completas.
+
+### Vercel (recomendado)
+
+1. Suba este projeto para um repositório no GitHub.
+2. Em [vercel.com/new](https://vercel.com/new), importe o repositório. O framework é detectado sozinho; não precisa mudar nada.
+3. Em *Settings → Environment Variables*, adicione `VITE_SITE_URL`.
+4. Cada `git push` na branch `main` publica uma nova versão.
+
+### Netlify
+
+Importe o repositório em [app.netlify.com](https://app.netlify.com). Comando de build: `bun run build`. O Nitro gera a saída no formato da Netlify sozinho.
+
+### Cloudflare
+
+Use `NITRO_PRESET=cloudflare_module bun run build` e publique com `npx wrangler deploy`.
+
+### VPS, Railway, Render ou Fly.io (Docker)
+
+```bash
+docker build -t ondina-bolos .
+docker run -p 3000:3000 ondina-bolos
+```
+
+Sem Docker: `NITRO_PRESET=node_server bun run build && bun run start`.
+
+## Onde mudar as coisas
+
+| O quê                                 | Arquivo                       |
+| ------------------------------------- | ----------------------------- |
+| Bolos com foto, preços e descrições   | `src/data/products.ts`        |
+| Lista completa de sabores             | `src/lib/bakery-menu.ts`      |
+| Número do WhatsApp e texto do pedido  | `src/lib/whatsapp.ts`         |
+| Endereço, telefone e horários         | `src/lib/site.ts`             |
+| Depoimentos de clientes (reais)       | `src/data/testimonials.ts`    |
+| Cores, fontes e animações             | `src/styles.css`              |
+| Logo                                  | `src/assets/ondina_logo.png`  |
+
+A seção de depoimentos só aparece quando há pelo menos um depoimento real cadastrado.

@@ -1,15 +1,8 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
+# Ondina Bolos — notas para quem mexer no código
 
-- Keep the delivery catalog at the index route with browser-only category filtering and WhatsApp order links; checkout is a conversation, not an in-app transaction.
-- Define the bakery's visual styling in src/styles.css and expose control treatments through Button variants, keeping brand changes centralized.
-- Use source-grounded edited cake photos; keep the canonical naked cake photo for both the featured image and its product listing to preserve its actual shape.
-- Keep the transcribed menu in a browser-safe data module and render it alongside the existing photo catalog, so flavors without source photos remain orderable without invented images.
+- O cardápio fica na rota inicial (`src/routes/index.tsx`). O pedido é montado no carrinho e finalizado numa conversa de WhatsApp; não há pagamento no site.
+- Produtos com foto: `src/data/products.ts`. Sabores completos do cardápio: `src/lib/bakery-menu.ts`. Preços sempre como número, formatados com `formatBRL` (`src/lib/format.ts`).
+- Formato da mensagem do pedido: `src/lib/whatsapp.ts` (coberto por `src/test/whatsapp.test.ts`).
+- Visual centralizado em `src/styles.css`; variantes de botão em `src/components/ui/button.tsx`.
+- Movimento: só CSS + `src/components/MotionRoot.tsx` + `src/lib/fly-to-cart.ts`. Toda animação precisa respeitar `prefers-reduced-motion`.
+- Use as fotos reais dos bolos. Depoimentos só reais, em `src/data/testimonials.ts`.

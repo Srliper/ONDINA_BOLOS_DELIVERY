@@ -18,17 +18,19 @@ export const CATEGORY_LABEL: Record<ProductCategory, string> = {
   cafes: 'Bolos para café',
 }
 
-const party = (p: Omit<Product, 'price' | 'priceUnit' | 'category'>): Product => ({
+const party = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category'>): Product => ({
   ...p,
   price: PARTY_PRICE_PER_KG,
   priceUnit: 'o quilo',
+  unit: 'kg',
   category: 'festas',
 })
 
-const coffee = (p: Omit<Product, 'price' | 'priceUnit' | 'category'>): Product => ({
+const coffee = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category'>): Product => ({
   ...p,
   price: COFFEE_CAKE_PRICE,
   priceUnit: 'até 13 fatias',
+  unit: 'un',
   category: 'cafes',
 })
 
@@ -105,3 +107,7 @@ export const products: readonly Product[] = [
 const productsById = new Map(products.map(product => [product.id, product]))
 
 export const getProductById = (id: string): Product | undefined => productsById.get(id)
+
+/** "2 kg" para bolos de festa, "2 bolos" para bolos de café. */
+export const formatQuantity = (product: Product, quantity: number): string =>
+  product.unit === 'kg' ? `${quantity} kg` : `${quantity} ${quantity === 1 ? 'bolo' : 'bolos'}`

@@ -154,3 +154,26 @@ export function useCart() {
     }
   }, [snapshot])
 }
+
+/* ---------- Gaveta do carrinho (aberta/fechada), compartilhada entre componentes ---------- */
+
+let drawerOpen = false
+const drawerListeners = new Set<() => void>()
+
+export function setCartOpen(open: boolean): void {
+  if (drawerOpen === open) return
+  drawerOpen = open
+  drawerListeners.forEach(listener => listener())
+}
+
+const subscribeDrawer = (listener: () => void) => {
+  drawerListeners.add(listener)
+  return () => {
+    drawerListeners.delete(listener)
+  }
+}
+
+export function useCartOpen(): [boolean, (open: boolean) => void] {
+  const open = useSyncExternalStore(subscribeDrawer, () => drawerOpen, () => false)
+  return [open, setCartOpen]
+}

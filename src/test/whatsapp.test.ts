@@ -15,7 +15,7 @@ describe('buildOrderMessage', () => {
         'Olá, Ondina Bolos! 🍰 Gostaria de fazer um pedido:',
         '',
         '📋 *Meu Pedido:*',
-        '• 1x Prestígio - R$ 60,00',
+        '• 1x Prestígio (kg) - R$ 60,00',
         '• 2x Fubá com goiabada - R$ 50,00',
         '',
         '💰 *Total Estimado: R$ 110,00*',

@@ -18,7 +18,7 @@ export function buildOrderMessage(
 ): string {
   const itemLines = cartItems.map(
     ({ product, quantity }) =>
-      `• ${quantity}x ${product.name} - ${formatBRLPlain(product.price * quantity)}`,
+      `• ${quantity}x ${product.name}${product.unit === 'kg' ? ' (kg)' : ''} - ${formatBRLPlain(product.price * quantity)}`,
   )
   const address = customerNote?.trim() || ADDRESS_PLACEHOLDER
 
