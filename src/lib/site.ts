@@ -1,4 +1,4 @@
-import { MAPS_URL, WHATSAPP_NUMBER } from '@/lib/whatsapp'
+import { MAPS_URL, WHATSAPP_NUMBER } from '@/lib/contact'
 
 /**
  * Dados institucionais num só lugar (SEO, rodapé, seção de localização).

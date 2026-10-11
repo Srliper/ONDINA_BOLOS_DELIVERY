@@ -599,3 +599,9 @@ button.checkout-button { border:0; cursor:pointer; font:inherit; font-size:15px;
  .checkout-qr { width:96px; height:96px; }
  .checkout-row { grid-template-columns:1fr 80px; }
 }
+button.checkout-button:disabled { opacity:.75; cursor:progress; }
+.checkout-spin { animation:checkout-spin 1s linear infinite; }
+@keyframes checkout-spin { to { rotate:360deg } }
+.cart-sent { gap:14px; }
+.cart-sent>svg { color:var(--gold-ink); }
+.cart-sent p { line-height:1.6; }

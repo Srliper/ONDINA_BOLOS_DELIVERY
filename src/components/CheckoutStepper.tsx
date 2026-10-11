@@ -6,6 +6,7 @@ import {
   Banknote,
   Check,
   CreditCard,
+  Loader2,
   MapPin,
   MessageCircle,
   Palette,
@@ -34,8 +35,8 @@ export interface CheckoutStepperProps {
   total: number
   /** Volta para a lista do carrinho. */
   onBack: () => void
-  /** Pedido revisado e confirmado pelo cliente. */
-  onConfirm: (data: CheckoutData) => void
+  /** Pedido revisado e confirmado pelo cliente (registra no n8n e abre o WhatsApp). */
+  onConfirm: (data: CheckoutData) => Promise<void>
 }
 
 const STEPS = ['Endereço', 'Pagamento', 'Resumo'] as const
@@ -90,6 +91,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
   const [method, setMethod] = useState<PaymentMethod>()
   const [change, setChange] = useState('')
   const [paymentTried, setPaymentTried] = useState(false)
+  const [sending, setSending] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
 
   const { errors } = useMemo(() => parseFulfillment(values), [values])
@@ -217,15 +219,23 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
           <button
             type="button"
             className="checkout-button checkout-send"
-            onClick={() =>
-              onConfirm({
-                customer,
-                payment: { method, changeFor: method === 'dinheiro' ? changeFor : undefined },
-              })
-            }
+            disabled={sending}
+            aria-busy={sending}
+            onClick={async () => {
+              if (sending) return
+              setSending(true)
+              try {
+                await onConfirm({
+                  customer,
+                  payment: { method, changeFor: method === 'dinheiro' ? changeFor : undefined },
+                })
+              } finally {
+                setSending(false)
+              }
+            }}
           >
-            <MessageCircle aria-hidden="true" />
-            Enviar pedido pelo WhatsApp
+            {sending ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <MessageCircle aria-hidden="true" />}
+            {sending ? 'Enviando pedido…' : 'Enviar pedido pelo WhatsApp'}
           </button>
         )}
       </div>

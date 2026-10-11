@@ -1,52 +1,56 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Minus, Palette, Plus, ShoppingBag, Trash2 } from 'lucide-react'
+import { ArrowRight, MessageCircle, Minus, Palette, PartyPopper, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { CheckoutStepper } from '@/components/CheckoutStepper'
 import { StackedCake } from '@/components/StackedCake'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { formatQuantity } from '@/data/products'
 import { MAX_QUANTITY, useCart, useCartOpen } from '@/lib/cart-store'
-import { formatAddress, paymentLabel, type CheckoutData } from '@/lib/checkout'
+import type { CheckoutData } from '@/lib/checkout'
 import { formatBRL } from '@/lib/format'
-import { generateWhatsAppLink } from '@/lib/whatsapp'
+import { processOrderAndSend, type SendResult } from '@/lib/whatsapp'
 import type { CartItem } from '@/types/product'
 
 export function CartDrawer() {
   const [open, setOpen] = useCartOpen()
   const cart = useCart()
   const [checkingOut, setCheckingOut] = useState(false)
+  const [sent, setSent] = useState<SendResult>()
 
   // Avisos de "adicionado" ficariam por cima do botão de finalizar; ao fechar, volta para a lista.
   useEffect(() => {
     if (open) toast.dismiss()
-    else setCheckingOut(false)
+    else {
+      setCheckingOut(false)
+      setSent(undefined)
+    }
   }, [open])
 
   const showCheckout = checkingOut && !cart.isEmpty
-
-  const sendOrder = ({ customer, payment }: CheckoutData) => {
-    const paymentText =
-      paymentLabel(payment.method, customer.fulfillment) +
-      (payment.changeFor !== undefined ? ` (troco para ${formatBRL(payment.changeFor)})` : '')
-    const link = generateWhatsAppLink(cart.items, cart.total, formatAddress(customer), {
-      name: customer.name,
-      payment: paymentText,
-    })
-    window.open(link, '_blank', 'noopener,noreferrer')
-  }
 
   const goToMenu = () => {
     setOpen(false)
     document.getElementById('bolos')?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const sendOrder = async (checkout: CheckoutData) => {
+    const result = await processOrderAndSend(cart.items, cart.total, checkout)
+    setSent(result)
+    setCheckingOut(false)
+    cart.clear()
+  }
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent side="right" className="cart-drawer">
         <SheetHeader className="cart-header">
-          <SheetTitle className="cart-title">{showCheckout ? 'Finalizar pedido' : 'Seu pedido'}</SheetTitle>
+          <SheetTitle className="cart-title">
+            {sent ? 'Pedido pronto!' : showCheckout ? 'Finalizar pedido' : 'Seu pedido'}
+          </SheetTitle>
           <SheetDescription className="cart-subtitle">
-            {cart.isEmpty
+            {sent
+              ? 'Falta só um toque: envie a mensagem na conversa do WhatsApp.'
+              : cart.isEmpty
               ? 'Nenhum bolo escolhido ainda.'
               : showCheckout
                 ? 'Três passos rápidos e o pedido segue pronto para o WhatsApp.'
@@ -54,7 +58,22 @@ export function CartDrawer() {
           </SheetDescription>
         </SheetHeader>
 
-        {cart.isEmpty ? (
+        {sent ? (
+          <div className="cart-empty cart-sent" role="status">
+            <PartyPopper aria-hidden="true" />
+            <p>
+              Abrimos o WhatsApp com o seu pedido <strong>{sent.orderId}</strong>. Toque em <strong>Enviar</strong> na
+              conversa para a Ondina receber e confirmar.
+            </p>
+            <a className="checkout-button" href={sent.whatsappUrl} target="_blank" rel="noreferrer">
+              <MessageCircle aria-hidden="true" />
+              Abrir o WhatsApp de novo
+            </a>
+            <button type="button" className="cart-clear" onClick={goToMenu}>
+              Voltar ao cardápio
+            </button>
+          </div>
+        ) : cart.isEmpty ? (
           <div className="cart-empty">
             <ShoppingBag aria-hidden="true" />
             <p>Escolha um bolo no cardápio e toque em “Adicionar”.</p>

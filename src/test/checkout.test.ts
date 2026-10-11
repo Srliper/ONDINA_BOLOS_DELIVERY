@@ -6,8 +6,6 @@ import {
   paymentLabel,
   validateChange,
 } from '@/lib/checkout'
-import { buildOrderMessage } from '@/lib/whatsapp'
-import { toCartItems } from '@/lib/cart-store'
 
 const delivery = {
   fulfillment: 'entrega' as const,
@@ -72,13 +70,5 @@ describe('formatAddress', () => {
       'Rua Tapixi, S/N — Vila Tomaz, São Miguel Arcanjo — Referência: perto da praça',
     )
     expect(formatAddress({ fulfillment: 'retirada', name: 'Ana' })).toMatch(/^Retirada na loja \(Rua Tapixi, 412/)
-  })
-})
-
-describe('mensagem com dados do checkout', () => {
-  it('inclui nome e pagamento quando informados', () => {
-    const items = toCartItems([{ productId: 'prestigio', quantity: 1 }])
-    const message = buildOrderMessage(items, 60, 'Rua Tapixi, 412', { name: 'Ana', payment: 'Pix' })
-    expect(message).toContain('👤 *Nome:* Ana\n📍 *Meu Endereço:* Rua Tapixi, 412\n💳 *Pagamento:* Pix\n')
   })
 })
