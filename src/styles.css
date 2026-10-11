@@ -503,7 +503,7 @@ html [data-sonner-toaster] [data-sonner-toast][data-styled=true] [data-button] {
 }
 
 .bolo-dialog-overlay { position:fixed; inset:0; z-index:50; background:oklch(0.301 0.064 43 / 45%); backdrop-filter:blur(4px); }
-.bolo-dialog { position:fixed; inset:0; z-index:51; overflow-y:auto; overscroll-behavior:contain; display:grid; justify-items:center; align-items:start; padding:24px 16px; outline:none; }
+.bolo-dialog { position:fixed; inset:0; z-index:51; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; display:grid; grid-template-columns:minmax(0, 1fr); justify-items:center; align-items:start; padding:24px 16px; outline:none; }
 @media(min-height:900px) { .bolo-dialog { align-items:center; } }
 @media(max-width:400px) { .bolo-dialog { padding:12px 8px; } }
 @media (prefers-reduced-motion: no-preference) {
