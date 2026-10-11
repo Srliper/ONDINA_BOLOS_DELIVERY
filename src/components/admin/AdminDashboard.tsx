@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ArrowUpRight, Copy, ExternalLink, Instagram, LogOut, MessageCircle, Store, Workflow } from 'lucide-react'
 import { toast } from 'sonner'
 import logo from '@/assets/ondina_logo.png'
+import { AdminOrders } from '@/components/admin/AdminOrders'
 import { BOLO_LAYERS, LAYER_LABELS, LAYER_ORDER } from '@/data/bolo-layers'
 import { products } from '@/data/products'
 import { initials, instagramHandle, TEAM } from '@/data/team'
@@ -94,6 +95,8 @@ export function AdminDashboard({ memberId, onLogout }: { memberId: string; onLog
             site vem com um número como <strong>OB-…</strong>, o mesmo que fica registrado no n8n.
           </p>
         </section>
+
+        <AdminOrders />
 
         <div className="admin-grid">
           <section className="admin-card" aria-labelledby="admin-orders-title">

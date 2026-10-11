@@ -10,6 +10,7 @@ import {
   registerFailure,
   signSession,
 } from '@/lib/admin-session'
+import { fetchOrdersFromN8n, type OrdersResult } from '@/lib/orders'
 
 /**
  * Acesso da administração. Tudo aqui roda só no servidor (server functions):
@@ -75,4 +76,18 @@ export const getAdminSession = createServerFn({ method: 'GET' }).handler(async (
 export const adminLogout = createServerFn({ method: 'POST' }).handler(async () => {
   deleteCookie(COOKIE, { path: '/' })
   return { ok: true }
+})
+
+/**
+ * Pedidos registrados no n8n. Só para quem está logado; a URL e a chave ficam em variáveis
+ * de ambiente do servidor (N8N_ORDERS_URL, N8N_ORDERS_KEY) e nunca chegam ao navegador.
+ */
+export const getAdminOrders = createServerFn({ method: 'GET' }).handler(async (): Promise<OrdersResult> => {
+  const config = settings()
+  const session = config ? await readSession(getCookie(COOKIE), config.secret) : undefined
+  if (!session) return { status: 'error', message: 'Sessão expirada. Entre de novo.' }
+
+  const url = process.env['N8N_ORDERS_URL']
+  if (!url) return { status: 'not-configured' }
+  return fetchOrdersFromN8n({ url, key: process.env['N8N_ORDERS_KEY'] })
 })

@@ -10,3 +10,4 @@
 - Use as fotos reais dos bolos. Depoimentos só reais, em `src/data/testimonials.ts`.
 - Administração em `/admin` (`src/routes/admin.tsx`): senha só na variável de ambiente `ADMIN_PASSWORD` (nunca no código), conferida no servidor por server functions em `src/lib/admin-auth.ts`; sessão em cookie httpOnly assinado (`src/lib/admin-session.ts`). Não coloque dados de clientes nem senhas no bundle do navegador.
 - WhatsApp flutuante para clientes: `src/components/WhatsAppWidget.tsx`.
+- Pedidos no painel: `src/lib/orders.ts` (leitura tolerante do n8n) + `getAdminOrders` em `src/lib/admin-auth.ts`, que exige sessão e usa `N8N_ORDERS_URL`/`N8N_ORDERS_KEY` só no servidor.

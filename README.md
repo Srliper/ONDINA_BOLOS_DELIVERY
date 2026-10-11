@@ -90,3 +90,21 @@ empresa, o n8n, o Instagram e a tabela de preços. A senha **não fica no códig
 variável `ADMIN_PASSWORD` no provedor (na Vercel: *Settings → Environment Variables*) e, no
 computador, num arquivo `.env` (que não vai para o GitHub). Sem a variável, ninguém entra.
 Cinco senhas erradas seguidas bloqueiam o acesso por 5 minutos.
+
+## Pedidos no painel
+
+O painel `/admin` mostra os últimos 50 pedidos lendo do n8n **pelo servidor** (só com login).
+No n8n:
+
+1. **Guardar cada pedido** — no fluxo do webhook `pedido-recebido`, adicione um nó *Google Sheets →
+   Append row* (ou uma *Data Table* do n8n) com, no mínimo, a coluna `payload` =
+   `{{ JSON.stringify($json.body) }}`. Colunas extras (nº, data, nome, total) são opcionais.
+2. **Webhook de leitura** — crie outro fluxo: *Webhook* (método **GET**, caminho `pedidos`,
+   autenticação **Header Auth** com o nome `x-ondina-key` e uma chave longa) → *Google Sheets → Get
+   rows* → *Respond to Webhook* (*All Incoming Items*).
+3. **No servidor do site** (Vercel → *Environment Variables*):
+   - `N8N_ORDERS_URL` = `https://n8n.ondinabolos.com/webhook/pedidos`
+   - `N8N_ORDERS_KEY` = a mesma chave do Header Auth
+
+O painel aceita uma lista com o JSON do pedido direto ou com a coluna `payload` em texto; linhas em
+outro formato são ignoradas (e o painel avisa quantas).
