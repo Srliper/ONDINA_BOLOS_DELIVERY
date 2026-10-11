@@ -21,13 +21,24 @@ export interface BoloBuilderProps {
   onAddToCart: (selection: CompleteBoloSelection, total: number) => void
 }
 
-/** Altura (px) de cada camada na pilha e onde ela se apoia (bottom). */
-const STACK: Record<LayerCategory, { bottom: number; height: number; z: number }> = {
-  base: { bottom: 0, height: 150, z: 1 },
-  recheio: { bottom: 30, height: 40, z: 2 },
-  cobertura: { bottom: 60, height: 100, z: 3 },
-  decoracao: { bottom: 80, height: 120, z: 4 },
+/**
+ * Geometria da pilha (px, antes da escala). Enquanto o bolo é montado, as camadas
+ * flutuam separadas (`floating`) com etiquetas; no resumo elas se aproximam e se
+ * encaixam em `bottom`. `focus` é a altura, dentro da imagem, para onde a etiqueta aponta.
+ */
+const STACK: Record<
+  LayerCategory,
+  { bottom: number; floating: number; height: number; focus: number; z: number; side: 'left' | 'right' }
+> = {
+  base: { bottom: 0, floating: 0, height: 150, focus: 75, z: 1, side: 'left' },
+  recheio: { bottom: 30, floating: 168, height: 40, focus: 20, z: 2, side: 'right' },
+  cobertura: { bottom: 60, floating: 222, height: 100, focus: 77, z: 3, side: 'left' },
+  decoracao: { bottom: 80, floating: 300, height: 120, focus: 80, z: 4, side: 'right' },
 }
+/** Escala da pilha "explodida", para caber na pré-visualização de 320px. */
+const FLOATING_SCALE = 0.68
+/** Espaço reservado para o prato embaixo da pilha (igual ao `bottom` de .bolo-preview-stack). */
+const PLATE_OFFSET = 24
 
 const STEP_TITLES: Record<LayerCategory, string> = {
   base: 'Escolha a base',
@@ -40,6 +51,7 @@ const SUMMARY_STEP = LAYER_ORDER.length
 
 const enterTransition: Transition = { duration: 0.45, ease: [0.22, 1, 0.36, 1] }
 const layerSpring: Transition = { type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }
+const assembleSpring: Transition = { type: 'spring', stiffness: 170, damping: 18 }
 const stepTransition: Transition = { duration: 0.28, ease: [0.22, 1, 0.36, 1] }
 
 const isComplete = (selection: BoloSelection): selection is CompleteBoloSelection =>
@@ -101,7 +113,7 @@ export function BoloBuilder({ onClose, onAddToCart }: BoloBuilderProps) {
 
         <StepIndicator step={step} selection={selection} onJump={goTo} />
 
-        <CakePreview selection={selection} />
+        <CakePreview selection={selection} assembled={isSummary} />
 
         <div className="bolo-builder-total" aria-live="polite">
           <span>Total</span>
@@ -203,18 +215,31 @@ function StepIndicator({
 
 /* ---------- Pré-visualização do bolo empilhado ---------- */
 
-function CakePreview({ selection }: { selection: BoloSelection }) {
+function CakePreview({ selection, assembled }: { selection: BoloSelection; assembled: boolean }) {
   const isEmpty = LAYER_ORDER.every(key => !selection[key])
   const description = LAYER_ORDER.flatMap(key => (selection[key] ? [selection[key].name] : [])).join(', ')
 
   return (
-    <div className="bolo-preview" role="img" aria-label={isEmpty ? 'Bolo vazio: escolha a base' : `Seu bolo: ${description}`}>
+    <div
+      className={`bolo-preview${assembled ? ' is-assembled' : ''}`}
+      role="img"
+      aria-label={isEmpty ? 'Bolo vazio: escolha a base' : `Seu bolo: ${description}`}
+    >
       <div className="bolo-preview-plate" aria-hidden="true" />
-      <div className="bolo-preview-stack">
-        {isEmpty && <p className="bolo-preview-empty">Escolha a base para começar</p>}
+      {isEmpty && <p className="bolo-preview-empty">Escolha a base para começar</p>}
+
+      <motion.div
+        className="bolo-preview-stack"
+        style={{ originX: 0.5, originY: 1 }}
+        initial={false}
+        animate={{ scale: assembled ? 1 : FLOATING_SCALE }}
+        transition={assembleSpring}
+      >
         {LAYER_ORDER.map(key => {
           const layer = selection[key]
-          const { bottom, height, z } = STACK[key]
+          const { bottom, floating, height, z } = STACK[key]
+          // A posição de repouso é a encaixada; a flutuação é só um deslocamento em y.
+          const y = assembled ? 0 : bottom - floating
           return (
             <AnimatePresence key={key} initial={false}>
               {layer && (
@@ -225,16 +250,40 @@ function CakePreview({ selection }: { selection: BoloSelection }) {
                   draggable={false}
                   className="bolo-preview-layer"
                   style={{ bottom, height, zIndex: z }}
-                  initial={{ y: 40, opacity: 0, scale: 0.9 }}
-                  animate={{ y: 0, opacity: 1, scale: 1 }}
-                  exit={{ y: -16, opacity: 0, scale: 0.96, transition: { duration: 0.18 } }}
-                  transition={layerSpring}
+                  initial={{ y: y + 40, opacity: 0, scale: 0.9 }}
+                  animate={{ y, opacity: 1, scale: 1 }}
+                  exit={{ y: y - 16, opacity: 0, scale: 0.96, transition: { duration: 0.18 } }}
+                  transition={assembled ? assembleSpring : layerSpring}
                 />
               )}
             </AnimatePresence>
           )
         })}
-      </div>
+      </motion.div>
+
+      {/* Etiquetas com linha dourada, como num cardápio ilustrado: somem quando o bolo se fecha. */}
+      {LAYER_ORDER.map(key => {
+        const layer = selection[key]
+        const { floating, focus, side } = STACK[key]
+        return (
+          <AnimatePresence key={key}>
+            {layer && !assembled && (
+              <motion.div
+                key={layer.id}
+                className={`bolo-preview-label is-${side}`}
+                style={{ bottom: PLATE_OFFSET + (floating + focus) * FLOATING_SCALE }}
+                initial={{ opacity: 0, x: side === 'left' ? -10 : 10 }}
+                animate={{ opacity: 1, x: 0, transition: { delay: 0.35, duration: 0.3 } }}
+                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                aria-hidden="true"
+              >
+                <span className="bolo-preview-label-category">{LAYER_LABELS[key]}</span>
+                <span className="bolo-preview-label-name">{layer.name}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )
+      })}
     </div>
   )
 }

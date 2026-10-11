@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { BoloBuilder } from '@/components/BoloBuilder'
+import { BoloBuilder, type BoloBuilderProps } from '@/components/BoloBuilder'
 import { BOLO_LAYERS, LAYER_ORDER } from '@/data/bolo-layers'
 
 vi.mock('@/lib/confetti', () => ({ celebrate: vi.fn(() => Promise.resolve()) }))
@@ -27,7 +27,7 @@ describe('BOLO_LAYERS', () => {
 
 describe('BoloBuilder', () => {
   it('só avança com a camada escolhida e entrega o bolo completo ao carrinho', async () => {
-    const onAddToCart = vi.fn()
+    const onAddToCart = vi.fn<BoloBuilderProps['onAddToCart']>()
     render(<BoloBuilder onClose={() => {}} onAddToCart={onAddToCart} />)
 
     const next = () => screen.getByRole('button', { name: /próxima camada|ver o resumo/i })
@@ -42,9 +42,9 @@ describe('BoloBuilder', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Adicionar bolo personalizado ao carrinho por R\$\s64,00/ }))
 
     expect(onAddToCart).toHaveBeenCalledTimes(1)
-    const [selection, total] = onAddToCart.mock.calls[0]
+    const [selection, total] = onAddToCart.mock.calls[0] ?? []
     expect(total).toBe(64)
-    expect(selection.base.id).toBe('base-redonda')
-    expect(selection.decoracao.id).toBe('decoracao-detalhes-dourados')
+    expect(selection?.base.id).toBe('base-redonda')
+    expect(selection?.decoracao.id).toBe('decoracao-detalhes-dourados')
   })
 })

@@ -400,10 +400,18 @@ html [data-sonner-toaster] [data-sonner-toast][data-styled=true] [data-button] {
 .bolo-builder-steps .is-current { color:var(--foreground); font-weight:600; }
 .bolo-builder-steps .is-current .bolo-builder-step-dot { background:var(--gold); border-color:var(--gold); color:var(--foreground); }
 
-.bolo-preview { position:relative; width:min(320px, 100%); height:320px; margin-inline:auto; border-radius:24px; background:radial-gradient(circle at 50% 40%, var(--card) 0%, var(--secondary) 75%); overflow:hidden; }
+.bolo-preview { position:relative; width:min(340px, 100%); height:320px; margin-inline:auto; border-radius:24px; background:radial-gradient(circle at 50% 38%, oklch(0.985 0.012 20) 0%, oklch(0.93 0.04 15) 70%, oklch(0.89 0.055 15) 100%); overflow:hidden; }
 .bolo-preview-plate { position:absolute; left:50%; bottom:12px; width:280px; height:30px; translate:-50% 0; border-radius:50%; background:oklch(1 0 0); box-shadow:0 10px 22px oklch(0.301 0.064 43 / 14%), inset 0 -3px 0 oklch(0.301 0.064 43 / 8%); }
 .bolo-preview-stack { position:absolute; inset:0 0 24px 0; }
 .bolo-preview-layer { position:absolute; left:0; right:0; margin-inline:auto; width:260px; max-width:none; object-fit:fill; pointer-events:none; user-select:none; will-change:transform, opacity; }
+.bolo-preview-label { position:absolute; width:calc(50% - 96px); translate:0 50%; display:flex; flex-direction:column; gap:1px; z-index:5; pointer-events:none; }
+.bolo-preview-label::after { content:""; position:absolute; top:50%; width:14px; height:1px; background:var(--gold); }
+.bolo-preview-label.is-left { left:8px; align-items:flex-start; text-align:left; }
+.bolo-preview-label.is-left::after { left:100%; }
+.bolo-preview-label.is-right { right:8px; align-items:flex-end; text-align:right; }
+.bolo-preview-label.is-right::after { right:100%; }
+.bolo-preview-label-category { width:100%; padding-bottom:2px; border-bottom:1px solid var(--gold); font-family:var(--font-serif); font-size:13px; color:var(--gold-ink); }
+.bolo-preview-label-name { font-size:10.5px; line-height:1.3; color:var(--foreground); }
 .bolo-preview-empty { position:absolute; left:50%; bottom:24px; translate:-50% 0; width:240px; height:120px; display:grid; place-items:center; text-align:center; padding:0 24px; border:2px dashed oklch(0.301 0.064 43 / 18%); border-radius:50% / 40%; color:var(--muted-foreground); font-size:13px; }
 
 .bolo-builder-total { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:2px 4px; }
@@ -453,7 +461,6 @@ html [data-sonner-toaster] [data-sonner-toast][data-styled=true] [data-button] {
 @media(max-width:400px) {
  .bolo-builder { padding:16px 12px 14px; border-radius:22px; gap:12px; }
  .bolo-builder-header h2 { font-size:24px; }
- .bolo-preview { height:290px; }
  .bolo-builder-price { font-size:24px; }
  .bolo-picker-item { flex-basis:58%; }
  .bolo-builder-nav button { padding:0 14px; }
