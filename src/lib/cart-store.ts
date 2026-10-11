@@ -191,7 +191,7 @@ function toCustomItem(line: CustomLine): CustomCartItem | undefined {
     quantity: line.quantity,
     image: base.image,
     customConfig: { base: base.name, recheio: recheio.name, cobertura: cobertura.name, decoracao: decoracao.name },
-    layerImages: layers.map(layer => layer.image),
+    layers: layers.map(({ category, image, fallbackImage, offsetY }) => ({ category, image, fallbackImage, offsetY })),
   }
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import {
+  animate,
   AnimatePresence,
   MotionConfig,
   motion,
@@ -8,12 +9,14 @@ import {
   useTransform,
   type Transition,
 } from 'framer-motion'
+import type { PointerEvent as ReactPointerEvent } from 'react'
 import { ArrowLeft, ArrowRight, Check, Crown, ShoppingBag, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel'
 import { LAYER_LABELS, LAYER_ORDER, LAYER_STACK as STACK, getLayersByCategory } from '@/data/bolo-layers'
 import { celebrate } from '@/lib/confetti'
 import { formatBRL } from '@/lib/format'
+import { useLayerSrc } from '@/lib/layer-photo'
 import type { BoloLayer, BoloSelection, CompleteBoloSelection, LayerCategory } from '@/types/bolo-layers'
 
 export interface BoloBuilderProps {
@@ -21,6 +24,14 @@ export interface BoloBuilderProps {
   /** `preview` é a pré-visualização do bolo, para a foto "voar" até o carrinho. */
   onAddToCart: (selection: CompleteBoloSelection, total: number, preview: HTMLElement | null) => void
 }
+
+/** Pose isométrica de repouso da pilha (graus) e quanto o toque/mouse pode girar além dela. */
+const REST_TILT = { x: 9, y: -10 }
+const TILT_RANGE = { x: 10, y: 24 }
+/** Balanço lento enquanto ninguém mexe: mostra o 3D também no celular. */
+const IDLE_SWAY = 9
+/** De quanto a camada nova cai (px acima da posição final). */
+const DROP_HEIGHT = 150
 
 /** Escala da pilha "explodida", para caber na pré-visualização de 320px. */
 const FLOATING_SCALE = 0.68
@@ -37,7 +48,11 @@ const STEP_TITLES: Record<LayerCategory, string> = {
 const SUMMARY_STEP = LAYER_ORDER.length
 
 const enterTransition: Transition = { duration: 0.45, ease: [0.22, 1, 0.36, 1] }
-const layerSpring: Transition = { type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }
+/** Queda da camada: mola com amortecimento de bolo de verdade (um quique curto ao encaixar). */
+const dropTransition: Transition = {
+  y: { type: 'spring', stiffness: 210, damping: 17, mass: 1, delay: 0.05 },
+  opacity: { duration: 0.2, delay: 0.05 },
+}
 const assembleSpring: Transition = { type: 'spring', stiffness: 170, damping: 18 }
 const stepTransition: Transition = { duration: 0.28, ease: [0.22, 1, 0.36, 1] }
 
@@ -215,44 +230,66 @@ function CakePreview({
   const isEmpty = LAYER_ORDER.every(key => !selection[key])
   const description = LAYER_ORDER.flatMap(key => (selection[key] ? [selection[key].name] : [])).join(', ')
 
+  // Giro 3D: a pilha segue o dedo/mouse e volta à pose isométrica ao soltar.
+  const reduceMotion = useReducedMotion()
+  const tiltSpring = { stiffness: 120, damping: 16, mass: 0.6 }
+  const rotateX = useSpring(REST_TILT.x, tiltSpring)
+  const rotateY = useSpring(REST_TILT.y, tiltSpring)
+
+  // Balanço ocioso; para assim que a pessoa toca/move o mouse e recomeça ao soltar.
+  const [interacting, setInteracting] = useState(false)
+  useEffect(() => {
+    if (reduceMotion || interacting) return
+    const sway = animate(rotateY, [REST_TILT.y - IDLE_SWAY, REST_TILT.y + IDLE_SWAY], {
+      duration: 4.5,
+      ease: 'easeInOut',
+      repeat: Infinity,
+      repeatType: 'mirror',
+    })
+    return () => sway.stop()
+  }, [interacting, reduceMotion, rotateY])
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (reduceMotion) return
+    if (!interacting) setInteracting(true)
+    const box = event.currentTarget.getBoundingClientRect()
+    const nx = ((event.clientX - box.left) / box.width) * 2 - 1
+    const ny = ((event.clientY - box.top) / box.height) * 2 - 1
+    rotateY.set(REST_TILT.y + nx * TILT_RANGE.y)
+    rotateX.set(REST_TILT.x - ny * TILT_RANGE.x)
+  }
+  const resetTilt = () => {
+    rotateX.set(REST_TILT.x)
+    rotateY.set(REST_TILT.y)
+    setInteracting(false)
+  }
+
   return (
     <div
       ref={ref}
       className={`bolo-preview${assembled ? ' is-assembled' : ''}`}
       role="img"
       aria-label={isEmpty ? 'Bolo vazio: escolha a base' : `Seu bolo: ${description}`}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={resetTilt}
+      onPointerUp={resetTilt}
+      onPointerCancel={resetTilt}
     >
       <div className="bolo-preview-plate" aria-hidden="true" />
       {isEmpty && <p className="bolo-preview-empty">Escolha a base para começar</p>}
 
       <motion.div
         className="bolo-preview-stack"
-        style={{ originX: 0.5, originY: 1 }}
+        style={{ originX: 0.5, originY: 1, rotateX, rotateY, transformStyle: 'preserve-3d' }}
         initial={false}
         animate={{ scale: assembled ? 1 : FLOATING_SCALE }}
         transition={assembleSpring}
       >
         {LAYER_ORDER.map(key => {
           const layer = selection[key]
-          const { bottom, floating, height, z } = STACK[key]
-          // A posição de repouso é a encaixada; a flutuação é só um deslocamento em y.
-          const y = assembled ? 0 : bottom - floating
           return (
             <AnimatePresence key={key} initial={false}>
-              {layer && (
-                <motion.img
-                  key={layer.id}
-                  src={layer.image}
-                  alt=""
-                  draggable={false}
-                  className="bolo-preview-layer"
-                  style={{ bottom, height, zIndex: z }}
-                  initial={{ y: y + 40, opacity: 0, scale: 0.9 }}
-                  animate={{ y, opacity: 1, scale: 1 }}
-                  exit={{ y: y - 16, opacity: 0, scale: 0.96, transition: { duration: 0.18 } }}
-                  transition={assembled ? assembleSpring : layerSpring}
-                />
-              )}
+              {layer && <PreviewLayer key={layer.id} layer={layer} assembled={assembled} />}
             </AnimatePresence>
           )
         })}
@@ -282,6 +319,33 @@ function CakePreview({
         )
       })}
     </div>
+  )
+}
+
+/**
+ * Uma camada da pilha: foto real (ou ilustração provisória), ancorada no prato e levada até
+ * o seu `offsetY`. Enquanto o bolo é montado, flutua mais alto e mais à frente (translateZ),
+ * o que dá paralaxe quando a pilha gira; no resumo, encaixa.
+ */
+function PreviewLayer({ layer, assembled }: { layer: BoloLayer; assembled: boolean }) {
+  const { src, onError } = useLayerSrc(layer)
+  const { floating, height, z, depth } = STACK[layer.category]
+  const y = assembled ? layer.offsetY : -floating
+  const translateZ = assembled ? depth * 0.05 : depth
+
+  return (
+    <motion.img
+      src={src}
+      onError={onError}
+      alt=""
+      draggable={false}
+      className="bolo-preview-layer"
+      style={{ height, zIndex: z }}
+      initial={{ y: y - DROP_HEIGHT, z: translateZ, opacity: 0 }}
+      animate={{ y, z: translateZ, opacity: 1 }}
+      exit={{ y: y - 24, opacity: 0, transition: { duration: 0.18 } }}
+      transition={assembled ? assembleSpring : dropTransition}
+    />
   )
 }
 

@@ -1,3 +1,5 @@
+import type { LayerVisual } from '@/lib/layer-photo'
+
 export type ProductCategory = 'festas' | 'cafes'
 
 export interface Product {
@@ -44,8 +46,8 @@ export interface ReadyCartItem extends CartItemBase {
 export interface CustomCartItem extends CartItemBase {
   type: 'custom'
   customConfig: CustomCakeConfig
-  /** Imagens das camadas, de baixo para cima — usadas na miniatura empilhada. */
-  layerImages: string[]
+  /** Camadas de baixo para cima (foto, ilustração provisória e encaixe) — para a miniatura. */
+  layers: LayerVisual[]
 }
 
 export type CartItem = ReadyCartItem | CustomCartItem

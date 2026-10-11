@@ -102,7 +102,7 @@ function CartLine({ item, index }: { item: CartItem; index: number }) {
     <li className={`cart-line${isCustom ? ' is-custom' : ''}`} style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}>
       {item.type === 'custom' ? (
         <span className="cart-thumb cart-thumb-custom">
-          <StackedCake images={item.layerImages} width={56} />
+          <StackedCake layers={item.layers} width={56} />
         </span>
       ) : (
         <img src={item.product.image} alt="" className="cart-thumb" width={64} height={64} />

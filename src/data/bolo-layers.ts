@@ -12,23 +12,41 @@ export const LAYER_LABELS: Record<LayerCategory, string> = {
 
 /**
  * Geometria da pilha (px, antes da escala). Enquanto o bolo é montado, as camadas
- * flutuam separadas (`floating`) com etiquetas; no resumo elas se aproximam e se
- * encaixam em `bottom`. `focus` é a altura, dentro da imagem, para onde a etiqueta aponta.
+ * flutuam separadas (`floating`) com etiquetas; no resumo elas se encaixam no `offsetY`
+ * de cada camada. `focus` é a altura, dentro da imagem, para onde a etiqueta aponta, e
+ * `depth` é a profundidade (translateZ) que dá paralaxe quando o bolo gira em 3D.
  */
 export const LAYER_STACK: Record<
   LayerCategory,
-  { bottom: number; floating: number; height: number; focus: number; z: number; side: 'left' | 'right' }
+  { floating: number; height: number; focus: number; z: number; depth: number; side: 'left' | 'right' }
 > = {
-  base: { bottom: 0, floating: 0, height: 150, focus: 75, z: 1, side: 'left' },
-  recheio: { bottom: 30, floating: 168, height: 40, focus: 20, z: 2, side: 'right' },
-  cobertura: { bottom: 60, floating: 222, height: 100, focus: 77, z: 3, side: 'left' },
-  decoracao: { bottom: 80, floating: 300, height: 120, focus: 80, z: 4, side: 'right' },
+  base: { floating: 0, height: 150, focus: 75, z: 1, depth: 0, side: 'left' },
+  recheio: { floating: 168, height: 40, focus: 20, z: 2, depth: 35, side: 'right' },
+  cobertura: { floating: 222, height: 100, focus: 77, z: 3, depth: 70, side: 'left' },
+  decoracao: { floating: 300, height: 120, focus: 80, z: 4, depth: 105, side: 'right' },
+}
+
+/**
+ * Deslocamento vertical de cada camada na pilha montada (px; negativo = para cima).
+ * Ajuste aqui se as fotos reais pedirem outro encaixe.
+ */
+export const LAYER_OFFSET_Y: Record<LayerCategory, number> = {
+  base: 0,
+  recheio: -30,
+  cobertura: -60,
+  decoracao: -80,
 }
 /** Largura (px) de todas as imagens de camada e altura do bolo já montado. */
 export const LAYER_WIDTH = 260
 export const ASSEMBLED_HEIGHT = 200
 
-// As imagens em /public/layers são ilustrações provisórias, no lugar das fotos reais das camadas.
+/** Foto real esperada e ilustração provisória (usada até a foto existir). */
+const pictures = (id: string, category: LayerCategory) => ({
+  image: `/layers/foto-real-${id}.png`,
+  fallbackImage: `/layers/${id}.png`,
+  offsetY: LAYER_OFFSET_Y[category],
+})
+
 export const BOLO_LAYERS: readonly BoloLayer[] = [
   // Base
   {
@@ -36,7 +54,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'base',
     name: 'Base Redonda Tradicional',
     price: 25,
-    image: '/layers/base-redonda.png',
+    ...pictures('base-redonda', 'base'),
     description: 'Massa fofinha de baunilha, assada no formato redondo clássico.',
     badge: 'popular',
   },
@@ -45,7 +63,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'base',
     name: 'Base Quadrada Premium',
     price: 35,
-    image: '/layers/base-quadrada.png',
+    ...pictures('base-quadrada', 'base'),
     description: 'Formato quadrado, mais alto, ideal para festas e fotos.',
     badge: 'premium',
   },
@@ -54,7 +72,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'base',
     name: 'Base Red Velvet',
     price: 40,
-    image: '/layers/base-red-velvet.png',
+    ...pictures('base-red-velvet', 'base'),
     description: 'Massa aveludada de cacau suave, com a cor vermelha marcante.',
   },
 
@@ -64,7 +82,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'recheio',
     name: 'Brigadeiro Belga',
     price: 15,
-    image: '/layers/recheio-brigadeiro-belga.png',
+    ...pictures('recheio-brigadeiro-belga', 'recheio'),
     description: 'Brigadeiro cremoso feito com chocolate belga.',
     badge: 'popular',
   },
@@ -73,7 +91,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'recheio',
     name: 'Morango com Ninho',
     price: 18,
-    image: '/layers/recheio-morango-ninho.png',
+    ...pictures('recheio-morango-ninho', 'recheio'),
     description: 'Mousse de leite Ninho com pedaços de morango fresco.',
     badge: 'popular',
   },
@@ -82,7 +100,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'recheio',
     name: 'Doce de Leite Argentino',
     price: 16,
-    image: '/layers/recheio-doce-de-leite.png',
+    ...pictures('recheio-doce-de-leite', 'recheio'),
     description: 'Doce de leite denso e caramelizado, no estilo argentino.',
   },
   {
@@ -90,7 +108,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'recheio',
     name: 'Prestígio',
     price: 17,
-    image: '/layers/recheio-prestigio.png',
+    ...pictures('recheio-prestigio', 'recheio'),
     description: 'Creme de coco com brigadeiro de chocolate.',
   },
 
@@ -100,7 +118,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'cobertura',
     name: 'Cobertura de Brigadeiro',
     price: 12,
-    image: '/layers/cobertura-brigadeiro.png',
+    ...pictures('cobertura-brigadeiro', 'cobertura'),
     description: 'Brigadeiro escorrendo pelas laterais do bolo.',
     badge: 'popular',
   },
@@ -109,7 +127,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'cobertura',
     name: 'Chantilly Premium',
     price: 10,
-    image: '/layers/cobertura-chantilly.png',
+    ...pictures('cobertura-chantilly', 'cobertura'),
     description: 'Chantilly leve e estável, com acabamento de bicos.',
   },
   {
@@ -117,7 +135,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'cobertura',
     name: 'Ganache de Chocolate',
     price: 15,
-    image: '/layers/cobertura-ganache.png',
+    ...pictures('cobertura-ganache', 'cobertura'),
     description: 'Ganache brilhante de chocolate meio amargo.',
   },
   {
@@ -125,7 +143,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'cobertura',
     name: 'Pasta Americana',
     price: 25,
-    image: '/layers/cobertura-pasta-americana.png',
+    ...pictures('cobertura-pasta-americana', 'cobertura'),
     description: 'Acabamento liso e elegante, perfeito para bolos temáticos.',
     badge: 'premium',
   },
@@ -136,7 +154,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'decoracao',
     name: 'Morangos Frescos',
     price: 8,
-    image: '/layers/decoracao-morangos.png',
+    ...pictures('decoracao-morangos', 'decoracao'),
     description: 'Morangos selecionados por cima do bolo.',
     badge: 'popular',
   },
@@ -145,7 +163,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'decoracao',
     name: 'Flores Comestíveis',
     price: 15,
-    image: '/layers/decoracao-flores.png',
+    ...pictures('decoracao-flores', 'decoracao'),
     description: 'Flores delicadas e comestíveis em tons suaves.',
     badge: 'premium',
   },
@@ -154,7 +172,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'decoracao',
     name: 'Lasca de Chocolate',
     price: 6,
-    image: '/layers/decoracao-lascas-chocolate.png',
+    ...pictures('decoracao-lascas-chocolate', 'decoracao'),
     description: 'Lascas de chocolate ao leite e meio amargo.',
   },
   {
@@ -162,7 +180,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
     category: 'decoracao',
     name: 'Detalhes Dourados',
     price: 12,
-    image: '/layers/decoracao-detalhes-dourados.png',
+    ...pictures('decoracao-detalhes-dourados', 'decoracao'),
     description: 'Pérolas e folhas douradas comestíveis.',
     badge: 'premium',
   },

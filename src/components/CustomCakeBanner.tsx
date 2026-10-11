@@ -9,7 +9,7 @@ import { flyToCart } from '@/lib/fly-to-cart'
 
 /** Combinação mostrada no banner como exemplo do que dá para montar. */
 const SHOWCASE = ['base-red-velvet', 'recheio-morango-ninho', 'cobertura-brigadeiro', 'decoracao-morangos']
-const showcaseImages = SHOWCASE.flatMap(id => getLayerById(id)?.image ?? [])
+const showcaseLayers = SHOWCASE.flatMap(id => getLayerById(id) ?? [])
 
 /** Chamada para o Monte seu Bolo em camadas + o diálogo que abre o BoloBuilder. */
 export function CustomCakeBanner() {
@@ -56,7 +56,7 @@ export function CustomCakeBanner() {
           </DialogPrimitive.Root>
         </div>
         <div className="custom-cake-banner-art">
-          <StackedCake images={showcaseImages} width={260} />
+          <StackedCake layers={showcaseLayers} width={260} />
         </div>
       </div>
     </section>

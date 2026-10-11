@@ -401,10 +401,11 @@ html [data-sonner-toaster] [data-sonner-toast][data-styled=true] [data-button] {
 .bolo-builder-steps .is-current { color:var(--foreground); font-weight:600; }
 .bolo-builder-steps .is-current .bolo-builder-step-dot { background:var(--gold); border-color:var(--gold); color:var(--foreground); }
 
-.bolo-preview { position:relative; width:min(340px, 100%); height:320px; margin-inline:auto; border-radius:24px; background:radial-gradient(circle at 50% 38%, oklch(0.985 0.012 20) 0%, oklch(0.93 0.04 15) 70%, oklch(0.89 0.055 15) 100%); overflow:hidden; }
+.bolo-preview { position:relative; width:min(340px, 100%); height:320px; margin-inline:auto; border-radius:24px; perspective:1000px; perspective-origin:50% 35%; touch-action:pan-y; cursor:grab; background:radial-gradient(circle at 50% 38%, oklch(0.985 0.012 20) 0%, oklch(0.93 0.04 15) 70%, oklch(0.89 0.055 15) 100%); overflow:hidden; }
 .bolo-preview-plate { position:absolute; left:50%; bottom:12px; width:280px; height:30px; translate:-50% 0; border-radius:50%; background:oklch(1 0 0); box-shadow:0 10px 22px oklch(0.301 0.064 43 / 14%), inset 0 -3px 0 oklch(0.301 0.064 43 / 8%); }
-.bolo-preview-stack { position:absolute; inset:0 0 24px 0; }
-.bolo-preview-layer { position:absolute; left:0; right:0; margin-inline:auto; width:260px; max-width:none; object-fit:fill; pointer-events:none; user-select:none; will-change:transform, opacity; }
+.bolo-preview-stack { position:absolute; inset:0 0 24px 0; transform-style:preserve-3d; }
+.bolo-preview-layer { position:absolute; bottom:0; left:0; right:0; margin-inline:auto; width:260px; max-width:none; object-fit:fill; pointer-events:none; user-select:none; will-change:transform, opacity; filter:drop-shadow(0 10px 10px oklch(0.301 0.064 43 / 26%)) drop-shadow(0 2px 3px oklch(0.301 0.064 43 / 22%)); }
+.bolo-preview.is-assembled .bolo-preview-layer { filter:drop-shadow(0 4px 5px oklch(0.301 0.064 43 / 22%)); }
 .bolo-preview-label { position:absolute; width:calc(50% - 96px); translate:0 50%; display:flex; flex-direction:column; gap:1px; z-index:5; pointer-events:none; }
 .bolo-preview-label::after { content:""; position:absolute; top:50%; width:14px; height:1px; background:var(--gold); }
 .bolo-preview-label.is-left { left:8px; align-items:flex-start; text-align:left; }

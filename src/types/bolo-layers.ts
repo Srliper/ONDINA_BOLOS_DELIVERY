@@ -8,8 +8,15 @@ export interface BoloLayer {
   name: string
   /** Preço em reais (número, nunca string formatada). */
   price: number
-  /** Caminho público da imagem da camada (PNG transparente). */
+  /** Foto real da camada: PNG com fundo transparente em /public/layers/foto-real-<id>.png. */
   image: string
+  /**
+   * Ilustração provisória, usada só enquanto a foto real ainda não foi colocada na pasta
+   * (se `image` não carregar, o componente troca para esta automaticamente).
+   */
+  fallbackImage: string
+  /** Deslocamento vertical (px) da camada na pilha montada: base 0, recheio -30, cobertura -60... */
+  offsetY: number
   description: string
   badge?: 'popular' | 'premium'
 }
