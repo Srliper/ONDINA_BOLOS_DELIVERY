@@ -82,3 +82,11 @@ Se o n8n falhar ou demorar mais de 2,5 s, o WhatsApp abre do mesmo jeito. Config
 
 - `VITE_N8N_WEBHOOK_URL` (opcional; o padrão é `https://n8n.ondinabolos.com/webhook/pedido-recebido`);
 - no nó Webhook do n8n, **Options → Allowed Origins (CORS)** com o endereço do site.
+
+## Área da equipe (`/admin`)
+
+Entrada com senha para a família (Ondina, Edgard e Kaique), com atalhos para o WhatsApp da
+empresa, o n8n, o Instagram e a tabela de preços. A senha **não fica no código**: configure a
+variável `ADMIN_PASSWORD` no provedor (na Vercel: *Settings → Environment Variables*) e, no
+computador, num arquivo `.env` (que não vai para o GitHub). Sem a variável, ninguém entra.
+Cinco senhas erradas seguidas bloqueiam o acesso por 5 minutos.

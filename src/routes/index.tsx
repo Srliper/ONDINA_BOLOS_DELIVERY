@@ -8,6 +8,7 @@ import { CustomCakeBanner } from '@/components/CustomCakeBanner'
 import { Header } from '@/components/Header'
 import { ProductCard } from '@/components/ProductCard'
 import { TeamSection } from '@/components/TeamSection'
+import { WhatsAppWidget } from '@/components/WhatsAppWidget'
 import aboutPhoto from '@/assets/three_cakes.jpg'
 import { CATEGORY_LABEL, getProductById, products } from '@/data/products'
 import { testimonials } from '@/data/testimonials'
@@ -74,6 +75,7 @@ function Index() {
       </main>
       <Footer />
       <CartDrawer />
+      <WhatsAppWidget />
     </div>
   )
 }
@@ -406,7 +408,9 @@ function Footer() {
         </div>
         <div className="footer-bottom">
           <span>© 2026 Ondina Bolos</span>
-          <span>Desde 2003</span>
+          <a href="/admin" className="footer-admin">
+            Área da equipe
+          </a>
         </div>
       </div>
     </footer>
