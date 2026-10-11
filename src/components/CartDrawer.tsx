@@ -1,10 +1,12 @@
-import { useEffect, useId, useState } from 'react'
-import { MessageCircle, Minus, Palette, Plus, ShoppingBag, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowRight, Minus, Palette, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { CheckoutStepper } from '@/components/CheckoutStepper'
 import { StackedCake } from '@/components/StackedCake'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { formatQuantity } from '@/data/products'
 import { MAX_QUANTITY, useCart, useCartOpen } from '@/lib/cart-store'
+import { formatAddress, paymentLabel, type CheckoutData } from '@/lib/checkout'
 import { formatBRL } from '@/lib/format'
 import { generateWhatsAppLink } from '@/lib/whatsapp'
 import type { CartItem } from '@/types/product'
@@ -12,13 +14,26 @@ import type { CartItem } from '@/types/product'
 export function CartDrawer() {
   const [open, setOpen] = useCartOpen()
   const cart = useCart()
-  const [address, setAddress] = useState('')
-  const addressId = useId()
+  const [checkingOut, setCheckingOut] = useState(false)
 
-  // Avisos de "adicionado" ficariam por cima do botão de finalizar.
+  // Avisos de "adicionado" ficariam por cima do botão de finalizar; ao fechar, volta para a lista.
   useEffect(() => {
     if (open) toast.dismiss()
+    else setCheckingOut(false)
   }, [open])
+
+  const showCheckout = checkingOut && !cart.isEmpty
+
+  const sendOrder = ({ customer, payment }: CheckoutData) => {
+    const paymentText =
+      paymentLabel(payment.method, customer.fulfillment) +
+      (payment.changeFor !== undefined ? ` (troco para ${formatBRL(payment.changeFor)})` : '')
+    const link = generateWhatsAppLink(cart.items, cart.total, formatAddress(customer), {
+      name: customer.name,
+      payment: paymentText,
+    })
+    window.open(link, '_blank', 'noopener,noreferrer')
+  }
 
   const goToMenu = () => {
     setOpen(false)
@@ -29,9 +44,13 @@ export function CartDrawer() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent side="right" className="cart-drawer">
         <SheetHeader className="cart-header">
-          <SheetTitle className="cart-title">Seu pedido</SheetTitle>
+          <SheetTitle className="cart-title">{showCheckout ? 'Finalizar pedido' : 'Seu pedido'}</SheetTitle>
           <SheetDescription className="cart-subtitle">
-            {cart.isEmpty ? 'Nenhum bolo escolhido ainda.' : 'Confira os itens e envie pelo WhatsApp. A confirmação é feita na conversa.'}
+            {cart.isEmpty
+              ? 'Nenhum bolo escolhido ainda.'
+              : showCheckout
+                ? 'Três passos rápidos e o pedido segue pronto para o WhatsApp.'
+                : 'Confira os itens e envie pelo WhatsApp. A confirmação é feita na conversa.'}
           </SheetDescription>
         </SheetHeader>
 
@@ -43,6 +62,13 @@ export function CartDrawer() {
               Ver cardápio
             </button>
           </div>
+        ) : showCheckout ? (
+          <CheckoutStepper
+            items={cart.items}
+            total={cart.total}
+            onBack={() => setCheckingOut(false)}
+            onConfirm={sendOrder}
+          />
         ) : (
           <>
             <ul className="cart-list" aria-label="Itens do pedido">
@@ -52,33 +78,15 @@ export function CartDrawer() {
             </ul>
 
             <div className="cart-footer">
-              <label htmlFor={addressId} className="cart-address-label">
-                Endereço de entrega
-              </label>
-              <textarea
-                id={addressId}
-                className="cart-address"
-                value={address}
-                maxLength={240}
-                rows={2}
-                onChange={event => setAddress(event.target.value)}
-                placeholder="Rua, número e bairro. Deixe em branco para retirar na loja."
-              />
-
               <div className="cart-total" aria-live="polite">
                 <span>Total estimado</span>
                 <strong key={cart.total}>{formatBRL(cart.total)}</strong>
               </div>
 
-              <a
-                className="checkout-button"
-                href={generateWhatsAppLink(cart.items, cart.total, address)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <MessageCircle aria-hidden="true" />
-                Finalizar Pedido no WhatsApp
-              </a>
+              <button type="button" className="checkout-button" onClick={() => setCheckingOut(true)}>
+                Finalizar pedido
+                <ArrowRight aria-hidden="true" />
+              </button>
               <button type="button" className="cart-clear" onClick={cart.clear}>
                 Esvaziar carrinho
               </button>

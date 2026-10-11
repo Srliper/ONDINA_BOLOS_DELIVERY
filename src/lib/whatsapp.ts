@@ -15,6 +15,7 @@ export function buildOrderMessage(
   cartItems: readonly CartItem[],
   total: number,
   customerNote?: string,
+  details?: { name?: string; payment?: string },
 ): string {
   const itemLines = cartItems.flatMap(item => {
     const subtotal = formatBRLPlain(item.price * item.quantity)
@@ -40,7 +41,9 @@ export function buildOrderMessage(
     '',
     `💰 *Total Estimado: ${formatBRLPlain(total)}*`,
     '',
+    ...(details?.name ? [`👤 *Nome:* ${details.name}`] : []),
     `📍 *Meu Endereço:* ${address}`,
+    ...(details?.payment ? [`💳 *Pagamento:* ${details.payment}`] : []),
     `🗺️ *Ponto de Referência:* ${MAPS_URL}`,
   ].join('\n')
 }
@@ -50,8 +53,9 @@ export function generateWhatsAppLink(
   cartItems: readonly CartItem[],
   total: number,
   customerNote?: string,
+  details?: { name?: string; payment?: string },
 ): string {
-  return whatsappUrl(buildOrderMessage(cartItems, total, customerNote))
+  return whatsappUrl(buildOrderMessage(cartItems, total, customerNote, details))
 }
 
 /** Link para dúvidas avulsas (sem carrinho), ex.: "Pedir agora" no topo. */
