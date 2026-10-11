@@ -18,6 +18,8 @@ export const BUSINESS = {
   city: 'São Miguel Arcanjo',
   region: 'SP',
   mapsUrl: MAPS_URL,
+  instagram: 'https://www.instagram.com/ondinabolos/',
+  instagramHandle: '@ondinabolos',
   /** Mapa incorporado (não precisa de chave de API). */
   mapsEmbedUrl:
     'https://www.google.com/maps?q=' +
@@ -43,6 +45,7 @@ export function bakeryJsonLd(image: string) {
     foundingDate: '2003',
     servesCuisine: 'Confeitaria',
     hasMap: BUSINESS.mapsUrl,
+    sameAs: [BUSINESS.instagram],
     address: {
       '@type': 'PostalAddress',
       streetAddress: BUSINESS.street,

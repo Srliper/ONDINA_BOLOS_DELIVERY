@@ -1,12 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ArrowDown, ArrowUpRight, CakeSlice, Clock, MapPin, MessageCircle, Package, Quote, Truck } from 'lucide-react'
+import { ArrowDown, ArrowUpRight, CakeSlice, Clock, Instagram, MapPin, MessageCircle, Package, Quote, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CakeBuilder } from '@/components/CakeBuilder'
 import { CartDrawer } from '@/components/CartDrawer'
 import { CustomCakeBanner } from '@/components/CustomCakeBanner'
 import { Header } from '@/components/Header'
 import { ProductCard } from '@/components/ProductCard'
+import { TeamSection } from '@/components/TeamSection'
 import aboutPhoto from '@/assets/three_cakes.jpg'
 import { CATEGORY_LABEL, getProductById, products } from '@/data/products'
 import { testimonials } from '@/data/testimonials'
@@ -67,6 +68,7 @@ function Index() {
         <CustomCakeBanner />
         <CakeBuilder />
         <About />
+        <TeamSection />
         {testimonials.length > 0 && <Testimonials />}
         <ServiceInfo />
       </main>
@@ -380,6 +382,11 @@ function Footer() {
             <a className="footer-link" href={whatsapp()} target="_blank" rel="noreferrer">
               <MessageCircle size={16} aria-hidden="true" />
               Conversar no WhatsApp
+              <ArrowUpRight size={14} aria-hidden="true" />
+            </a>
+            <a className="footer-link" href={BUSINESS.instagram} target="_blank" rel="noreferrer">
+              <Instagram size={16} aria-hidden="true" />
+              {BUSINESS.instagramHandle} no Instagram
               <ArrowUpRight size={14} aria-hidden="true" />
             </a>
           </div>
