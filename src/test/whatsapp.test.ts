@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { getProductById } from '@/data/products'
 import { ADDRESS_PLACEHOLDER, buildOrderMessage, generateWhatsAppLink, MAPS_URL } from '@/lib/whatsapp'
 import { cartActions, getCartTotal, toCartItems } from '@/lib/cart-store'
-import type { CartItem } from '@/types/product'
 
-const item = (id: string, quantity: number): CartItem => ({ product: getProductById(id)!, quantity })
+const item = (id: string, quantity: number) => toCartItems([{ productId: id, quantity }])[0]!
+const CUSTOM = {
+  base: 'base-red-velvet',
+  recheio: 'recheio-morango-ninho',
+  cobertura: 'cobertura-brigadeiro',
+  decoracao: 'decoracao-morangos',
+}
 
 describe('buildOrderMessage', () => {
   const items = [item('prestigio', 1), item('fuba-goiabada', 2)]
@@ -48,7 +53,7 @@ describe('cartActions', () => {
 
     const raw = JSON.parse(localStorage.getItem('ondina-bolos:cart:v1') ?? '[]')
     const items = toCartItems(raw)
-    expect(items.map(i => [i.product.id, i.quantity])).toEqual([['prestigio', 2], ['fuba-goiabada', 1]])
+    expect(items.map(i => [i.id, i.quantity])).toEqual([['prestigio', 2], ['fuba-goiabada', 1]])
     expect(getCartTotal(items)).toBe(145)
 
     cartActions.setQuantity('prestigio', 0)
@@ -56,5 +61,57 @@ describe('cartActions', () => {
 
     cartActions.clear()
     expect(JSON.parse(localStorage.getItem('ondina-bolos:cart:v1')!)).toEqual([])
+  })
+
+  it('soma o mesmo bolo montado em vez de duplicar e calcula o preço pelas camadas', () => {
+    cartActions.clear()
+    const lineId = cartActions.addCustom(CUSTOM)
+    cartActions.addCustom(CUSTOM)
+    cartActions.add('prestigio')
+    expect(cartActions.addCustom({ ...CUSTOM, base: 'recheio-prestigio' })).toBeUndefined()
+
+    const items = toCartItems(JSON.parse(localStorage.getItem('ondina-bolos:cart:v1')!))
+    const custom = items.find(i => i.type === 'custom')
+    expect(custom).toMatchObject({
+      id: lineId,
+      name: 'Bolo Personalizado',
+      price: 78,
+      quantity: 2,
+      customConfig: {
+        base: 'Base Red Velvet',
+        recheio: 'Morango com Ninho',
+        cobertura: 'Cobertura de Brigadeiro',
+        decoracao: 'Morangos Frescos',
+      },
+    })
+    expect(getCartTotal(items)).toBe(78 * 2 + 60)
+
+    cartActions.decrement(lineId!)
+    cartActions.decrement(lineId!)
+    expect(toCartItems(JSON.parse(localStorage.getItem('ondina-bolos:cart:v1')!)).map(i => i.id)).toEqual(['prestigio'])
+    cartActions.clear()
+  })
+
+  it('descarta do navegador camadas que saíram do cardápio', () => {
+    localStorage.setItem(
+      'ondina-bolos:cart:v1',
+      JSON.stringify([{ custom: { ...CUSTOM, cobertura: 'cobertura-que-nao-existe' }, quantity: 1 }]),
+    )
+    expect(toCartItems(JSON.parse(localStorage.getItem('ondina-bolos:cart:v1')!))).toEqual([])
+  })
+})
+
+describe('buildOrderMessage com bolo montado', () => {
+  it('lista as camadas abaixo do bolo personalizado', () => {
+    const items = toCartItems([{ custom: CUSTOM, quantity: 1 }])
+    expect(buildOrderMessage(items, 78)).toContain(
+      [
+        '• 1x Bolo Personalizado - R$ 78,00',
+        '   Base: Base Red Velvet',
+        '   Recheio: Morango com Ninho',
+        '   Cobertura: Cobertura de Brigadeiro',
+        '   Decoração: Morangos Frescos',
+      ].join('\n'),
+    )
   })
 })

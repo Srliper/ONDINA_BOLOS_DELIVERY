@@ -10,6 +10,24 @@ export const LAYER_LABELS: Record<LayerCategory, string> = {
   decoracao: 'Decoração',
 }
 
+/**
+ * Geometria da pilha (px, antes da escala). Enquanto o bolo é montado, as camadas
+ * flutuam separadas (`floating`) com etiquetas; no resumo elas se aproximam e se
+ * encaixam em `bottom`. `focus` é a altura, dentro da imagem, para onde a etiqueta aponta.
+ */
+export const LAYER_STACK: Record<
+  LayerCategory,
+  { bottom: number; floating: number; height: number; focus: number; z: number; side: 'left' | 'right' }
+> = {
+  base: { bottom: 0, floating: 0, height: 150, focus: 75, z: 1, side: 'left' },
+  recheio: { bottom: 30, floating: 168, height: 40, focus: 20, z: 2, side: 'right' },
+  cobertura: { bottom: 60, floating: 222, height: 100, focus: 77, z: 3, side: 'left' },
+  decoracao: { bottom: 80, floating: 300, height: 120, focus: 80, z: 4, side: 'right' },
+}
+/** Largura (px) de todas as imagens de camada e altura do bolo já montado. */
+export const LAYER_WIDTH = 260
+export const ASSEMBLED_HEIGHT = 200
+
 // As imagens em /public/layers são ilustrações provisórias, no lugar das fotos reais das camadas.
 export const BOLO_LAYERS: readonly BoloLayer[] = [
   // Base
@@ -152,3 +170,7 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
 
 export const getLayersByCategory = (category: LayerCategory): BoloLayer[] =>
   BOLO_LAYERS.filter(layer => layer.category === category)
+
+const layersById = new Map(BOLO_LAYERS.map(layer => [layer.id, layer]))
+
+export const getLayerById = (id: string): BoloLayer | undefined => layersById.get(id)

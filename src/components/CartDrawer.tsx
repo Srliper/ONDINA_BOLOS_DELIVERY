@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
-import { MessageCircle, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
+import { MessageCircle, Minus, Palette, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { StackedCake } from '@/components/StackedCake'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { formatQuantity } from '@/data/products'
 import { MAX_QUANTITY, useCart, useCartOpen } from '@/lib/cart-store'
@@ -46,7 +47,7 @@ export function CartDrawer() {
           <>
             <ul className="cart-list" aria-label="Itens do pedido">
               {cart.items.map((item, index) => (
-                <CartLine key={item.product.id} item={item} index={index} />
+                <CartLine key={item.id} item={item} index={index} />
               ))}
             </ul>
 
@@ -90,38 +91,58 @@ export function CartDrawer() {
 }
 
 function CartLine({ item, index }: { item: CartItem; index: number }) {
-  const { product, quantity } = item
+  const { id, name, price, quantity } = item
   const { increment, decrement, remove } = useCart()
-  const step = product.unit === 'kg' ? 'quilo' : 'bolo'
+  const isCustom = item.type === 'custom'
+  const step = item.type === 'ready' && item.product.unit === 'kg' ? 'quilo' : 'bolo'
+  const quantityLabel =
+    item.type === 'ready' ? formatQuantity(item.product, quantity) : `${quantity} ${quantity === 1 ? 'bolo' : 'bolos'}`
 
   return (
-    <li className="cart-line" style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}>
-      <img src={product.image} alt="" className="cart-thumb" width={64} height={64} />
+    <li className={`cart-line${isCustom ? ' is-custom' : ''}`} style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}>
+      {item.type === 'custom' ? (
+        <span className="cart-thumb cart-thumb-custom">
+          <StackedCake images={item.layerImages} width={56} />
+        </span>
+      ) : (
+        <img src={item.product.image} alt="" className="cart-thumb" width={64} height={64} />
+      )}
       <div className="cart-line-info">
-        <p className="cart-line-name">{product.name}</p>
-        <p className="cart-line-meta">
-          {formatBRL(product.price)} {product.priceUnit}
+        <p className="cart-line-name">
+          {isCustom && <Palette aria-hidden="true" className="cart-line-icon" />}
+          {name}
         </p>
-        <div className="cart-stepper" role="group" aria-label={`Quantidade de ${product.name}`}>
-          <button type="button" onClick={() => decrement(product.id)} aria-label={`Tirar 1 ${step} de ${product.name}`}>
+        {item.type === 'custom' ? (
+          <dl className="cart-custom-layers" aria-label="Camadas escolhidas">
+            <div><dt>Base</dt><dd>{item.customConfig.base}</dd></div>
+            <div><dt>Recheio</dt><dd>{item.customConfig.recheio}</dd></div>
+            <div><dt>Cobertura</dt><dd>{item.customConfig.cobertura}</dd></div>
+            <div><dt>Decoração</dt><dd>{item.customConfig.decoracao}</dd></div>
+          </dl>
+        ) : null}
+        <p className="cart-line-meta">
+          {formatBRL(price)} {item.type === 'ready' ? item.product.priceUnit : 'cada'}
+        </p>
+        <div className="cart-stepper" role="group" aria-label={`Quantidade de ${name}`}>
+          <button type="button" onClick={() => decrement(id)} aria-label={`Tirar 1 ${step} de ${name}`}>
             <Minus aria-hidden="true" />
           </button>
           <output key={quantity} aria-live="polite">
-            {formatQuantity(product, quantity)}
+            {quantityLabel}
           </output>
           <button
             type="button"
-            onClick={() => increment(product.id)}
+            onClick={() => increment(id)}
             disabled={quantity >= MAX_QUANTITY}
-            aria-label={`Adicionar 1 ${step} de ${product.name}`}
+            aria-label={`Adicionar 1 ${step} de ${name}`}
           >
             <Plus aria-hidden="true" />
           </button>
         </div>
       </div>
       <div className="cart-line-end">
-        <strong>{formatBRL(product.price * quantity)}</strong>
-        <button type="button" className="cart-remove" onClick={() => remove(product.id)} aria-label={`Remover ${product.name} do pedido`}>
+        <strong>{formatBRL(price * quantity)}</strong>
+        <button type="button" className="cart-remove" onClick={() => remove(id)} aria-label={`Remover ${name} do pedido`}>
           <Trash2 aria-hidden="true" />
         </button>
       </div>

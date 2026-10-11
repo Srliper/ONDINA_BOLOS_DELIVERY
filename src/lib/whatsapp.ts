@@ -16,10 +16,20 @@ export function buildOrderMessage(
   total: number,
   customerNote?: string,
 ): string {
-  const itemLines = cartItems.map(
-    ({ product, quantity }) =>
-      `• ${quantity}x ${product.name}${product.unit === 'kg' ? ' (kg)' : ''} - ${formatBRLPlain(product.price * quantity)}`,
-  )
+  const itemLines = cartItems.flatMap(item => {
+    const subtotal = formatBRLPlain(item.price * item.quantity)
+    if (item.type === 'ready') {
+      return [`• ${item.quantity}x ${item.name}${item.product.unit === 'kg' ? ' (kg)' : ''} - ${subtotal}`]
+    }
+    const { base, recheio, cobertura, decoracao } = item.customConfig
+    return [
+      `• ${item.quantity}x ${item.name} - ${subtotal}`,
+      `   Base: ${base}`,
+      `   Recheio: ${recheio}`,
+      `   Cobertura: ${cobertura}`,
+      `   Decoração: ${decoracao}`,
+    ]
+  })
   const address = customerNote?.trim() || ADDRESS_PLACEHOLDER
 
   return [

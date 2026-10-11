@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUpRight, CakeSlice, Clock, MapPin, MessageCircle, Packa
 import { Button } from '@/components/ui/button'
 import { CakeBuilder } from '@/components/CakeBuilder'
 import { CartDrawer } from '@/components/CartDrawer'
+import { CustomCakeBanner } from '@/components/CustomCakeBanner'
 import { Header } from '@/components/Header'
 import { ProductCard } from '@/components/ProductCard'
 import aboutPhoto from '@/assets/three_cakes.jpg'
@@ -63,6 +64,7 @@ function Index() {
       <main>
         <Hero />
         <Catalog />
+        <CustomCakeBanner />
         <CakeBuilder />
         <About />
         {testimonials.length > 0 && <Testimonials />}

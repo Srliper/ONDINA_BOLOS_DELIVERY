@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import {
   AnimatePresence,
   MotionConfig,
@@ -11,30 +11,17 @@ import {
 import { ArrowLeft, ArrowRight, Check, Crown, ShoppingBag, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel'
-import { LAYER_LABELS, LAYER_ORDER, getLayersByCategory } from '@/data/bolo-layers'
+import { LAYER_LABELS, LAYER_ORDER, LAYER_STACK as STACK, getLayersByCategory } from '@/data/bolo-layers'
 import { celebrate } from '@/lib/confetti'
 import { formatBRL } from '@/lib/format'
 import type { BoloLayer, BoloSelection, CompleteBoloSelection, LayerCategory } from '@/types/bolo-layers'
 
 export interface BoloBuilderProps {
   onClose: () => void
-  onAddToCart: (selection: CompleteBoloSelection, total: number) => void
+  /** `preview` é a pré-visualização do bolo, para a foto "voar" até o carrinho. */
+  onAddToCart: (selection: CompleteBoloSelection, total: number, preview: HTMLElement | null) => void
 }
 
-/**
- * Geometria da pilha (px, antes da escala). Enquanto o bolo é montado, as camadas
- * flutuam separadas (`floating`) com etiquetas; no resumo elas se aproximam e se
- * encaixam em `bottom`. `focus` é a altura, dentro da imagem, para onde a etiqueta aponta.
- */
-const STACK: Record<
-  LayerCategory,
-  { bottom: number; floating: number; height: number; focus: number; z: number; side: 'left' | 'right' }
-> = {
-  base: { bottom: 0, floating: 0, height: 150, focus: 75, z: 1, side: 'left' },
-  recheio: { bottom: 30, floating: 168, height: 40, focus: 20, z: 2, side: 'right' },
-  cobertura: { bottom: 60, floating: 222, height: 100, focus: 77, z: 3, side: 'left' },
-  decoracao: { bottom: 80, floating: 300, height: 120, focus: 80, z: 4, side: 'right' },
-}
 /** Escala da pilha "explodida", para caber na pré-visualização de 320px. */
 const FLOATING_SCALE = 0.68
 /** Espaço reservado para o prato embaixo da pilha (igual ao `bottom` de .bolo-preview-stack). */
@@ -61,6 +48,7 @@ export function BoloBuilder({ onClose, onAddToCart }: BoloBuilderProps) {
   const [step, setStep] = useState<number>(0)
   const [selection, setSelection] = useState<BoloSelection>({})
   const [direction, setDirection] = useState<1 | -1>(1)
+  const previewRef = useRef<HTMLDivElement>(null)
 
   const category: LayerCategory | undefined = LAYER_ORDER[step]
   const isSummary = step === SUMMARY_STEP
@@ -83,7 +71,7 @@ export function BoloBuilder({ onClose, onAddToCart }: BoloBuilderProps) {
     toast.success('Seu bolo personalizado foi adicionado', {
       description: `${selection.base.name} · ${formatBRL(total)}`,
     })
-    onAddToCart(selection, total)
+    onAddToCart(selection, total, previewRef.current)
   }
 
   return (
@@ -113,7 +101,7 @@ export function BoloBuilder({ onClose, onAddToCart }: BoloBuilderProps) {
 
         <StepIndicator step={step} selection={selection} onJump={goTo} />
 
-        <CakePreview selection={selection} assembled={isSummary} />
+        <CakePreview ref={previewRef} selection={selection} assembled={isSummary} />
 
         <div className="bolo-builder-total" aria-live="polite">
           <span>Total</span>
@@ -215,12 +203,21 @@ function StepIndicator({
 
 /* ---------- Pré-visualização do bolo empilhado ---------- */
 
-function CakePreview({ selection, assembled }: { selection: BoloSelection; assembled: boolean }) {
+function CakePreview({
+  ref,
+  selection,
+  assembled,
+}: {
+  ref: RefObject<HTMLDivElement | null>
+  selection: BoloSelection
+  assembled: boolean
+}) {
   const isEmpty = LAYER_ORDER.every(key => !selection[key])
   const description = LAYER_ORDER.flatMap(key => (selection[key] ? [selection[key].name] : [])).join(', ')
 
   return (
     <div
+      ref={ref}
       className={`bolo-preview${assembled ? ' is-assembled' : ''}`}
       role="img"
       aria-label={isEmpty ? 'Bolo vazio: escolha a base' : `Seu bolo: ${description}`}
