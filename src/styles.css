@@ -380,3 +380,82 @@ html [data-sonner-toaster] [data-sonner-toast][data-styled=true] [data-button] {
 @keyframes badge-bump { 0% { scale:.4; } 55% { scale:1.25; } 100% { scale:1; } }
 @keyframes add-pop { 40% { scale:1.04; } }
 @keyframes line-in { from { opacity:0; translate:16px 0; } }
+
+/* ---------- Monte seu Bolo em camadas (BoloBuilder) ---------- */
+.bolo-builder { width:min(560px, 100%); margin-inline:auto; background:var(--card); border:1px solid var(--border); border-radius:28px; padding:20px 20px 18px; box-shadow:var(--hero-shadow); display:flex; flex-direction:column; gap:14px; }
+.bolo-builder-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.bolo-builder-eyebrow { display:flex; align-items:center; gap:6px; color:var(--rose-ink); font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; }
+.bolo-builder-eyebrow svg { width:14px; height:14px; color:var(--gold-ink); }
+.bolo-builder-header h2 { font-family:var(--font-serif); font-size:28px; line-height:1.2; margin-top:4px; }
+.bolo-builder-close { flex:none; display:grid; place-items:center; width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:var(--background); color:var(--foreground); cursor:pointer; }
+.bolo-builder-close:hover { background:var(--secondary); }
+.bolo-builder-close svg { width:18px; height:18px; }
+
+.bolo-builder-steps { list-style:none; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+.bolo-builder-steps button { width:100%; display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:0; padding:4px 0; color:var(--muted-foreground); font-size:11px; cursor:pointer; }
+.bolo-builder-steps button:disabled { cursor:default; opacity:.55; }
+.bolo-builder-step-dot { display:grid; place-items:center; width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:var(--background); font-weight:600; font-size:12px; transition:background-color .2s, border-color .2s, color .2s; }
+.bolo-builder-step-dot svg { width:14px; height:14px; }
+.bolo-builder-steps .is-done .bolo-builder-step-dot { background:var(--secondary); border-color:var(--primary); color:var(--rose-ink); }
+.bolo-builder-steps .is-current { color:var(--foreground); font-weight:600; }
+.bolo-builder-steps .is-current .bolo-builder-step-dot { background:var(--gold); border-color:var(--gold); color:var(--foreground); }
+
+.bolo-preview { position:relative; width:min(320px, 100%); height:320px; margin-inline:auto; border-radius:24px; background:radial-gradient(circle at 50% 40%, var(--card) 0%, var(--secondary) 75%); overflow:hidden; }
+.bolo-preview-plate { position:absolute; left:50%; bottom:12px; width:280px; height:30px; translate:-50% 0; border-radius:50%; background:oklch(1 0 0); box-shadow:0 10px 22px oklch(0.301 0.064 43 / 14%), inset 0 -3px 0 oklch(0.301 0.064 43 / 8%); }
+.bolo-preview-stack { position:absolute; inset:0 0 24px 0; }
+.bolo-preview-layer { position:absolute; left:0; right:0; margin-inline:auto; width:260px; max-width:none; object-fit:fill; pointer-events:none; user-select:none; will-change:transform, opacity; }
+.bolo-preview-empty { position:absolute; left:50%; bottom:24px; translate:-50% 0; width:240px; height:120px; display:grid; place-items:center; text-align:center; padding:0 24px; border:2px dashed oklch(0.301 0.064 43 / 18%); border-radius:50% / 40%; color:var(--muted-foreground); font-size:13px; }
+
+.bolo-builder-total { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:2px 4px; }
+.bolo-builder-total>span { font-size:12px; color:var(--muted-foreground); text-transform:uppercase; letter-spacing:.06em; }
+.bolo-builder-price { font-family:var(--font-serif); font-size:28px; color:var(--rose-ink); font-variant-numeric:tabular-nums; }
+
+.bolo-builder-stage { overflow:hidden; margin:-6px -12px -26px; padding:6px 12px 26px; min-height:236px; }
+.bolo-picker-track { margin-left:-6px; padding:10px 8px 12px 0; }
+.bolo-picker-item { padding-left:12px; flex-basis:46%; }
+@media(min-width:480px) { .bolo-picker-item { flex-basis:33.333%; } }
+.bolo-option { position:relative; width:100%; height:100%; display:flex; flex-direction:column; gap:4px; text-align:left; padding:10px 10px 12px; border:2px solid var(--border); border-radius:18px; background:var(--card); color:var(--foreground); cursor:pointer; transition:border-color .2s, box-shadow .2s; }
+.bolo-option:hover { border-color:var(--primary); }
+.bolo-option:focus-visible { outline:2px solid var(--rose-ink); outline-offset:2px; }
+.bolo-option.is-selected { border-color:var(--gold); box-shadow:0 10px 24px oklch(0.86 0.11 82 / 40%); }
+.bolo-option-media { display:grid; place-items:center; height:76px; border-radius:12px; background:var(--secondary); overflow:hidden; }
+.bolo-option-media img { width:100%; height:100%; object-fit:contain; padding:6px; }
+.bolo-option-name { font-weight:600; font-size:13px; line-height:1.3; margin-top:4px; }
+.bolo-option-desc { font-size:11px; line-height:1.45; color:var(--muted-foreground); }
+.bolo-option-price { margin-top:auto; padding-top:4px; font-weight:600; font-size:13px; color:var(--rose-ink); }
+.bolo-option-badge { position:absolute; top:6px; left:6px; z-index:1; display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:999px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+.bolo-option-badge svg { width:10px; height:10px; }
+.bolo-option-badge.is-popular { background:var(--primary); color:var(--foreground); }
+.bolo-option-badge.is-premium { background:var(--foreground); color:var(--gold); }
+.bolo-option-check { position:absolute; top:6px; right:6px; display:grid; place-items:center; width:22px; height:22px; border-radius:50%; background:var(--gold); color:var(--foreground); }
+.bolo-option-check svg { width:13px; height:13px; }
+
+.bolo-summary ul { list-style:none; padding:0; display:grid; gap:2px; margin-bottom:16px; }
+.bolo-summary li { display:grid; grid-template-columns:1fr auto auto; grid-template-areas:"label price edit" "name price edit"; align-items:center; column-gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+.bolo-summary-label { grid-area:label; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted-foreground); }
+.bolo-summary-name { grid-area:name; font-size:14px; font-weight:600; }
+.bolo-summary-price { grid-area:price; font-size:13px; color:var(--rose-ink); white-space:nowrap; }
+.bolo-summary-edit { grid-area:edit; background:none; border:0; padding:6px 0 6px 4px; font-size:12px; color:var(--muted-foreground); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.bolo-summary-edit:hover { color:var(--rose-ink); }
+.bolo-add-button { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; min-height:58px; padding:0 18px; border:0; border-radius:999px; background:linear-gradient(135deg, var(--gold) 0%, oklch(0.8 0.12 75) 100%); color:var(--foreground); font-size:15px; font-weight:700; box-shadow:0 14px 30px oklch(0.86 0.11 82 / 45%); cursor:pointer; }
+.bolo-add-button svg { width:20px; height:20px; }
+.bolo-add-button:disabled { opacity:.5; cursor:not-allowed; }
+
+.bolo-builder-nav { display:flex; justify-content:space-between; gap:10px; padding-top:4px; }
+.bolo-builder-nav button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:46px; padding:0 18px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; transition:background-color .2s, opacity .2s; }
+.bolo-builder-nav svg { width:16px; height:16px; }
+.bolo-builder-nav button:disabled { opacity:.4; cursor:not-allowed; }
+.bolo-builder-back { background:transparent; border:1px solid var(--border); color:var(--foreground); }
+.bolo-builder-back:not(:disabled):hover { background:var(--secondary); }
+.bolo-builder-next { margin-left:auto; background:var(--foreground); border:1px solid var(--foreground); color:var(--background); }
+.bolo-builder-next:not(:disabled):hover { background:var(--rose-ink); border-color:var(--rose-ink); }
+
+@media(max-width:400px) {
+ .bolo-builder { padding:16px 12px 14px; border-radius:22px; gap:12px; }
+ .bolo-builder-header h2 { font-size:24px; }
+ .bolo-preview { height:290px; }
+ .bolo-builder-price { font-size:24px; }
+ .bolo-picker-item { flex-basis:58%; }
+ .bolo-builder-nav button { padding:0 14px; }
+ .bolo-add-button { font-size:14px; }
+}
