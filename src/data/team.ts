@@ -1,3 +1,5 @@
+import edgardPhoto from '@/assets/team/edgard.jpg'
+import kaiquePhoto from '@/assets/team/kaique.jpg'
 import ondinaPhoto from '@/assets/team/ondina.jpg'
 
 export interface TeamMember {
@@ -33,6 +35,7 @@ export const TEAM: readonly TeamMember[] = [
     relation: 'Filho da Ondina',
     description: 'Divide com a Ondina a administração da casa, os pedidos e o atendimento.',
     instagram: instagram('edgard.nvieira'),
+    photo: edgardPhoto,
   },
   {
     id: 'kaique',
@@ -41,6 +44,7 @@ export const TEAM: readonly TeamMember[] = [
     relation: 'Neto da Ondina',
     description: 'Organiza as rotas e leva os pedidos até você, com o bolo inteirinho.',
     instagram: instagram('kabn_2005'),
+    photo: kaiquePhoto,
   },
 ]
 

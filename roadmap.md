@@ -4,6 +4,14 @@
 - [x] Carrinho com envio do pedido pelo WhatsApp.
 - [x] Animações (abertura, catálogo, adicionar ao carrinho, gaveta).
 - [x] Projeto independente do Lovable, pronto para Vercel, Netlify ou Docker.
+- [x] Monte seu Bolo em camadas, em 3D só com CSS, com bolo personalizado no carrinho.
+- [x] Checkout em etapas: endereço validado, forma de pagamento (Pix, cartão, dinheiro) e resumo.
+- [x] Pedido registrado no n8n e enviado pelo WhatsApp, com confete.
+- [x] Seção Administração (Ondina, Edgard e Kaique) e Instagram da loja.
+- [ ] Fotos reais das camadas em `public/layers/foto-real-<id>.png`.
+- [ ] Confirmar preços das camadas do Monte seu Bolo.
+- [ ] Liberar o domínio do site no CORS do webhook do n8n.
 - [ ] Logo em alta resolução (substituir `src/assets/ondina_logo.png`).
 - [ ] Depoimentos reais de clientes em `src/data/testimonials.ts`.
 - [ ] Domínio próprio e `VITE_SITE_URL` configurados no provedor.
+- [ ] Publicar: juntar esta branch na `main` e ligar a Vercel.

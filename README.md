@@ -60,5 +60,25 @@ Sem Docker: `NITRO_PRESET=node_server bun run build && bun run start`.
 | Depoimentos de clientes (reais)       | `src/data/testimonials.ts`    |
 | Cores, fontes e animações             | `src/styles.css`              |
 | Logo                                  | `src/assets/ondina_logo.png`  |
+| Camadas do Monte seu Bolo e preços    | `src/data/bolo-layers.ts`     |
+| Fotos reais das camadas               | `public/layers/foto-real-<id>.png` |
+| Equipe (Administração) e fotos        | `src/data/team.ts`, `src/assets/team/` |
+| Instagram da loja                     | `src/lib/site.ts`             |
+| Mensagem do pedido e envio ao n8n     | `src/lib/whatsapp.ts`         |
+| Checkout (endereço e pagamento)       | `src/lib/checkout.ts`         |
 
 A seção de depoimentos só aparece quando há pelo menos um depoimento real cadastrado.
+
+## Fotos reais das camadas
+
+Cada camada do Monte seu Bolo procura a foto `public/layers/foto-real-<id>.png` (PNG com fundo
+transparente; o `<id>` está em `src/data/bolo-layers.ts`, ex.: `foto-real-base-red-velvet.png`).
+Enquanto a foto não existe, aparece a ilustração provisória `public/layers/<id>.png`.
+
+## n8n
+
+Ao enviar o pedido, o site faz um `POST` em JSON para o webhook do n8n e depois abre o WhatsApp.
+Se o n8n falhar ou demorar mais de 2,5 s, o WhatsApp abre do mesmo jeito. Configure:
+
+- `VITE_N8N_WEBHOOK_URL` (opcional; o padrão é `https://n8n.ondinabolos.com/webhook/pedido-recebido`);
+- no nó Webhook do n8n, **Options → Allowed Origins (CORS)** com o endereço do site.
