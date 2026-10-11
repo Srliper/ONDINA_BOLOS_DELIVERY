@@ -361,6 +361,7 @@
 /* Toasts (sonner) no tom da marca */
 html [data-sonner-toaster] [data-sonner-toast][data-styled=true] { background:var(--foreground); color:var(--background); border:0; border-radius:16px; font-family:var(--font-sans); font-size:13px; box-shadow:0 16px 36px oklch(0.301 0.064 43 / 28%); }
 html [data-sonner-toaster] [data-sonner-toast][data-styled=true] [data-icon] { color:var(--gold); }
+html [data-sonner-toaster] [data-sonner-toast][data-styled=true] [data-description] { color:oklch(0.987 0.008 55 / 72%); }
 html [data-sonner-toaster] [data-sonner-toast][data-styled=true] [data-button] { background:var(--gold); color:var(--foreground); border-radius:999px; font-weight:600; height:30px; padding:0 12px; }
 
 /* Movimento dos componentes da loja */
