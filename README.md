@@ -108,3 +108,38 @@ No n8n:
 
 O painel aceita uma lista com o JSON do pedido direto ou com a coluna `payload` em texto; linhas em
 outro formato são ignoradas (e o painel avisa quantas).
+
+## Frete
+
+`src/lib/shipping.ts`: em **São Miguel Arcanjo** a entrega é grátis (R$ 0,00) — o cliente também
+pode retirar. Para **qualquer outra cidade**, a única opção é **Retirada no Local**, com o endereço
+da loja. O checkout pede a cidade primeiro e o Zod recusa entrega fora de São Miguel Arcanjo.
+
+## Cardápio editável (banco de dados + API)
+
+O painel `/admin` tem a seção **Cardápio do site** para criar, editar e excluir **Bolos** (`Product`),
+**Recheios** (`Filling`) e **Camadas** (`Layer`: base, cobertura e decoração), cada um com `price`,
+`description` e `image_url`. O site inteiro (cardápio, carrinho, Monte seu Bolo e mensagem do
+WhatsApp) usa o que estiver salvo; enquanto ninguém editou, vale o cardápio padrão do código.
+
+API REST (JSON):
+
+| Método | Rota | Quem pode |
+| ------ | ---- | --------- |
+| GET    | `/api/catalog/{products\|fillings\|layers}` | todos (o site usa) |
+| GET    | `/api/catalog/{entidade}/{id}` | todos |
+| POST   | `/api/catalog/{entidade}` | equipe logada no `/admin` |
+| PUT    | `/api/catalog/{entidade}/{id}` | equipe logada no `/admin` |
+| DELETE | `/api/catalog/{entidade}/{id}` | equipe logada no `/admin` |
+
+Escritas exigem a sessão do `/admin`, `Content-Type: application/json` e a mesma origem do site.
+Erros de validação voltam com `400` e `issues` por campo. Não dá para apagar a última opção de uma
+etapa do Monte seu Bolo (`409`).
+
+**Onde fica guardado:**
+
+- **Site publicado (Vercel):** conecte um banco **Upstash Redis** em *Vercel → Storage →
+  Marketplace (Upstash for Redis)* e ligue ao projeto. A Vercel cria `KV_REST_API_URL` e
+  `KV_REST_API_TOKEN` sozinha (também aceita `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`).
+  Sem isso, o site funciona com o cardápio padrão e o painel avisa que não dá para salvar.
+- **No computador:** arquivo `.data/catalog.json` (fora do Git), criado na primeira edição.

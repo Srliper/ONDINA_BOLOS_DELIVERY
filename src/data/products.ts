@@ -38,7 +38,7 @@ const coffee = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category'>): 
  * Fotos reais dos bolos da Ondina (src/assets), em vez de placeholders do Unsplash,
  * para o cliente ver exatamente o que vai receber.
  */
-export const products: readonly Product[] = [
+export const DEFAULT_PRODUCTS: readonly Product[] = [
   party({
     id: 'naked-cake',
     name: 'Naked cake com frutas',
@@ -104,7 +104,22 @@ export const products: readonly Product[] = [
   }),
 ]
 
-const productsById = new Map(products.map(product => [product.id, product]))
+const defaultImages = new Map(DEFAULT_PRODUCTS.map(product => [product.id, product.image]))
+
+/** Foto padrão (src/assets) de um bolo do cardápio original, se houver. */
+export const defaultProductImage = (id: string): string | undefined => defaultImages.get(id)
+
+/**
+ * Cardápio em uso. Começa com o padrão acima e é trocado pelo do banco de dados
+ * (painel /admin) via applyProducts — os imports veem sempre a lista atual.
+ */
+export let products: readonly Product[] = DEFAULT_PRODUCTS
+let productsById = new Map(products.map(product => [product.id, product]))
+
+export function applyProducts(next: readonly Product[]): void {
+  products = next
+  productsById = new Map(next.map(product => [product.id, product]))
+}
 
 export const getProductById = (id: string): Product | undefined => productsById.get(id)
 

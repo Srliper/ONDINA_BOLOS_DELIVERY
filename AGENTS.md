@@ -11,3 +11,6 @@
 - Administração em `/admin` (`src/routes/admin.tsx`): senha só na variável de ambiente `ADMIN_PASSWORD` (nunca no código), conferida no servidor por server functions em `src/lib/admin-auth.ts`; sessão em cookie httpOnly assinado (`src/lib/admin-session.ts`). Não coloque dados de clientes nem senhas no bundle do navegador.
 - WhatsApp flutuante para clientes: `src/components/WhatsAppWidget.tsx`.
 - Pedidos no painel: `src/lib/orders.ts` (leitura tolerante do n8n) + `getAdminOrders` em `src/lib/admin-auth.ts`, que exige sessão e usa `N8N_ORDERS_URL`/`N8N_ORDERS_KEY` só no servidor.
+- Frete: `src/lib/shipping.ts` (grátis só em São Miguel Arcanjo; fora dela, só Retirada no Local).
+- Cardápio editável: entidades e CRUD puro em `src/lib/catalog.ts`; banco em `src/lib/catalog-store.ts` (Upstash Redis pela REST ou `.data/catalog.json`); API REST em `src/routes/api/catalog.*` com regras em `src/lib/catalog-api.ts`; a rota raiz carrega o catálogo e chama `applyCatalog` antes de desenhar — `products`/`BOLO_LAYERS` são a lista em uso, `DEFAULT_*` o padrão. Código que só roda no servidor fica em `*.server.ts` ou `createServerOnlyFn`.
+

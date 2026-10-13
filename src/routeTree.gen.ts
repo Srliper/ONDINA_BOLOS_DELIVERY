@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ApiCatalogEntityRouteImport } from './routes/api/catalog.$entity'
+import { Route as ApiCatalogEntityIdRouteImport } from './routes/api/catalog.$entity.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +24,54 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCatalogEntityRoute = ApiCatalogEntityRouteImport.update({
+  id: '/api/catalog/$entity',
+  path: '/api/catalog/$entity',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCatalogEntityIdRoute = ApiCatalogEntityIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiCatalogEntityRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/api/catalog/$entity': typeof ApiCatalogEntityRouteWithChildren
+  '/api/catalog/$entity/$id': typeof ApiCatalogEntityIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/api/catalog/$entity': typeof ApiCatalogEntityRouteWithChildren
+  '/api/catalog/$entity/$id': typeof ApiCatalogEntityIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/api/catalog/$entity': typeof ApiCatalogEntityRouteWithChildren
+  '/api/catalog/$entity/$id': typeof ApiCatalogEntityIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin'
+  fullPaths:
+    '/' | '/admin' | '/api/catalog/$entity' | '/api/catalog/$entity/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin'
-  id: '__root__' | '/' | '/admin'
+  to: '/' | '/admin' | '/api/catalog/$entity' | '/api/catalog/$entity/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/api/catalog/$entity'
+    | '/api/catalog/$entity/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  ApiCatalogEntityRoute: typeof ApiCatalogEntityRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +90,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/catalog/$entity': {
+      id: '/api/catalog/$entity'
+      path: '/api/catalog/$entity'
+      fullPath: '/api/catalog/$entity'
+      preLoaderRoute: typeof ApiCatalogEntityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/catalog/$entity/$id': {
+      id: '/api/catalog/$entity/$id'
+      path: '/$id'
+      fullPath: '/api/catalog/$entity/$id'
+      preLoaderRoute: typeof ApiCatalogEntityIdRouteImport
+      parentRoute: typeof ApiCatalogEntityRoute
+    }
   }
 }
+
+interface ApiCatalogEntityRouteChildren {
+  ApiCatalogEntityIdRoute: typeof ApiCatalogEntityIdRoute
+}
+
+const ApiCatalogEntityRouteChildren: ApiCatalogEntityRouteChildren = {
+  ApiCatalogEntityIdRoute: ApiCatalogEntityIdRoute,
+}
+
+const ApiCatalogEntityRouteWithChildren =
+  ApiCatalogEntityRoute._addFileChildren(ApiCatalogEntityRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  ApiCatalogEntityRoute: ApiCatalogEntityRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

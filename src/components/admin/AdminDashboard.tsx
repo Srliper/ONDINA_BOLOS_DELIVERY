@@ -3,11 +3,9 @@ import { ArrowUpRight, Copy, ExternalLink, Instagram, LogOut, MessageCircle, Sto
 import { toast } from 'sonner'
 import logo from '@/assets/ondina_logo.png'
 import { AdminOrders } from '@/components/admin/AdminOrders'
-import { BOLO_LAYERS, LAYER_LABELS, LAYER_ORDER } from '@/data/bolo-layers'
-import { products } from '@/data/products'
+import { CatalogManager } from '@/components/admin/CatalogManager'
 import { initials, instagramHandle, TEAM } from '@/data/team'
 import { adminLogout } from '@/lib/admin-auth'
-import { formatBRL } from '@/lib/format'
 import { BUSINESS } from '@/lib/site'
 import { generateContactLink, N8N_WEBHOOK_URL, WHATSAPP_NUMBER } from '@/lib/whatsapp'
 
@@ -151,44 +149,7 @@ export function AdminDashboard({ memberId, onLogout }: { memberId: string; onLog
           </section>
         </div>
 
-        <section className="admin-card" aria-labelledby="admin-prices-title">
-          <h2 id="admin-prices-title">Preços em vigor no site</h2>
-          <p>Para conferir antes de confirmar um pedido. Mudanças de preço são feitas no código do site.</p>
-          <div className="admin-prices">
-            <div>
-              <h3>Cardápio</h3>
-              <table>
-                <tbody>
-                  {products.map(product => (
-                    <tr key={product.id}>
-                      <th scope="row">{product.name}</th>
-                      <td>
-                        {formatBRL(product.price)} <small>{product.priceUnit}</small>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div>
-              <h3>Monte seu Bolo (camadas)</h3>
-              <table>
-                <tbody>
-                  {LAYER_ORDER.flatMap(category =>
-                    BOLO_LAYERS.filter(layer => layer.category === category).map(layer => (
-                      <tr key={layer.id}>
-                        <th scope="row">
-                          <small>{LAYER_LABELS[category]}</small> {layer.name}
-                        </th>
-                        <td>{formatBRL(layer.price)}</td>
-                      </tr>
-                    )),
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+        <CatalogManager />
       </main>
     </div>
   )

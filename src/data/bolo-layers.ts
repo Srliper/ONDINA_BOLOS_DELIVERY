@@ -47,7 +47,7 @@ const pictures = (id: string, category: LayerCategory) => ({
   offsetY: LAYER_OFFSET_Y[category],
 })
 
-export const BOLO_LAYERS: readonly BoloLayer[] = [
+export const DEFAULT_LAYERS: readonly BoloLayer[] = [
   // Base
   {
     id: 'base-redonda',
@@ -186,9 +186,23 @@ export const BOLO_LAYERS: readonly BoloLayer[] = [
   },
 ]
 
+/** Ids das camadas que já têm ilustração provisória em /public/layers/<id>.png. */
+const defaultLayerIds = new Set(DEFAULT_LAYERS.map(layer => layer.id))
+export const hasDefaultLayerArt = (id: string) => defaultLayerIds.has(id)
+
+/**
+ * Camadas em uso. Começam com as padrão acima e são trocadas pelas do banco de dados
+ * (painel /admin) via applyLayers — os imports veem sempre a lista atual.
+ */
+export let BOLO_LAYERS: readonly BoloLayer[] = DEFAULT_LAYERS
+let layersById = new Map(BOLO_LAYERS.map(layer => [layer.id, layer]))
+
+export function applyLayers(next: readonly BoloLayer[]): void {
+  BOLO_LAYERS = next
+  layersById = new Map(next.map(layer => [layer.id, layer]))
+}
+
 export const getLayersByCategory = (category: LayerCategory): BoloLayer[] =>
   BOLO_LAYERS.filter(layer => layer.category === category)
-
-const layersById = new Map(BOLO_LAYERS.map(layer => [layer.id, layer]))
 
 export const getLayerById = (id: string): BoloLayer | undefined => layersById.get(id)

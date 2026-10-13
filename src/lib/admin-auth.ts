@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start'
+import { createServerFn, createServerOnlyFn } from '@tanstack/react-start'
 import { deleteCookie, getCookie, getRequestIP, setCookie } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import {
@@ -90,4 +90,11 @@ export const getAdminOrders = createServerFn({ method: 'GET' }).handler(async ()
   const url = process.env['N8N_ORDERS_URL']
   if (!url) return { status: 'not-configured' }
   return fetchOrdersFromN8n({ url, key: process.env['N8N_ORDERS_KEY'] })
+})
+
+/** Sessão da administração na requisição atual — usada pelas rotas de API do catálogo. */
+export const currentAdminSession = createServerOnlyFn(async () => {
+  const config = settings()
+  if (!config) return undefined
+  return readSession(getCookie(COOKIE), config.secret)
 })
