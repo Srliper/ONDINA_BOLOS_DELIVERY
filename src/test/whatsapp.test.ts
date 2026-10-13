@@ -23,6 +23,7 @@ const checkout: CheckoutData = {
   customer: fulfillmentSchema.parse({
     fulfillment: 'entrega',
     name: 'Ana Souza',
+    city: 'São Miguel Arcanjo',
     address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', complement: '', reference: '' },
   }),
   payment: { method: 'dinheiro', changeFor: 200 },
@@ -43,6 +44,7 @@ describe('buildOrderMessage', () => {
         '   ◦ Decoração: Morangos Frescos',
         '• 2x Prestígio (kg) - R$ 120,00',
         '',
+        '🚚 *Frete:* R$ 0,00 (entrega grátis em São Miguel Arcanjo)',
         '💰 *Total Geral:* R$ 198,00',
         '',
         '👤 *Nome:* Ana Souza',
@@ -57,10 +59,11 @@ describe('buildOrderMessage', () => {
     const message = buildOrderMessage({
       items: [item('prestigio', 1)],
       total: 60,
-      checkout: { customer: { fulfillment: 'retirada', name: 'Ana' }, payment: { method: 'cartao' } },
+      checkout: { customer: { fulfillment: 'retirada', name: 'Ana', city: 'Pilar do Sul' }, payment: { method: 'cartao' } },
     })
     expect(message).toContain('📍 *Endereço:* Retirada na loja (Rua Tapixi, 412')
     expect(message).toContain('💳 *Forma de Pagamento:* Cartão na retirada')
+    expect(message).toContain('🚚 *Frete:* Retirada no Local (sem frete)')
   })
 
   it('gera o link da API oficial do WhatsApp com a mensagem codificada', () => {

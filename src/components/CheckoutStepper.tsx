@@ -27,6 +27,7 @@ import {
   type PaymentMethod,
 } from '@/lib/checkout'
 import { formatBRL } from '@/lib/format'
+import { DELIVERY_CITY, DELIVERY_FEE, isDeliveryCity, shippingFee, STORE_ADDRESS } from '@/lib/shipping'
 import { MAPS_URL } from '@/lib/whatsapp'
 import type { CartItem } from '@/types/product'
 
@@ -45,6 +46,7 @@ const slide: Transition = { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
 interface FormValues {
   fulfillment: Fulfillment['fulfillment']
   name: string
+  city: string
   street: string
   number: string
   district: string
@@ -55,6 +57,8 @@ interface FormValues {
 const EMPTY_FORM: FormValues = {
   fulfillment: 'entrega',
   name: '',
+  // A maioria dos pedidos é da cidade; quem é de fora troca e vê só a retirada.
+  city: DELIVERY_CITY,
   street: '',
   number: '',
   district: '',
@@ -66,10 +70,15 @@ type FieldName = Exclude<keyof FormValues, 'fulfillment'>
 type FieldErrors = Partial<Record<FieldName, string>>
 
 /** Valida a etapa 1 com o Zod e devolve os dados limpos ou os erros por campo. */
+/** Fora de São Miguel Arcanjo a entrega some: vale sempre a retirada. */
+const effectiveFulfillment = (values: FormValues): Fulfillment['fulfillment'] =>
+  values.fulfillment === 'entrega' && values.city.trim() && !isDeliveryCity(values.city) ? 'retirada' : values.fulfillment
+
 function parseFulfillment(values: FormValues): { data?: Fulfillment; errors: FieldErrors } {
-  const { fulfillment, name, ...address } = values
+  const { fulfillment: _chosen, name, city, ...address } = values
+  const fulfillment = effectiveFulfillment(values)
   const result = fulfillmentSchema.safeParse(
-    fulfillment === 'entrega' ? { fulfillment, name, address } : { fulfillment, name },
+    fulfillment === 'entrega' ? { fulfillment, name, city, address } : { fulfillment, name, city },
   )
   if (result.success) return { data: result.data, errors: {} }
   const errors: FieldErrors = {}
@@ -254,9 +263,25 @@ function AddressStep({
   errors: FieldErrors
   onChange: (field: keyof FormValues) => (value: string) => void
 }) {
-  const isDelivery = values.fulfillment === 'entrega'
+  const deliveryAvailable = !values.city.trim() || isDeliveryCity(values.city)
+  const isDelivery = effectiveFulfillment(values) === 'entrega'
   return (
     <>
+      <TextField
+        id="city"
+        label="Sua cidade"
+        value={values.city}
+        onValue={onChange('city')}
+        error={errors.city}
+        autoComplete="address-level2"
+        maxLength={60}
+        list="checkout-city-options"
+        placeholder={DELIVERY_CITY}
+      />
+      <datalist id="checkout-city-options">
+        <option value={DELIVERY_CITY} />
+      </datalist>
+
       <div className="checkout-choice-row" role="radiogroup" aria-label="Forma de receber">
         <ChoiceCard
           name="fulfillment"
@@ -264,17 +289,24 @@ function AddressStep({
           onSelect={() => onChange('fulfillment')('entrega')}
           icon={<Truck />}
           title="Entrega"
-          hint="Levamos até você"
+          hint={deliveryAvailable ? `Frete grátis · ${formatBRL(DELIVERY_FEE)}` : `Só em ${DELIVERY_CITY}`}
+          disabled={!deliveryAvailable}
         />
         <ChoiceCard
           name="fulfillment"
           checked={!isDelivery}
           onSelect={() => onChange('fulfillment')('retirada')}
           icon={<Store />}
-          title="Retirada"
-          hint="Na Rua Tapixi, 412"
+          title="Retirada no Local"
+          hint="Rua Tapixi, 412"
         />
       </div>
+      {!deliveryAvailable && (
+        <p className="checkout-notice" role="status">
+          Entregamos só em {DELIVERY_CITY}. Para {values.city.trim()}, o pedido fica para{' '}
+          <strong>retirada no local</strong>: {STORE_ADDRESS}.
+        </p>
+      )}
 
       <TextField
         id="name"
@@ -520,6 +552,7 @@ function ChoiceCard({
   title,
   hint,
   wide,
+  disabled,
 }: {
   name: string
   checked: boolean
@@ -528,15 +561,23 @@ function ChoiceCard({
   title: string
   hint: string
   wide?: boolean
+  disabled?: boolean
 }) {
   return (
     <motion.label
-      className={`checkout-choice${checked ? ' is-selected' : ''}${wide ? ' is-wide' : ''}`}
+      className={`checkout-choice${checked ? ' is-selected' : ''}${wide ? ' is-wide' : ''}${disabled ? ' is-disabled' : ''}`}
       animate={{ scale: checked ? 1.02 : 1 }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={disabled ? {} : { scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 400, damping: 26 }}
     >
-      <input type="radio" name={name} checked={checked} onChange={onSelect} className="sr-only" />
+      <input
+        type="radio"
+        name={name}
+        checked={checked}
+        onChange={onSelect}
+        disabled={disabled}
+        className="sr-only"
+      />
       <span className="checkout-choice-icon" aria-hidden="true">
         {icon}
       </span>
@@ -641,6 +682,14 @@ function ReviewStep({
           <dd>{formatAddress(customer)}</dd>
         </div>
         <div>
+          <dt>Frete</dt>
+          <dd>
+            {customer.fulfillment === 'entrega'
+              ? `Grátis em ${DELIVERY_CITY} (${formatBRL(shippingFee('entrega'))})`
+              : 'Retirada no Local (sem frete)'}
+          </dd>
+        </div>
+        <div>
           <dt>Pagamento</dt>
           <dd>
             {paymentLabel(method, customer.fulfillment)}
@@ -651,9 +700,9 @@ function ReviewStep({
 
       <div className="checkout-review-total">
         <span>Total</span>
-        <strong>{formatBRL(total)}</strong>
+        <strong>{formatBRL(total + shippingFee(customer.fulfillment))}</strong>
       </div>
-      <p className="checkout-review-note">A Ondina confirma o pedido, o horário e o frete pela conversa.</p>
+      <p className="checkout-review-note">A Ondina confirma o pedido e o horário pela conversa.</p>
     </div>
   )
 }

@@ -766,3 +766,6 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .admin-order-bottom span { min-width:0; color:var(--muted-foreground); }
 .admin-order-bottom strong { flex:none; }
 .admin-order-bottom strong { font-family:var(--font-serif); font-size:20px; color:var(--rose-ink); }
+.checkout-choice.is-disabled { opacity:.5; cursor:not-allowed; background:var(--secondary); }
+.checkout-choice.is-disabled:hover { border-color:var(--border); }
+.checkout-notice { padding:10px 12px; border-radius:12px; background:oklch(0.97 0.04 85); border:1px solid oklch(0.86 0.11 82 / 60%); font-size:12.5px; line-height:1.5; color:var(--foreground); }

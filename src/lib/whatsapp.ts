@@ -2,6 +2,7 @@ import { formatAddress, paymentLabel, type CheckoutData } from '@/lib/checkout'
 import { celebrate } from '@/lib/confetti'
 import { MAPS_URL, WHATSAPP_NUMBER } from '@/lib/contact'
 import { formatBRLPlain } from '@/lib/format'
+import { DELIVERY_CITY, shippingFee } from '@/lib/shipping'
 import type { CartItem } from '@/types/product'
 
 export { MAPS_URL, WHATSAPP_NUMBER }
@@ -30,6 +31,11 @@ export interface OrderInput {
   checkout: CheckoutData
 }
 
+const shippingText = ({ customer }: CheckoutData) =>
+  customer.fulfillment === 'entrega'
+    ? `${formatBRLPlain(shippingFee('entrega'))} (entrega grátis em ${DELIVERY_CITY})`
+    : 'Retirada no Local (sem frete)'
+
 const paymentText = ({ customer, payment }: CheckoutData) =>
   paymentLabel(payment.method, customer.fulfillment) +
   (payment.changeFor !== undefined ? ` (troco para ${formatBRLPlain(payment.changeFor)})` : '')
@@ -57,7 +63,8 @@ export function buildOrderMessage({ items, total, checkout }: OrderInput): strin
     '🎂 *Meu Pedido:*',
     ...itemLines,
     '',
-    `💰 *Total Geral:* ${formatBRLPlain(total)}`,
+    `🚚 *Frete:* ${shippingText(checkout)}`,
+    `💰 *Total Geral:* ${formatBRLPlain(total + shippingFee(checkout.customer.fulfillment))}`,
     '',
     `👤 *Nome:* ${checkout.customer.name}`,
     `📍 *Endereço:* ${formatAddress(checkout.customer)}`,
@@ -83,6 +90,7 @@ export interface OrderPayload {
     details?: DeliveryCustomer['address']
   }
   payment: { method: CheckoutData['payment']['method']; label: string; changeFor?: number }
+  shipping: { method: CheckoutData['customer']['fulfillment']; fee: number; city: string }
   items: {
     type: CartItem['type']
     name: string
@@ -125,7 +133,8 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
       subtotal: item.price * item.quantity,
       ...(item.type === 'custom' ? { layers: item.customConfig } : {}),
     })),
-    total: order.total,
+    shipping: { method: customer.fulfillment, fee: shippingFee(customer.fulfillment), city: customer.city },
+    total: order.total + shippingFee(customer.fulfillment),
     message,
   }
 }

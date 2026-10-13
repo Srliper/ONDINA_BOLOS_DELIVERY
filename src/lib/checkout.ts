@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BUSINESS } from '@/lib/site'
+import { DELIVERY_CITY, isDeliveryCity, STORE_ADDRESS } from '@/lib/shipping'
 
 /* ---------- Entrega ou retirada + endereço ---------- */
 
@@ -32,13 +32,22 @@ export const addressSchema = z.object({
 
 export const customerSchema = z.object({
   name: text(2, 60, 'seu nome').regex(/^[A-Za-zÀ-ÿ' .-]+$/, 'Use só letras no nome.'),
+  city: text(2, 60, 'sua cidade'),
 })
 
-/** Etapa 1: nome, e endereço só quando é entrega. */
-export const fulfillmentSchema = z.discriminatedUnion('fulfillment', [
-  customerSchema.extend({ fulfillment: z.literal('entrega'), address: addressSchema }),
-  customerSchema.extend({ fulfillment: z.literal('retirada') }),
-])
+export const DELIVERY_ONLY_IN_CITY = `Entregamos só em ${DELIVERY_CITY}. Para a sua cidade, escolha Retirada no Local.`
+
+/** Etapa 1: nome e cidade; endereço só quando é entrega — e entrega só em São Miguel Arcanjo. */
+export const fulfillmentSchema = z
+  .discriminatedUnion('fulfillment', [
+    customerSchema.extend({ fulfillment: z.literal('entrega'), address: addressSchema }),
+    customerSchema.extend({ fulfillment: z.literal('retirada') }),
+  ])
+  .superRefine((value, ctx) => {
+    if (value.fulfillment === 'entrega' && !isDeliveryCity(value.city)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['city'], message: DELIVERY_ONLY_IN_CITY })
+    }
+  })
 
 export type FulfillmentInput = z.input<typeof fulfillmentSchema>
 export type Fulfillment = z.output<typeof fulfillmentSchema>
@@ -87,7 +96,7 @@ export interface CheckoutData {
   payment: Payment
 }
 
-export const PICKUP_ADDRESS = `${BUSINESS.street} — ${BUSINESS.district}, ${BUSINESS.city}`
+export const PICKUP_ADDRESS = STORE_ADDRESS
 
 /** Endereço em uma linha, para o resumo e a mensagem do pedido. */
 export function formatAddress(customer: Fulfillment): string {
@@ -96,7 +105,7 @@ export function formatAddress(customer: Fulfillment): string {
   return [
     `${street}, ${number.toUpperCase() === 'SN' ? 'S/N' : number.toUpperCase()}`,
     complement,
-    `${district}, ${BUSINESS.city}`,
+    `${district}, ${DELIVERY_CITY}`,
     reference ? `Referência: ${reference}` : undefined,
   ]
     .filter(Boolean)

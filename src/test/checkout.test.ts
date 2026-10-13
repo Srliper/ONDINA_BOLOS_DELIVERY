@@ -10,6 +10,7 @@ import {
 const delivery = {
   fulfillment: 'entrega' as const,
   name: '  Ana Souza ',
+  city: 'São Miguel Arcanjo',
   address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', complement: '', reference: ' perto da praça ' },
 }
 
@@ -19,6 +20,7 @@ describe('fulfillmentSchema', () => {
     expect(result).toEqual({
       fulfillment: 'entrega',
       name: 'Ana Souza',
+      city: 'São Miguel Arcanjo',
       address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', complement: undefined, reference: 'perto da praça' },
     })
   })
@@ -27,6 +29,7 @@ describe('fulfillmentSchema', () => {
     const result = fulfillmentSchema.safeParse({
       fulfillment: 'entrega',
       name: 'A1',
+      city: 'São Miguel Arcanjo',
       address: { street: '123', number: 'quatro', district: ' ', complement: '', reference: '' },
     })
     expect(result.success).toBe(false)
@@ -40,8 +43,26 @@ describe('fulfillmentSchema', () => {
     }
   })
 
-  it('na retirada só pede o nome', () => {
-    expect(fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana' })).toEqual({ fulfillment: 'retirada', name: 'Ana' })
+  it('na retirada só pede nome e cidade', () => {
+    expect(fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana', city: 'Pilar do Sul' })).toEqual({
+      fulfillment: 'retirada',
+      name: 'Ana',
+      city: 'Pilar do Sul',
+    })
+  })
+
+  it('recusa entrega fora de São Miguel Arcanjo e aponta a retirada', () => {
+    const result = fulfillmentSchema.safeParse({ ...delivery, city: 'Pilar do Sul' })
+    expect(result.success).toBe(false)
+    const issue = result.success ? undefined : result.error.issues[0]
+    expect(issue?.path).toEqual(['city'])
+    expect(issue?.message).toMatch(/Retirada no Local/)
+  })
+
+  it('aceita a cidade escrita de vários jeitos', () => {
+    for (const city of ['sao miguel arcanjo', 'SÃO MIGUEL ARCANJO - SP', ' São  Miguel Arcanjo/SP ']) {
+      expect(fulfillmentSchema.safeParse({ ...delivery, city }).success).toBe(true)
+    }
   })
 })
 
@@ -69,6 +90,6 @@ describe('formatAddress', () => {
     expect(formatAddress(fulfillmentSchema.parse({ ...delivery, address: { ...delivery.address, number: 'sn' } }))).toBe(
       'Rua Tapixi, S/N — Vila Tomaz, São Miguel Arcanjo — Referência: perto da praça',
     )
-    expect(formatAddress({ fulfillment: 'retirada', name: 'Ana' })).toMatch(/^Retirada na loja \(Rua Tapixi, 412/)
+    expect(formatAddress({ fulfillment: 'retirada', name: 'Ana', city: 'Pilar do Sul' })).toMatch(/^Retirada na loja \(Rua Tapixi, 412/)
   })
 })
