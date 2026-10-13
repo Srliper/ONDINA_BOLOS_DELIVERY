@@ -10,7 +10,7 @@ import {
   type Transition,
 } from 'framer-motion'
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import { ArrowLeft, ArrowRight, Check, Crown, ShoppingBag, Sparkles, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CakeSlice, Check, Crown, ShoppingBag, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel'
 import { LAYER_LABELS, LAYER_ORDER, LAYER_STACK as STACK, getLayersByCategory } from '@/data/bolo-layers'
@@ -332,6 +332,7 @@ function PreviewLayer({ layer, assembled }: { layer: BoloLayer; assembled: boole
   const { floating, height, z, depth } = STACK[layer.category]
   const y = assembled ? layer.offsetY : -floating
   const translateZ = assembled ? depth * 0.05 : depth
+  if (!src) return null
 
   return (
     <motion.img
@@ -445,6 +446,7 @@ function LayerPicker({
 /** Foto da opção no carrossel, com a mesma troca para a ilustração provisória. */
 function LayerThumb({ layer }: { layer: BoloLayer }) {
   const { src, onError, ref } = useLayerSrc(layer)
+  if (!src) return <CakeSlice className="bolo-option-placeholder" aria-hidden="true" />
   return <img ref={ref} src={src} onError={onError} alt="" loading="lazy" draggable={false} />
 }
 

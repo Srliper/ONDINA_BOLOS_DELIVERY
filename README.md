@@ -61,7 +61,7 @@ Sem Docker: `NITRO_PRESET=node_server bun run build && bun run start`.
 | Cores, fontes e animações             | `src/styles.css`              |
 | Logo                                  | `src/assets/ondina_logo.png`  |
 | Camadas do Monte seu Bolo e preços    | `src/data/bolo-layers.ts`     |
-| Fotos reais das camadas               | `public/layers/foto-real-<id>.png` |
+| Fotos reais das camadas               | `public/layers/<id>.png` ou o painel `/admin` |
 | Equipe (Administração) e fotos        | `src/data/team.ts`, `src/assets/team/` |
 | Instagram da loja                     | `src/lib/site.ts`             |
 | Mensagem do pedido e envio ao n8n     | `src/lib/whatsapp.ts`         |
@@ -71,9 +71,16 @@ A seção de depoimentos só aparece quando há pelo menos um depoimento real ca
 
 ## Fotos reais das camadas
 
-Cada camada do Monte seu Bolo procura a foto `public/layers/foto-real-<id>.png` (PNG com fundo
-transparente; o `<id>` está em `src/data/bolo-layers.ts`, ex.: `foto-real-base-red-velvet.png`).
-Enquanto a foto não existe, aparece a ilustração provisória `public/layers/<id>.png`.
+Cada camada do Monte seu Bolo usa a imagem `public/layers/<id>.png` (PNG com fundo transparente; o
+`<id>` está em `src/data/bolo-layers.ts`, ex.: `base-red-velvet.png`). Hoje são ilustrações
+provisórias. Para colocar a foto real, escolha um dos dois:
+
+- **Trocar o arquivo:** salve a foto com o **mesmo nome** em `public/layers/` (ex.: substitua
+  `base-red-velvet.png`). Vale para o site todo depois de publicar.
+- **Pelo painel:** em `/admin` → *Cardápio do site* → *Camadas* ou *Recheios* → *Editar*, cole o
+  endereço da foto em *Endereço da imagem*.
+
+Se uma foto cadastrada não carregar, o site volta para a imagem padrão; nunca aparece imagem quebrada.
 
 ## n8n
 

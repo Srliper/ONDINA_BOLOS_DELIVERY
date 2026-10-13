@@ -8,7 +8,7 @@
 - [x] Checkout em etapas: endereço validado, forma de pagamento (Pix, cartão, dinheiro) e resumo.
 - [x] Pedido registrado no n8n e enviado pelo WhatsApp, com confete.
 - [x] Seção Administração (Ondina, Edgard e Kaique) e Instagram da loja.
-- [ ] Fotos reais das camadas em `public/layers/foto-real-<id>.png`.
+- [ ] Fotos reais das camadas em `public/layers/<id>.png` (ou pelo painel `/admin`).
 - [ ] Confirmar preços das camadas do Monte seu Bolo.
 - [ ] Liberar o domínio do site no CORS do webhook do n8n.
 - [ ] Logo em alta resolução (substituir `src/assets/ondina_logo.png`).

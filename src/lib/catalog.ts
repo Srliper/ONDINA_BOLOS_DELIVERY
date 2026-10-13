@@ -146,15 +146,17 @@ export function toProducts(catalog: Catalog): Product[] {
   }))
 }
 
+const defaultLayerImage = (id: string) => (hasDefaultLayerArt(id) ? `/layers/${id}.png` : FALLBACK_IMAGE)
+
 export function toBoloLayers(catalog: Catalog): BoloLayer[] {
   const toLayer = (item: CatalogFilling | CatalogLayer, category: BoloLayer['category']): BoloLayer => ({
     id: item.id,
     category,
     name: item.name,
     price: item.price,
-    image: item.image_url || `/layers/foto-real-${item.id}.png`,
-    // Ilustração provisória só existe para as camadas originais.
-    fallbackImage: hasDefaultLayerArt(item.id) ? `/layers/${item.id}.png` : item.image_url || FALLBACK_IMAGE,
+    // Foto cadastrada no painel; sem ela, a imagem padrão (só existe para as camadas originais).
+    image: item.image_url || defaultLayerImage(item.id),
+    fallbackImage: defaultLayerImage(item.id),
     offsetY: LAYER_OFFSET_Y[category],
     description: item.description,
     ...(item.badge ? { badge: item.badge } : {}),

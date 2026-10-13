@@ -4,26 +4,31 @@ import type { BoloLayer } from '@/types/bolo-layers'
 /** O mínimo de uma camada para desenhá-la na pilha. */
 export type LayerVisual = Pick<BoloLayer, 'category' | 'image' | 'fallbackImage' | 'offsetY'>
 
-/** Fotos que já falharam nesta visita: não pedimos de novo a cada miniatura. */
-const missingPhotos = new Set<string>()
+/** Endereços que já falharam nesta visita: não pedimos de novo a cada miniatura. */
+const brokenUrls = new Set<string>()
 
 /**
- * Usa a foto real da camada e, se ela ainda não existir (404), troca para a ilustração
- * provisória. Assim basta colocar `foto-real-<id>.png` em /public/layers para a foto entrar.
+ * Imagem da camada com reserva: tenta `image`; se falhar, `fallbackImage`; se essa também
+ * falhar, devolve `src: undefined` para o componente mostrar um espaço neutro em vez do
+ * ícone de imagem quebrada.
  */
 export function useLayerSrc({ image, fallbackImage }: Pick<LayerVisual, 'image' | 'fallbackImage'>) {
-  const [failed, setFailed] = useState(() => missingPhotos.has(image))
+  const pick = () => [image, fallbackImage].find(url => url && !brokenUrls.has(url))
+  const [src, setSrc] = useState<string | undefined>(pick)
+
   const onError = useCallback(() => {
-    missingPhotos.add(image)
-    setFailed(true)
-  }, [image])
+    if (!src) return
+    brokenUrls.add(src)
+    setSrc([image, fallbackImage].find(url => url && !brokenUrls.has(url)))
+  }, [src, image, fallbackImage])
+
   // Imagem que veio pronta do servidor pode falhar (404) antes de o React assumir a página:
   // aí o onError nunca dispara. Ao montar, confere se ela já quebrou e troca na hora.
   const ref = useCallback(
     (img: HTMLImageElement | null) => {
-      if (img && !failed && img.complete && img.naturalWidth === 0) onError()
+      if (img && img.complete && img.naturalWidth === 0 && img.getAttribute('src')) onError()
     },
-    [failed, onError],
+    [onError],
   )
-  return { src: failed ? fallbackImage : image, onError: failed ? undefined : onError, ref }
+  return { src, onError, ref }
 }

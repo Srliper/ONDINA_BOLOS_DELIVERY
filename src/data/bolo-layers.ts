@@ -40,9 +40,12 @@ export const LAYER_OFFSET_Y: Record<LayerCategory, number> = {
 export const LAYER_WIDTH = 260
 export const ASSEMBLED_HEIGHT = 200
 
-/** Foto real esperada e ilustração provisória (usada até a foto existir). */
+/**
+ * Imagem padrão de cada camada em /public/layers/<id>.png. Para usar a foto real, troque o
+ * arquivo (mesmo nome) ou cadastre o endereço da foto no painel /admin (image_url).
+ */
 const pictures = (id: string, category: LayerCategory) => ({
-  image: `/layers/foto-real-${id}.png`,
+  image: `/layers/${id}.png`,
   fallbackImage: `/layers/${id}.png`,
   offsetY: LAYER_OFFSET_Y[category],
 })

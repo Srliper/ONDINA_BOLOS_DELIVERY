@@ -807,3 +807,4 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .admin-form-actions { display:flex; justify-content:flex-end; gap:8px; }
 .admin-form-actions .admin-submit { margin:0; padding:0 22px; min-height:42px; }
 @media(max-width:600px) { .admin-item { flex-wrap:wrap; } .admin-item-info { flex-basis:calc(100% - 70px); } .admin-item-price { margin-left:68px; } .admin-item-actions { margin-left:auto; } }
+.bolo-option-placeholder { width:32px; height:32px; color:var(--rose-ink); opacity:.45; }

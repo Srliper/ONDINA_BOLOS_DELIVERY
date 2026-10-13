@@ -12,8 +12,8 @@ const layer = (id: string): LayerVisual => ({
 
 afterEach(() => vi.restoreAllMocks())
 
-describe('foto real com ilustração provisória', () => {
-  it('troca para a ilustração quando a foto real não carrega', () => {
+describe('imagem da camada com reserva', () => {
+  it('troca para a imagem padrão quando a foto cadastrada não carrega', () => {
     const { container } = render(<StackedCake layers={[layer('teste-erro')]} width={100} />)
     const img = container.querySelector('img')!
     expect(img.getAttribute('src')).toBe('/layers/foto-real-teste-erro.png')
@@ -22,10 +22,22 @@ describe('foto real com ilustração provisória', () => {
   })
 
   it('também troca quando a foto já tinha falhado antes de o React assumir (página vinda do servidor)', () => {
-    // Imagem "quebrada" desde o início: completa e sem largura.
-    vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true)
-    vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(0)
+    // Só a primeira imagem chegou "quebrada" do servidor: completa e sem largura.
+    const brokenFirst = (img: HTMLImageElement) => (img.getAttribute('src') ?? '').includes('foto-real')
+    vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockImplementation(function (this: HTMLImageElement) {
+      return brokenFirst(this)
+    })
+    vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockImplementation(function (this: HTMLImageElement) {
+      return brokenFirst(this) ? 0 : 100
+    })
     const { container } = render(<StackedCake layers={[layer('teste-ssr')]} width={100} />)
     expect(container.querySelector('img')!.getAttribute('src')).toBe('/layers/teste-ssr.png')
+  })
+
+  it('se nem a imagem padrão carregar, some em vez de mostrar imagem quebrada', () => {
+    const { container } = render(<StackedCake layers={[layer('teste-sem-nada')]} width={100} />)
+    fireEvent.error(container.querySelector('img')!)
+    fireEvent.error(container.querySelector('img')!)
+    expect(container.querySelector('img')).toBeNull()
   })
 })
