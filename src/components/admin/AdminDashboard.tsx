@@ -3,6 +3,7 @@ import { ArrowUpRight, Copy, ExternalLink, Instagram, LogOut, MessageCircle, Sto
 import { toast } from 'sonner'
 import logo from '@/assets/ondina_logo.png'
 import { AdminOrders } from '@/components/admin/AdminOrders'
+import { AdminTutorial } from '@/components/admin/AdminTutorial'
 import { CatalogManager } from '@/components/admin/CatalogManager'
 import { initials, instagramHandle, TEAM } from '@/data/team'
 import { adminLogout } from '@/lib/admin-auth'
@@ -63,6 +64,8 @@ export function AdminDashboard({ memberId, onLogout }: { memberId: string; onLog
           <h1>Olá, {member?.name.split(' ')[0] ?? 'equipe'}!</h1>
           <p>{member ? `${member.role} · ${member.relation}` : 'Bem-vindo à administração.'}</p>
         </section>
+
+        <AdminTutorial />
 
         <section className="admin-whatsapp" aria-labelledby="admin-whatsapp-title">
           <div className="admin-whatsapp-head">

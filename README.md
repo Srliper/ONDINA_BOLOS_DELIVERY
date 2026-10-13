@@ -150,3 +150,32 @@ etapa do Monte seu Bolo (`409`).
   `KV_REST_API_TOKEN` sozinha (também aceita `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`).
   Sem isso, o site funciona com o cardápio padrão e o painel avisa que não dá para salvar.
 - **No computador:** arquivo `.data/catalog.json` (fora do Git), criado na primeira edição.
+
+## Estoque e pedido pendente
+
+Cada bolo do cardápio tem um **estoque** (em kg para bolos de festa, em bolos para os de café),
+marcado pela equipe no `/admin` → *Cardápio do site* → *Bolos* (botões **−**/**+** ou *Editar →
+Estoque*). Vazio = sem controle (sempre disponível).
+
+- Estoque **0** (ou pedido acima do estoque): o site mostra **Esgotado**, mas o cliente ainda pode
+  deixar o pedido. O checkout **pula a etapa de pagamento** e a mensagem do WhatsApp chega como
+  **⏳ PEDIDO PENDENTE**, com pagamento “A combinar”. No n8n, o pedido vai com `status: "pendente"`
+  e `payment.method: null`; o painel mostra a etiqueta *Pendente*.
+- O estoque não baixa sozinho: depois de confirmar a venda na conversa, ajuste no painel.
+- Bolos montados no Monte seu Bolo são sempre sob encomenda (sem estoque).
+
+Regras em `src/lib/stock.ts` (testes em `src/test/stock.test.ts`).
+
+## Fotos pelo painel
+
+No formulário de bolos, recheios e camadas, **Enviar foto do celular ou computador** reduz a foto no
+navegador (`src/lib/image-resize.ts`) e envia para `POST /api/images` (só equipe logada). A foto fica
+no mesmo banco do cardápio (Upstash, ou `.data/images/` no computador) e é servida em
+`/api/images/<id>`, que vira o `image_url` do item. Aceita JPEG, PNG e WebP de até 1 MB (os bytes são
+conferidos; SVG não é aceito).
+
+## Tutorial do painel
+
+O próprio `/admin` tem o **Tutorial do painel** (`src/components/admin/AdminTutorial.tsx`) com o passo a
+passo de entrar, marcar estoque, pedidos pendentes, mudar preços, adicionar bolos com foto e
+acompanhar os pedidos. A tela de entrada tem o atalho “Como entrar?”.

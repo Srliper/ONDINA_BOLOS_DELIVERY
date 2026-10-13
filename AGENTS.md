@@ -14,3 +14,5 @@
 - Frete: `src/lib/shipping.ts` (grátis só em São Miguel Arcanjo; fora dela, só Retirada no Local).
 - Cardápio editável: entidades e CRUD puro em `src/lib/catalog.ts`; banco em `src/lib/catalog-store.ts` (Upstash Redis pela REST ou `.data/catalog.json`); API REST em `src/routes/api/catalog.*` com regras em `src/lib/catalog-api.ts`; a rota raiz carrega o catálogo e chama `applyCatalog` antes de desenhar — `products`/`BOLO_LAYERS` são a lista em uso, `DEFAULT_*` o padrão. Código que só roda no servidor fica em `*.server.ts` ou `createServerOnlyFn`.
 
+- Estoque: `stock` dos bolos (kg ou unidades; `null` = sem controle) em `src/lib/catalog.ts`; regras em `src/lib/stock.ts`. Faltou estoque → o checkout pula o pagamento (`payment: null`) e o pedido vai como PENDENTE no WhatsApp e no n8n (`status: "pendente"`).
+- Fotos enviadas pelo painel: `src/lib/image-api.ts` (`/api/images`, só JPEG/PNG/WebP conferidos pelos bytes) + `src/lib/image-resize.ts` no navegador. Tutorial do painel: `src/components/admin/AdminTutorial.tsx` — atualize-o quando mudar o painel.

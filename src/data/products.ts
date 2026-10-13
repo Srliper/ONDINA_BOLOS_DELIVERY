@@ -18,20 +18,22 @@ export const CATEGORY_LABEL: Record<ProductCategory, string> = {
   cafes: 'Bolos para café',
 }
 
-const party = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category'>): Product => ({
+const party = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category' | 'stock'>): Product => ({
   ...p,
   price: PARTY_PRICE_PER_KG,
   priceUnit: 'o quilo',
   unit: 'kg',
   category: 'festas',
+  stock: null,
 })
 
-const coffee = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category'>): Product => ({
+const coffee = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category' | 'stock'>): Product => ({
   ...p,
   price: COFFEE_CAKE_PRICE,
   priceUnit: 'até 13 fatias',
   unit: 'un',
   category: 'cafes',
+  stock: null,
 })
 
 /**

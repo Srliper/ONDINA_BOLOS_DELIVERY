@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { useRouter } from '@tanstack/react-router'
-import { AlertTriangle, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { AlertTriangle, ImageUp, Loader2, Minus, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { hasDefaultLayerArt, LAYER_LABELS } from '@/data/bolo-layers'
 import { CATEGORY_LABEL, defaultProductImage } from '@/data/products'
@@ -15,6 +15,7 @@ import {
 } from '@/lib/catalog'
 import { getCatalogStorageKind } from '@/lib/catalog-server'
 import { formatBRL } from '@/lib/format'
+import { prepareImage } from '@/lib/image-resize'
 
 type AnyItem = CatalogProduct | CatalogFilling | CatalogLayer
 type Lists = { [E in EntityName]: EntityItem<E>[] }
@@ -91,6 +92,21 @@ export function CatalogManager() {
     }
   }
 
+  // Estoque direto na lista: cada toque salva na hora (vazio/sem controle → 0 ou 1).
+  const [stockBusy, setStockBusy] = useState<string>()
+  const changeStock = async (product: CatalogProduct, delta: number) => {
+    const next = Math.max(0, (product.stock ?? (delta > 0 ? 0 : 1)) + delta)
+    setStockBusy(product.id)
+    try {
+      await request(api('products', product.id), { method: 'PUT', body: JSON.stringify({ stock: next }) })
+      await refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível mudar o estoque.')
+    } finally {
+      setStockBusy(undefined)
+    }
+  }
+
   const items = (lists?.[tab] ?? []) as AnyItem[]
 
   return (
@@ -101,7 +117,10 @@ export function CatalogManager() {
           <Plus aria-hidden="true" /> Adicionar {ENTITY_LABELS[tab].one.toLowerCase()}
         </button>
       </div>
-      <p className="admin-muted">Preços, descrições e fotos. O que você salvar aqui aparece no site na hora.</p>
+      <p className="admin-muted">
+        Estoque, preços, descrições e fotos. O que você salvar aqui aparece no site na hora. Dúvidas? Veja o{' '}
+        <a href="#admin-tutorial-title">tutorial do painel</a>.
+      </p>
 
       {storage === 'none' && (
         <p className="admin-warning" role="status">
@@ -136,6 +155,13 @@ export function CatalogManager() {
               <small>{detail(tab, item)}</small>
             </div>
             <span className="admin-item-price">{formatBRL(item.price)}</span>
+            {tab === 'products' && (
+              <StockControl
+                product={item as CatalogProduct}
+                busy={stockBusy === item.id}
+                onChange={delta => void changeStock(item as CatalogProduct, delta)}
+              />
+            )}
             <div className="admin-item-actions">
               <button type="button" onClick={() => setEditing({ entity: tab, item })} aria-label={`Editar ${item.name}`}>
                 <Pencil aria-hidden="true" />
@@ -178,6 +204,7 @@ interface FormState {
   unit: string
   featured: boolean
   badge: string
+  stock: string
 }
 
 function initialState(entity: EntityName, item?: AnyItem): FormState {
@@ -195,6 +222,7 @@ function initialState(entity: EntityName, item?: AnyItem): FormState {
     unit: product?.unit ?? 'kg',
     featured: product?.featured ?? false,
     badge: withBadge?.badge ?? '',
+    stock: product?.stock == null ? '' : String(product.stock),
   }
 }
 
@@ -208,7 +236,16 @@ function toPayload(entity: EntityName, form: FormState, creating: boolean) {
     image_url: form.image_url.trim(),
   }
   if (entity === 'products') {
-    return { ...base, category: form.category, price_unit: form.price_unit, unit: form.unit, featured: form.featured }
+    const stock = form.stock.trim() === '' ? null : Number(form.stock.trim())
+    return {
+      ...base,
+      category: form.category,
+      price_unit: form.price_unit,
+      unit: form.unit,
+      featured: form.featured,
+      // Texto inválido vai como está, para o servidor devolver a mensagem do campo.
+      stock: stock !== null && Number.isNaN(stock) ? form.stock : stock,
+    }
   }
   const badge = form.badge === '' ? null : form.badge
   return entity === 'layers' ? { ...base, category: form.category, badge } : { ...base, badge }
@@ -266,7 +303,7 @@ function ItemForm({
       )}
     </div>
   )
-  const text = (key: 'id' | 'name' | 'price' | 'image_url' | 'price_unit', extra: Record<string, unknown> = {}) => (
+  const text = (key: 'id' | 'name' | 'price' | 'image_url' | 'price_unit' | 'stock', extra: Record<string, unknown> = {}) => (
     <input
       id={`${formId}-${key}`}
       value={form[key]}
@@ -277,6 +314,31 @@ function ItemForm({
   )
 
   const preview = form.image_url.trim() || (item ? previewSrc(entity, item) : '')
+
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const upload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setUploading(true)
+    setErrors(prev => ({ ...prev, image_url: '' }))
+    try {
+      // Bolos: JPEG. Camadas e recheios: mantém o fundo transparente.
+      const dataUrl = await prepareImage(file, { transparent: entity !== 'products' })
+      const saved = await request<{ url: string }>('/api/images', {
+        method: 'POST',
+        body: JSON.stringify({ dataUrl }),
+      })
+      set('image_url')(saved.url)
+      toast.success('Foto enviada. Toque em Salvar para usar no site.')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Não foi possível enviar a foto.'
+      setErrors(prev => ({ ...prev, image_url: message }))
+    } finally {
+      setUploading(false)
+    }
+  }
 
   return (
     <form className="admin-form" onSubmit={submit} aria-labelledby={`${formId}-title`} noValidate>
@@ -313,6 +375,12 @@ function ItemForm({
                 <option value="kg">Por quilo (kg)</option>
                 <option value="un">Por unidade</option>
               </select>,
+            )}
+            {field(
+              'stock',
+              form.unit === 'kg' ? 'Estoque (kg)' : 'Estoque (bolos)',
+              text('stock', { inputMode: 'numeric', placeholder: 'vazio = sem controle' }),
+              '0 = esgotado: o cliente só deixa pedido pendente. Vazio = sempre disponível.',
             )}
             <label className="admin-check">
               <input type="checkbox" checked={form.featured} onChange={e => set('featured')(e.target.checked)} /> Destaque no
@@ -357,12 +425,25 @@ function ItemForm({
       )}
 
       <div className="admin-form-image">
-        {field(
-          'image_url',
-          'Endereço da imagem (image_url)',
-          text('image_url', { placeholder: 'https://… ou vazio para a foto padrão', inputMode: 'url' }),
-          entity === 'products' ? undefined : 'Para o Monte seu Bolo, use PNG com fundo transparente.',
-        )}
+        <div className="admin-upload">
+          <button
+            type="button"
+            className="admin-refresh"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            aria-busy={uploading}
+          >
+            {uploading ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <ImageUp aria-hidden="true" />}
+            {uploading ? 'Enviando foto…' : 'Enviar foto do celular ou computador'}
+          </button>
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" hidden onChange={upload} />
+          {field(
+            'image_url',
+            'Ou cole o endereço da imagem (image_url)',
+            text('image_url', { placeholder: 'https://… ou vazio para a foto padrão', inputMode: 'url' }),
+            entity === 'products' ? undefined : 'Para o Monte seu Bolo, use PNG com fundo transparente.',
+          )}
+        </div>
         {preview && <img src={preview} alt="Prévia da imagem" width={72} height={72} />}
       </div>
 
@@ -382,5 +463,42 @@ function ItemForm({
         </button>
       </div>
     </form>
+  )
+}
+
+/* ---------- Estoque na lista ---------- */
+
+function StockControl({
+  product,
+  busy,
+  onChange,
+}: {
+  product: CatalogProduct
+  busy: boolean
+  onChange: (delta: number) => void
+}) {
+  const unit = product.unit === 'kg' ? 'kg' : product.stock === 1 ? 'bolo' : 'bolos'
+  const label =
+    product.stock === null ? 'Sem controle' : product.stock === 0 ? 'Esgotado' : `${product.stock} ${unit}`
+  return (
+    <div
+      className={`admin-stock${product.stock === 0 ? ' is-out' : ''}`}
+      role="group"
+      aria-label={`Estoque de ${product.name}`}
+      aria-busy={busy}
+    >
+      <button
+        type="button"
+        onClick={() => onChange(-1)}
+        disabled={busy || product.stock === 0}
+        aria-label={`Diminuir o estoque de ${product.name}`}
+      >
+        <Minus aria-hidden="true" />
+      </button>
+      <output aria-live="polite">{busy ? <Loader2 aria-hidden="true" className="checkout-spin" /> : label}</output>
+      <button type="button" onClick={() => onChange(1)} disabled={busy} aria-label={`Aumentar o estoque de ${product.name}`}>
+        <Plus aria-hidden="true" />
+      </button>
+    </div>
   )
 }

@@ -18,7 +18,7 @@ export interface CatalogStorage {
 
 const env = (name: string) => process.env[name] || undefined
 
-function upstashStorage(url: string, token: string, fetchImpl: typeof fetch = fetch): CatalogStorage {
+function upstashStorage(url: string, token: string, fetchImpl: typeof fetch = fetch, key = KEY): CatalogStorage {
   const command = async (args: string[]) => {
     const response = await fetchImpl(url.replace(/\/+$/, ''), {
       method: 'POST',
@@ -33,11 +33,11 @@ function upstashStorage(url: string, token: string, fetchImpl: typeof fetch = fe
   return {
     kind: 'upstash',
     read: async () => {
-      const result = await command(['GET', KEY])
+      const result = await command(['GET', key])
       return typeof result === 'string' ? result : null
     },
     write: async value => {
-      await command(['SET', KEY, value])
+      await command(['SET', key, value])
     },
   }
 }
@@ -73,13 +73,24 @@ const noStorage: CatalogStorage = {
   },
 }
 
+const catalogFile = () => env('CATALOG_FILE') ?? '.data/catalog.json'
+
 export function getCatalogStorage(): CatalogStorage {
   const url = env('KV_REST_API_URL') ?? env('UPSTASH_REDIS_REST_URL')
   const token = env('KV_REST_API_TOKEN') ?? env('UPSTASH_REDIS_REST_TOKEN')
   if (url && token) return upstashStorage(url, token)
   // Na Vercel o disco é temporário: gravar em arquivo perderia as edições sem avisar.
   if (env('VERCEL')) return noStorage
-  return fileStorage(env('CATALOG_FILE') ?? '.data/catalog.json')
+  return fileStorage(catalogFile())
+}
+
+/** Fotos enviadas pelo painel: uma chave por foto no mesmo banco (ou arquivos ao lado do catálogo). */
+export function getImageStorage(id: string): CatalogStorage {
+  const url = env('KV_REST_API_URL') ?? env('UPSTASH_REDIS_REST_URL')
+  const token = env('KV_REST_API_TOKEN') ?? env('UPSTASH_REDIS_REST_TOKEN')
+  if (url && token) return upstashStorage(url, token, fetch, `ondina:image:${id}`)
+  if (env('VERCEL')) return noStorage
+  return fileStorage(`${catalogFile().replace(/[^/\\]+$/, '')}images/${id}.json`)
 }
 
 /** Lê o catálogo guardado; sem nada guardado (ou guardado com defeito), usa o padrão. */
