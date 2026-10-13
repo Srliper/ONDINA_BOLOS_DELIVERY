@@ -48,6 +48,14 @@ export const productSchema = z.object({
   price_unit: z.string().trim().min(1, 'Informe como o preço é cobrado.').max(40),
   unit: z.enum(['kg', 'un']),
   featured: z.boolean(),
+  /** Estoque (kg ou bolos); null = sem controle. Catálogos salvos antes do estoque entram como null. */
+  stock: z
+    .number({ invalid_type_error: 'Informe o estoque em números (ou deixe vazio).' })
+    .int('Use um número inteiro no estoque.')
+    .min(0, 'O estoque não pode ser negativo.')
+    .max(9999)
+    .nullable()
+    .default(null),
 })
 
 export const fillingSchema = z.object({ ...common, badge: badgeSchema })
@@ -101,6 +109,7 @@ export function seedCatalog(): Catalog {
       price_unit: product.priceUnit,
       unit: product.unit,
       featured: product.isFeatured,
+      stock: product.stock,
     })),
     fillings: DEFAULT_LAYERS.filter(layer => layer.category === 'recheio').map(layer => ({
       id: layer.id,
@@ -143,6 +152,7 @@ export function toProducts(catalog: Catalog): Product[] {
     image: item.image_url || defaultProductImage(item.id) || FALLBACK_IMAGE,
     category: item.category,
     isFeatured: item.featured,
+    stock: item.stock,
   }))
 }
 

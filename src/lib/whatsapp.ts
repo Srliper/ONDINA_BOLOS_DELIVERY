@@ -1,8 +1,9 @@
-import { formatAddress, paymentLabel, type CheckoutData } from '@/lib/checkout'
+import { formatAddress, paymentLabel, PENDING_PAYMENT_LABEL, type CheckoutData, type PaymentMethod } from '@/lib/checkout'
 import { celebrate } from '@/lib/confetti'
 import { MAPS_URL, WHATSAPP_NUMBER } from '@/lib/contact'
 import { formatBRLPlain } from '@/lib/format'
 import { DELIVERY_CITY, shippingFee } from '@/lib/shipping'
+import { lacksStock, pendingItems } from '@/lib/stock'
 import type { CartItem } from '@/types/product'
 
 export { MAPS_URL, WHATSAPP_NUMBER }
@@ -37,15 +38,19 @@ const shippingText = ({ customer }: CheckoutData) =>
     : 'Retirada no Local (sem frete)'
 
 const paymentText = ({ customer, payment }: CheckoutData) =>
-  paymentLabel(payment.method, customer.fulfillment) +
-  (payment.changeFor !== undefined ? ` (troco para ${formatBRLPlain(payment.changeFor)})` : '')
+  payment
+    ? paymentLabel(payment.method, customer.fulfillment) +
+      (payment.changeFor !== undefined ? ` (troco para ${formatBRLPlain(payment.changeFor)})` : '')
+    : PENDING_PAYMENT_LABEL
 
 /** Mensagem do pedido no formato oficial (texto puro, ainda não codificado). */
 export function buildOrderMessage({ items, total, checkout }: OrderInput): string {
+  const missing = pendingItems(items)
   const itemLines = items.flatMap(item => {
     const subtotal = formatBRLPlain(item.price * item.quantity)
     if (item.type === 'ready') {
-      return [`• ${item.quantity}x ${item.name}${item.product.unit === 'kg' ? ' (kg)' : ''} - ${subtotal}`]
+      const kg = item.product.unit === 'kg' ? ' (kg)' : ''
+      return [`• ${item.quantity}x ${item.name}${kg} - ${subtotal}${lacksStock(item) ? ' ⚠️ sem estoque' : ''}`]
     }
     const { base, recheio, cobertura, decoracao } = item.customConfig
     return [
@@ -58,8 +63,16 @@ export function buildOrderMessage({ items, total, checkout }: OrderInput): strin
   })
 
   return [
-    'Olá, Ondina Bolos! Gostaria de fazer um pedido.',
+    missing.length
+      ? 'Olá, Ondina Bolos! Gostaria de deixar um pedido pendente.'
+      : 'Olá, Ondina Bolos! Gostaria de fazer um pedido.',
     '',
+    ...(missing.length
+      ? [
+          `⏳ *PEDIDO PENDENTE:* sem estoque de ${missing.map(item => item.name).join(', ')}. Aguardo a confirmação da disponibilidade para combinar o pagamento.`,
+          '',
+        ]
+      : []),
     '🎂 *Meu Pedido:*',
     ...itemLines,
     '',
@@ -81,6 +94,8 @@ export interface OrderPayload {
   orderId: string
   createdAt: string
   source: 'site'
+  /** "pendente" quando algum bolo está sem estoque: não houve escolha de pagamento. */
+  status: 'novo' | 'pendente'
   customer: {
     name: string
     fulfillment: CheckoutData['customer']['fulfillment']
@@ -89,12 +104,14 @@ export interface OrderPayload {
     /** Campos separados, só na entrega. */
     details?: DeliveryCustomer['address']
   }
-  payment: { method: CheckoutData['payment']['method']; label: string; changeFor?: number }
+  payment: { method: PaymentMethod | null; label: string; changeFor?: number }
   shipping: { method: CheckoutData['customer']['fulfillment']; fee: number; city: string }
   items: {
     type: CartItem['type']
     name: string
     quantity: number
+    /** Só quando o bolo estava sem estoque suficiente. */
+    outOfStock?: true
     unitPrice: number
     subtotal: number
     layers?: { base: string; recheio: string; cobertura: string; decoracao: string }
@@ -114,6 +131,7 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
     orderId: createOrderId(now),
     createdAt: now.toISOString(),
     source: 'site',
+    status: payment && pendingItems(order.items).length === 0 ? 'novo' : 'pendente',
     customer: {
       name: customer.name,
       fulfillment: customer.fulfillment,
@@ -121,9 +139,9 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
       ...(customer.fulfillment === 'entrega' ? { details: customer.address } : {}),
     },
     payment: {
-      method: payment.method,
+      method: payment?.method ?? null,
       label: paymentText(order.checkout),
-      ...(payment.changeFor !== undefined ? { changeFor: payment.changeFor } : {}),
+      ...(payment?.changeFor !== undefined ? { changeFor: payment.changeFor } : {}),
     },
     items: order.items.map(item => ({
       type: item.type,
@@ -131,6 +149,7 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
       quantity: item.quantity,
       unitPrice: item.price,
       subtotal: item.price * item.quantity,
+      ...(lacksStock(item) ? { outOfStock: true as const } : {}),
       ...(item.type === 'custom' ? { layers: item.customConfig } : {}),
     })),
     shipping: { method: customer.fulfillment, fee: shippingFee(customer.fulfillment), city: customer.city },

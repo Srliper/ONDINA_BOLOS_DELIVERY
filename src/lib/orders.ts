@@ -10,12 +10,15 @@ const itemSchema = z.object({
   name: z.string(),
   quantity: z.number(),
   subtotal: z.number(),
+  outOfStock: z.boolean().optional(),
   layers: z.object({ base: z.string(), recheio: z.string(), cobertura: z.string(), decoracao: z.string() }).optional(),
 })
 
 export const storedOrderSchema = z.object({
   orderId: z.string(),
   createdAt: z.string(),
+  /** Pedidos antigos não têm status: contam como "novo". */
+  status: z.enum(['novo', 'pendente']).optional(),
   customer: z.object({
     name: z.string(),
     fulfillment: z.enum(['entrega', 'retirada']),

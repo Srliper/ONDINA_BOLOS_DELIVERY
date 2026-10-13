@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Palette, RefreshCw, Store, Truck } from 'lucide-react'
+import { Hourglass, Loader2, Palette, RefreshCw, Store, Truck } from 'lucide-react'
 import { getAdminOrders } from '@/lib/admin-auth'
 import { formatBRL } from '@/lib/format'
 import type { OrdersResult, StoredOrder } from '@/lib/orders'
@@ -90,6 +90,11 @@ function OrderRow({ order }: { order: StoredOrder }) {
     <li className="admin-order">
       <div className="admin-order-top">
         <span className="admin-order-id">{order.orderId}</span>
+        {order.status === 'pendente' && (
+          <span className="admin-order-tag is-pending">
+            <Hourglass aria-hidden="true" /> Pendente
+          </span>
+        )}
         <time dateTime={order.createdAt}>{formatDate(order.createdAt)}</time>
       </div>
       <p className="admin-order-customer">
@@ -106,6 +111,7 @@ function OrderRow({ order }: { order: StoredOrder }) {
             <span>
               {item.layers && <Palette aria-hidden="true" />}
               {item.quantity}× {item.name}
+              {item.outOfStock && <em className="admin-order-shortage">sem estoque</em>}
               {item.layers && (
                 <small>
                   {item.layers.base} · {item.layers.recheio} · {item.layers.cobertura} · {item.layers.decoracao}

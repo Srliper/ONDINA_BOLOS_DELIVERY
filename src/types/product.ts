@@ -16,6 +16,11 @@ export interface Product {
   image: string
   category: ProductCategory
   isFeatured: boolean
+  /**
+   * Quantidade em estoque, na mesma unidade do carrinho (kg ou bolos), marcada pela equipe no /admin.
+   * null = sem controle de estoque (sempre disponível). Sem estoque, o pedido vai como pendente.
+   */
+  stock: number | null
 }
 
 /** Nomes das camadas escolhidas no Monte seu Bolo. */

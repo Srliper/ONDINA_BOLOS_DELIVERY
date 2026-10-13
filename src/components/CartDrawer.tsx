@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, MessageCircle, Minus, Palette, PartyPopper, Plus, ShoppingBag, Trash2 } from 'lucide-react'
+import { ArrowRight, Hourglass, MessageCircle, Minus, Palette, PartyPopper, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { CheckoutStepper } from '@/components/CheckoutStepper'
 import { StackedCake } from '@/components/StackedCake'
@@ -8,6 +8,7 @@ import { formatQuantity } from '@/data/products'
 import { MAX_QUANTITY, useCart, useCartOpen } from '@/lib/cart-store'
 import type { CheckoutData } from '@/lib/checkout'
 import { formatBRL } from '@/lib/format'
+import { isPendingOrder, lacksStock, shortageText } from '@/lib/stock'
 import { processOrderAndSend, type SendResult } from '@/lib/whatsapp'
 import type { CartItem } from '@/types/product'
 
@@ -27,6 +28,7 @@ export function CartDrawer() {
   }, [open])
 
   const showCheckout = checkingOut && !cart.isEmpty
+  const pending = isPendingOrder(cart.items)
 
   const goToMenu = () => {
     setOpen(false)
@@ -53,7 +55,9 @@ export function CartDrawer() {
               : cart.isEmpty
               ? 'Nenhum bolo escolhido ainda.'
               : showCheckout
-                ? 'Três passos rápidos e o pedido segue pronto para o WhatsApp.'
+                ? pending
+                  ? 'Dois passos rápidos e o pedido pendente segue para o WhatsApp.'
+                  : 'Três passos rápidos e o pedido segue pronto para o WhatsApp.'
                 : 'Confira os itens e envie pelo WhatsApp. A confirmação é feita na conversa.'}
           </SheetDescription>
         </SheetHeader>
@@ -101,9 +105,18 @@ export function CartDrawer() {
                 <span>Total estimado</span>
                 <strong key={cart.total}>{formatBRL(cart.total)}</strong>
               </div>
+              {pending && (
+                <p className="cart-pending" role="status">
+                  <Hourglass aria-hidden="true" />
+                  <span>
+                    Tem bolo sem estoque: o pedido vai como <strong>pendente</strong>, sem pagamento agora. A Ondina
+                    confirma pelo WhatsApp.
+                  </span>
+                </p>
+              )}
 
               <button type="button" className="checkout-button" onClick={() => setCheckingOut(true)}>
-                Finalizar pedido
+                {pending ? 'Continuar como pedido pendente' : 'Finalizar pedido'}
                 <ArrowRight aria-hidden="true" />
               </button>
               <button type="button" className="cart-clear" onClick={cart.clear}>
@@ -150,6 +163,7 @@ function CartLine({ item, index }: { item: CartItem; index: number }) {
         <p className="cart-line-meta">
           {formatBRL(price)} {item.type === 'ready' ? item.product.priceUnit : 'cada'}
         </p>
+        {lacksStock(item) && <p className="cart-line-shortage">{shortageText(item)}</p>}
         <div className="cart-stepper" role="group" aria-label={`Quantidade de ${name}`}>
           <button type="button" onClick={() => decrement(id)} aria-label={`Tirar 1 ${step} de ${name}`}>
             <Minus aria-hidden="true" />

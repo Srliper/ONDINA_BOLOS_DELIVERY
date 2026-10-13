@@ -808,3 +808,39 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .admin-form-actions .admin-submit { margin:0; padding:0 22px; min-height:42px; }
 @media(max-width:600px) { .admin-item { flex-wrap:wrap; } .admin-item-info { flex-basis:calc(100% - 70px); } .admin-item-price { margin-left:68px; } .admin-item-actions { margin-left:auto; } }
 .bolo-option-placeholder { width:32px; height:32px; color:var(--rose-ink); opacity:.45; }
+
+/* ---------- Estoque e pedido pendente ---------- */
+.cake-soldout { position:absolute; top:12px; left:12px; z-index:2; padding:4px 10px; border-radius:999px; background:var(--foreground); color:var(--background); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+.cake-stock { margin:-8px 0 12px; font-size:12px; font-weight:600; color:oklch(0.45 0.1 150); }
+.cake-stock.is-out { color:var(--rose-ink); font-weight:500; }
+.cart-line-shortage { margin:-6px 0 8px; font-size:11.5px; font-weight:600; color:var(--rose-ink); }
+.cart-pending, .checkout-notice.is-pending { display:flex; gap:8px; align-items:flex-start; padding:10px 12px; border-radius:12px; background:oklch(0.97 0.04 85); border:1px solid oklch(0.86 0.11 82 / 60%); font-size:12.5px; line-height:1.5; }
+.checkout-notice.is-pending { margin-bottom:12px; }
+.cart-pending svg, .checkout-notice.is-pending svg { flex:none; width:16px; height:16px; margin-top:2px; color:var(--gold-ink); }
+.checkout-review-shortage { margin-left:6px; padding:1px 7px; border-radius:999px; background:oklch(0.95 0.04 18); color:var(--rose-ink); font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+.admin-order-tag.is-pending { background:oklch(0.95 0.07 85); color:oklch(0.4 0.09 70); margin-right:auto; }
+.admin-order-shortage { margin-left:6px; font-size:11px; font-style:normal; font-weight:600; color:var(--rose-ink); }
+.admin-stock { display:inline-flex; align-items:center; gap:4px; padding:2px; border:1px solid var(--border); border-radius:999px; background:var(--card); }
+.admin-stock button { display:grid; place-items:center; width:32px; height:32px; border:0; border-radius:50%; background:var(--secondary); color:var(--foreground); cursor:pointer; }
+.admin-stock button:disabled { opacity:.4; cursor:default; }
+.admin-stock svg { width:14px; height:14px; }
+.admin-stock output { display:grid; place-items:center; min-width:84px; font-size:12.5px; font-weight:600; white-space:nowrap; }
+.admin-stock.is-out output { color:var(--rose-ink); }
+.admin-upload { display:flex; flex:1; flex-direction:column; align-items:flex-start; gap:10px; min-width:0; }
+.admin-upload .admin-field { width:100%; }
+@media(max-width:600px) { .admin-stock output { min-width:72px; } }
+
+/* ---------- Tutorial do painel ---------- */
+.admin-lessons { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:8px; margin-top:10px; align-items:start; }
+.admin-lesson { border:1px solid var(--border); border-radius:14px; background:var(--background); }
+.admin-lesson summary { display:flex; align-items:center; gap:8px; min-height:46px; padding:8px 12px; font-size:13.5px; font-weight:600; cursor:pointer; list-style:none; }
+.admin-lesson summary::-webkit-details-marker { display:none; }
+.admin-lesson summary::after { content:"+"; margin-left:auto; font-size:18px; color:var(--muted-foreground); }
+.admin-lesson[open] summary::after { content:"−"; }
+.admin-lesson summary svg { flex:none; width:17px; height:17px; color:var(--rose-ink); }
+.admin-lesson ol { margin:0; padding:0 14px 4px 34px; display:grid; gap:6px; font-size:13px; line-height:1.55; }
+.admin-lesson code { font-size:12px; padding:1px 5px; border-radius:6px; background:var(--secondary); }
+.admin-lesson-tip { margin:8px 12px 12px; padding:8px 10px; border-radius:10px; background:var(--secondary); font-size:12.5px; line-height:1.5; }
+.admin-login-help { text-align:left; font-size:12.5px; line-height:1.55; color:var(--muted-foreground); }
+.admin-login-help summary { cursor:pointer; font-weight:600; color:var(--foreground); text-align:center; }
+.admin-login-help ol { margin:8px 0 4px; padding-left:20px; display:grid; gap:4px; }

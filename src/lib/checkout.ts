@@ -93,8 +93,11 @@ export function validateChange(changeFor: number | undefined, total: number): st
 
 export interface CheckoutData {
   customer: Fulfillment
-  payment: Payment
+  /** null = pedido pendente (falta estoque): sem pagamento agora, a Ondina combina na conversa. */
+  payment: Payment | null
 }
+
+export const PENDING_PAYMENT_LABEL = 'A combinar (pedido pendente)'
 
 export const PICKUP_ADDRESS = STORE_ADDRESS
 

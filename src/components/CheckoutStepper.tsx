@@ -6,6 +6,7 @@ import {
   Banknote,
   Check,
   CreditCard,
+  Hourglass,
   Loader2,
   MapPin,
   MessageCircle,
@@ -20,6 +21,7 @@ import {
   parseMoney,
   paymentLabel,
   PAYMENT_METHODS,
+  PENDING_PAYMENT_LABEL,
   PICKUP_ADDRESS,
   validateChange,
   type CheckoutData,
@@ -28,6 +30,7 @@ import {
 } from '@/lib/checkout'
 import { formatBRL } from '@/lib/format'
 import { DELIVERY_CITY, DELIVERY_FEE, isDeliveryCity, shippingFee, STORE_ADDRESS } from '@/lib/shipping'
+import { lacksStock, pendingItems } from '@/lib/stock'
 import { MAPS_URL } from '@/lib/whatsapp'
 import type { CartItem } from '@/types/product'
 
@@ -41,6 +44,9 @@ export interface CheckoutStepperProps {
 }
 
 const STEPS = ['Endereço', 'Pagamento', 'Resumo'] as const
+/** Etapas mostradas: pedido pendente (falta estoque) não passa pelo pagamento. */
+const PENDING_STEPS = [0, 2] as const
+const FULL_STEPS = [0, 1, 2] as const
 const slide: Transition = { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
 
 interface FormValues {
@@ -102,6 +108,9 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
   const [paymentTried, setPaymentTried] = useState(false)
   const [sending, setSending] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
+  const missing = pendingItems(items)
+  const pending = missing.length > 0
+  const visibleSteps = pending ? PENDING_STEPS : FULL_STEPS
 
   const { errors } = useMemo(() => parseFulfillment(values), [values])
   const changeFor = parseMoney(change)
@@ -126,7 +135,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
       return
     }
     setCustomer(parsed.data)
-    goTo(1)
+    goTo(pending ? 2 : 1)
   }
 
   const submitPayment = () => {
@@ -141,16 +150,16 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
     <MotionConfig reducedMotion="user">
       <div className="checkout">
         <ol className="checkout-steps" aria-label="Etapas do pedido">
-          {STEPS.map((label, index) => (
+          {visibleSteps.map((index, position) => (
             <li
-              key={label}
+              key={STEPS[index]}
               className={index === step ? 'is-current' : index < step ? 'is-done' : undefined}
               aria-current={index === step ? 'step' : undefined}
             >
               <span className="checkout-step-dot" aria-hidden="true">
-                {index < step ? <Check /> : index + 1}
+                {index < step ? <Check /> : position + 1}
               </span>
-              {label}
+              {STEPS[index]}
             </li>
           ))}
         </ol>
@@ -173,8 +182,25 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
               aria-labelledby="checkout-step-title"
             >
               <h3 id="checkout-step-title" ref={headingRef} tabIndex={-1} className="checkout-title">
-                {step === 0 ? 'Como você quer receber?' : step === 1 ? 'Como você quer pagar?' : 'Confira seu pedido'}
+                {step === 0
+                  ? 'Como você quer receber?'
+                  : step === 1
+                    ? 'Como você quer pagar?'
+                    : pending
+                      ? 'Confira seu pedido pendente'
+                      : 'Confira seu pedido'}
               </h3>
+
+              {pending && step !== 1 && (
+                <p className="checkout-notice is-pending" role="status">
+                  <Hourglass aria-hidden="true" />
+                  <span>
+                    <strong>Sem estoque agora:</strong> {missing.map(item => item.name).join(', ')}. O pedido vai como{' '}
+                    <strong>pendente</strong>, sem pagamento pelo site: a Ondina confirma a disponibilidade e combina o
+                    pagamento pelo WhatsApp.
+                  </span>
+                </p>
+              )}
 
               {step === 0 && (
                 <AddressStep values={values} errors={showErrors ? errors : {}} onChange={set} />
@@ -191,13 +217,13 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
                   missingMethod={paymentTried && !method}
                 />
               )}
-              {step === 2 && customer && method && (
+              {step === 2 && customer && (pending || method) && (
                 <ReviewStep
                   items={items}
                   total={total}
                   customer={customer}
-                  method={method}
-                  changeFor={method === 'dinheiro' ? changeFor : undefined}
+                  method={pending ? undefined : method}
+                  changeFor={!pending && method === 'dinheiro' ? changeFor : undefined}
                 />
               )}
             </motion.section>
@@ -208,14 +234,14 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
           <button
             type="button"
             className="checkout-back"
-            onClick={() => (step === 0 ? onBack() : goTo(step - 1))}
+            onClick={() => (step === 0 ? onBack() : goTo(pending ? 0 : step - 1))}
           >
             <ArrowLeft aria-hidden="true" />
             {step === 0 ? 'Carrinho' : 'Voltar'}
           </button>
           {step === 0 && (
             <button type="button" className="checkout-next" onClick={submitAddress}>
-              Pagamento <ArrowRight aria-hidden="true" />
+              {pending ? 'Revisar pedido' : 'Pagamento'} <ArrowRight aria-hidden="true" />
             </button>
           )}
           {step === 1 && (
@@ -224,7 +250,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
             </button>
           )}
         </div>
-        {step === 2 && customer && method && (
+        {step === 2 && customer && (pending || method) && (
           <button
             type="button"
             className="checkout-button checkout-send"
@@ -236,7 +262,8 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
               try {
                 await onConfirm({
                   customer,
-                  payment: { method, changeFor: method === 'dinheiro' ? changeFor : undefined },
+                  payment:
+                    pending || !method ? null : { method, changeFor: method === 'dinheiro' ? changeFor : undefined },
                 })
               } finally {
                 setSending(false)
@@ -244,7 +271,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
             }}
           >
             {sending ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <MessageCircle aria-hidden="true" />}
-            {sending ? 'Enviando pedido…' : 'Enviar pedido pelo WhatsApp'}
+            {sending ? 'Enviando pedido…' : pending ? 'Enviar pedido pendente pelo WhatsApp' : 'Enviar pedido pelo WhatsApp'}
           </button>
         )}
       </div>
@@ -646,7 +673,8 @@ function ReviewStep({
   items: readonly CartItem[]
   total: number
   customer: Fulfillment
-  method: PaymentMethod
+  /** undefined = pedido pendente (pagamento combinado depois). */
+  method: PaymentMethod | undefined
   changeFor: number | undefined
 }) {
   return (
@@ -659,6 +687,7 @@ function ReviewStep({
                 {item.type === 'custom' && <Palette aria-hidden="true" />}
                 {item.quantity}× {item.name}
                 {item.type === 'ready' && item.product.unit === 'kg' ? ' (kg)' : ''}
+                {lacksStock(item) && <span className="checkout-review-shortage">sem estoque</span>}
               </p>
               {item.type === 'custom' && (
                 <p className="checkout-review-layers">
@@ -692,7 +721,7 @@ function ReviewStep({
         <div>
           <dt>Pagamento</dt>
           <dd>
-            {paymentLabel(method, customer.fulfillment)}
+            {method ? paymentLabel(method, customer.fulfillment) : PENDING_PAYMENT_LABEL}
             {changeFor !== undefined && ` (troco para ${formatBRL(changeFor)})`}
           </dd>
         </div>
@@ -702,7 +731,11 @@ function ReviewStep({
         <span>Total</span>
         <strong>{formatBRL(total + shippingFee(customer.fulfillment))}</strong>
       </div>
-      <p className="checkout-review-note">A Ondina confirma o pedido e o horário pela conversa.</p>
+      <p className="checkout-review-note">
+        {method
+          ? 'A Ondina confirma o pedido e o horário pela conversa.'
+          : 'Nada é cobrado agora. A Ondina avisa pela conversa quando o bolo estiver disponível.'}
+      </p>
     </div>
   )
 }

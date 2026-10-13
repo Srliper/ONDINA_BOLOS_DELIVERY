@@ -101,6 +101,15 @@ export function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
           {loading && <Loader2 aria-hidden="true" className="checkout-spin" />}
           {loading ? 'Entrando…' : 'Entrar'}
         </button>
+        <details className="admin-login-help">
+          <summary>Como entrar?</summary>
+          <ol>
+            <li>Toque no seu nome, em “Quem está entrando?”.</li>
+            <li>Digite a senha da equipe (o olho mostra o que você digitou).</li>
+            <li>Toque em Entrar. Você fica conectado por 12 horas neste aparelho.</li>
+          </ol>
+          <p>Lá dentro, o “Tutorial do painel” explica estoque, preços e fotos.</p>
+        </details>
         <a href="/" className="admin-back">
           Voltar para o site
         </a>
