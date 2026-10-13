@@ -6,6 +6,7 @@ import { cartActions, setCartOpen } from '@/lib/cart-store'
 import { flyToCart } from '@/lib/fly-to-cart'
 import { formatBRL } from '@/lib/format'
 import { stagger } from '@/lib/motion'
+import { isSoldOut, stockLabel } from '@/lib/stock'
 import { cn } from '@/lib/utils'
 import type { Product } from '@/types/product'
 
@@ -55,11 +56,14 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
     }, LOADING_MS)
   }
 
+  const soldOut = isSoldOut(product)
+  const stock = stockLabel(product)
   const Icon = state === 'loading' ? Loader2 : state === 'success' ? Check : ShoppingBag
 
   return (
     <article className="cake-item" data-reveal style={stagger(index)}>
       <div className="cake-media">
+        {soldOut && <span className="cake-soldout">Esgotado</span>}
         <img
           ref={imageRef}
           className="cake-image"
@@ -77,18 +81,29 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
       <p className="cake-price">
         <strong>{formatBRL(product.price)}</strong> {product.priceUnit}
       </p>
+      {stock && (
+        <p className={cn('cake-stock', soldOut && 'is-out')}>
+          {soldOut ? 'Esgotado agora: dá para deixar como pedido pendente.' : stock}
+        </p>
+      )}
       <button
         type="button"
         className={cn('add-button', `is-${state}`)}
         onClick={handleAdd}
-        aria-label={state === 'idle' ? `Adicionar ${product.name} ao carrinho` : undefined}
+        aria-label={
+          state === 'idle'
+            ? soldOut
+              ? `Deixar ${product.name} como pedido pendente`
+              : `Adicionar ${product.name} ao carrinho`
+            : undefined
+        }
         aria-disabled={state === 'loading'}
       >
         <Icon
           aria-hidden="true"
           className={cn(state === 'loading' && 'animate-spin', state === 'success' && 'animate-bounce')}
         />
-        <span aria-live="polite">{LABEL[state]}</span>
+        <span aria-live="polite">{state === 'idle' && soldOut ? 'Pedir pendente' : LABEL[state]}</span>
       </button>
     </article>
   )

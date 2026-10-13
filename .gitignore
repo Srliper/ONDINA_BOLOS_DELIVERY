@@ -33,3 +33,6 @@ dist-ssr
 
 # Variáveis locais
 .env
+
+# Banco local do catálogo (desenvolvimento)
+.data/

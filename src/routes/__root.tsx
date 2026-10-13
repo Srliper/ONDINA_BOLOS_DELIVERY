@@ -13,6 +13,8 @@ import type { ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { MotionRoot } from "../components/MotionRoot";
 import { Toaster } from "../components/ui/sonner";
+import { applyCatalog } from "../lib/catalog";
+import { getPublicCatalog } from "../lib/catalog-server";
 
 function StatusPage({ title, message, children }: { title: string; message: string; children: ReactNode }) {
   return (
@@ -80,6 +82,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
   }),
+  // Cardápio do banco (editável no /admin) — ou o padrão, se ninguém editou ainda.
+  loader: () => getPublicCatalog(),
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -102,6 +106,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  // Antes de qualquer página desenhar: cardápio, carrinho e Monte seu Bolo leem daqui.
+  applyCatalog(Route.useLoaderData());
 
   return (
     <QueryClientProvider client={queryClient}>

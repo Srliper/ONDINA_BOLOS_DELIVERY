@@ -1,3 +1,5 @@
+import type { LayerVisual } from '@/lib/layer-photo'
+
 export type ProductCategory = 'festas' | 'cafes'
 
 export interface Product {
@@ -14,9 +16,43 @@ export interface Product {
   image: string
   category: ProductCategory
   isFeatured: boolean
+  /**
+   * Quantidade em estoque, na mesma unidade do carrinho (kg ou bolos), marcada pela equipe no /admin.
+   * null = sem controle de estoque (sempre disponível). Sem estoque, o pedido vai como pendente.
+   */
+  stock: number | null
 }
 
-export interface CartItem {
-  product: Product
-  quantity: number
+/** Nomes das camadas escolhidas no Monte seu Bolo. */
+export interface CustomCakeConfig {
+  base: string
+  recheio: string
+  cobertura: string
+  decoracao: string
 }
+
+interface CartItemBase {
+  /** Id da linha no carrinho: o id do produto, ou `custom:<camadas>` para bolos montados. */
+  id: string
+  name: string
+  /** Preço unitário em reais (o do quilo, para bolos de festa). */
+  price: number
+  quantity: number
+  image?: string
+}
+
+/** Bolo pronto do cardápio. */
+export interface ReadyCartItem extends CartItemBase {
+  type: 'ready'
+  product: Product
+}
+
+/** Bolo montado camada por camada no BoloBuilder. */
+export interface CustomCartItem extends CartItemBase {
+  type: 'custom'
+  customConfig: CustomCakeConfig
+  /** Camadas de baixo para cima (foto, ilustração provisória e encaixe) — para a miniatura. */
+  layers: LayerVisual[]
+}
+
+export type CartItem = ReadyCartItem | CustomCartItem
