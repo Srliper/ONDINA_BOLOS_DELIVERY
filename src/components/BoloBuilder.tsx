@@ -328,13 +328,14 @@ function CakePreview({
  * o que dá paralaxe quando a pilha gira; no resumo, encaixa.
  */
 function PreviewLayer({ layer, assembled }: { layer: BoloLayer; assembled: boolean }) {
-  const { src, onError } = useLayerSrc(layer)
+  const { src, onError, ref } = useLayerSrc(layer)
   const { floating, height, z, depth } = STACK[layer.category]
   const y = assembled ? layer.offsetY : -floating
   const translateZ = assembled ? depth * 0.05 : depth
 
   return (
     <motion.img
+      ref={ref}
       src={src}
       onError={onError}
       alt=""
@@ -422,7 +423,7 @@ function LayerPicker({
                   </span>
                 )}
                 <span className="bolo-option-media" aria-hidden="true">
-                  <img src={option.image} alt="" loading="lazy" draggable={false} />
+                  <LayerThumb layer={option} />
                 </span>
                 <span className="bolo-option-name">{option.name}</span>
                 <span className="bolo-option-desc">{option.description}</span>
@@ -439,6 +440,12 @@ function LayerPicker({
       </CarouselContent>
     </Carousel>
   )
+}
+
+/** Foto da opção no carrossel, com a mesma troca para a ilustração provisória. */
+function LayerThumb({ layer }: { layer: BoloLayer }) {
+  const { src, onError, ref } = useLayerSrc(layer)
+  return <img ref={ref} src={src} onError={onError} alt="" loading="lazy" draggable={false} />
 }
 
 /* ---------- Resumo final ---------- */

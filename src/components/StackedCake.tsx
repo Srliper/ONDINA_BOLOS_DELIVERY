@@ -26,10 +26,11 @@ export function StackedCake({
 }
 
 function StackedLayer({ layer, scale, width }: { layer: LayerVisual; scale: number; width: number }) {
-  const { src, onError } = useLayerSrc(layer)
+  const { src, onError, ref } = useLayerSrc(layer)
   const { height, z } = LAYER_STACK[layer.category]
   return (
     <img
+      ref={ref}
       src={src}
       onError={onError}
       alt=""

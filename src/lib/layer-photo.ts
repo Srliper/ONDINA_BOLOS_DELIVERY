@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { BoloLayer } from '@/types/bolo-layers'
 
 /** O mínimo de uma camada para desenhá-la na pilha. */
@@ -13,12 +13,17 @@ const missingPhotos = new Set<string>()
  */
 export function useLayerSrc({ image, fallbackImage }: Pick<LayerVisual, 'image' | 'fallbackImage'>) {
   const [failed, setFailed] = useState(() => missingPhotos.has(image))
-  return {
-    src: failed ? fallbackImage : image,
-    onError: () => {
-      if (failed) return
-      missingPhotos.add(image)
-      setFailed(true)
+  const onError = useCallback(() => {
+    missingPhotos.add(image)
+    setFailed(true)
+  }, [image])
+  // Imagem que veio pronta do servidor pode falhar (404) antes de o React assumir a página:
+  // aí o onError nunca dispara. Ao montar, confere se ela já quebrou e troca na hora.
+  const ref = useCallback(
+    (img: HTMLImageElement | null) => {
+      if (img && !failed && img.complete && img.naturalWidth === 0) onError()
     },
-  }
+    [failed, onError],
+  )
+  return { src: failed ? fallbackImage : image, onError: failed ? undefined : onError, ref }
 }
