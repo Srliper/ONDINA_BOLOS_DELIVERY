@@ -18,8 +18,9 @@ export interface CatalogStorage {
 
 const env = (name: string) => process.env[name] || undefined
 
-function upstashStorage(url: string, token: string, fetchImpl: typeof fetch = fetch, key = KEY): CatalogStorage {
-  const command = async (args: string[]) => {
+/** Um comando do Redis pela API REST do Upstash (ex.: ['GET', 'chave']). */
+export function upstashCommand(url: string, token: string, fetchImpl: typeof fetch = fetch) {
+  return async (args: string[]): Promise<unknown> => {
     const response = await fetchImpl(url.replace(/\/+$/, ''), {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -30,6 +31,17 @@ function upstashStorage(url: string, token: string, fetchImpl: typeof fetch = fe
     if (body.error) throw new CatalogError(503, `Erro no banco de dados: ${body.error}`)
     return body.result
   }
+}
+
+/** Endereço e token do Upstash nas variáveis de ambiente (Vercel → Storage), se houver. */
+export function upstashConfig(): { url: string; token: string } | undefined {
+  const url = env('KV_REST_API_URL') ?? env('UPSTASH_REDIS_REST_URL')
+  const token = env('KV_REST_API_TOKEN') ?? env('UPSTASH_REDIS_REST_TOKEN')
+  return url && token ? { url, token } : undefined
+}
+
+function upstashStorage(url: string, token: string, fetchImpl: typeof fetch = fetch, key = KEY): CatalogStorage {
+  const command = upstashCommand(url, token, fetchImpl)
   return {
     kind: 'upstash',
     read: async () => {
@@ -75,10 +87,12 @@ const noStorage: CatalogStorage = {
 
 const catalogFile = () => env('CATALOG_FILE') ?? '.data/catalog.json'
 
+/** Pasta dos arquivos locais (a mesma do catálogo), terminando em "/". */
+export const localDataDir = () => catalogFile().replace(/[^/\\]+$/, '')
+
 export function getCatalogStorage(): CatalogStorage {
-  const url = env('KV_REST_API_URL') ?? env('UPSTASH_REDIS_REST_URL')
-  const token = env('KV_REST_API_TOKEN') ?? env('UPSTASH_REDIS_REST_TOKEN')
-  if (url && token) return upstashStorage(url, token)
+  const upstash = upstashConfig()
+  if (upstash) return upstashStorage(upstash.url, upstash.token)
   // Na Vercel o disco é temporário: gravar em arquivo perderia as edições sem avisar.
   if (env('VERCEL')) return noStorage
   return fileStorage(catalogFile())
@@ -86,12 +100,14 @@ export function getCatalogStorage(): CatalogStorage {
 
 /** Fotos enviadas pelo painel: uma chave por foto no mesmo banco (ou arquivos ao lado do catálogo). */
 export function getImageStorage(id: string): CatalogStorage {
-  const url = env('KV_REST_API_URL') ?? env('UPSTASH_REDIS_REST_URL')
-  const token = env('KV_REST_API_TOKEN') ?? env('UPSTASH_REDIS_REST_TOKEN')
-  if (url && token) return upstashStorage(url, token, fetch, `ondina:image:${id}`)
+  const upstash = upstashConfig()
+  if (upstash) return upstashStorage(upstash.url, upstash.token, fetch, `ondina:image:${id}`)
   if (env('VERCEL')) return noStorage
-  return fileStorage(`${catalogFile().replace(/[^/\\]+$/, '')}images/${id}.json`)
+  return fileStorage(`${localDataDir()}images/${id}.json`)
 }
+
+/** Sem banco na Vercel (disco temporário): nada pode ser guardado. */
+export const isEphemeralServer = () => Boolean(env('VERCEL'))
 
 /** Lê o catálogo guardado; sem nada guardado (ou guardado com defeito), usa o padrão. */
 export async function loadCatalog(storage = getCatalogStorage()): Promise<Catalog> {

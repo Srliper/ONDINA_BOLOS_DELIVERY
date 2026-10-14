@@ -108,6 +108,8 @@ export interface OrderPayload {
   shipping: { method: CheckoutData['customer']['fulfillment']; fee: number; city: string }
   items: {
     type: CartItem['type']
+    /** Só nos bolos prontos: o painel usa para baixar o estoque ao confirmar. */
+    productId?: string
     name: string
     quantity: number
     /** Só quando o bolo estava sem estoque suficiente. */
@@ -145,6 +147,7 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
     },
     items: order.items.map(item => ({
       type: item.type,
+      ...(item.type === 'ready' ? { productId: item.product.id } : {}),
       name: item.name,
       quantity: item.quantity,
       unitPrice: item.price,
@@ -168,7 +171,12 @@ export interface SendDeps {
   navigate: (url: string) => void
   celebrate: () => Promise<void> | void
   wait: (ms: number) => Promise<void>
+  /** Guarda o pedido no banco do site (painel /admin). Nunca pode impedir o pedido. */
+  record?: (payload: OrderPayload) => Promise<void>
 }
+
+/** Rota do próprio site que guarda os pedidos para o painel (src/lib/order-api.ts). */
+export const SITE_ORDERS_URL = '/api/orders'
 
 const browserDeps = (): SendDeps => ({
   fetch: (input, init) => window.fetch(input, init),
@@ -180,6 +188,24 @@ const browserDeps = (): SendDeps => ({
     return tab
   },
   navigate: url => window.location.assign(url),
+  record: async payload => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), N8N_TIMEOUT_MS)
+    try {
+      const response = await window.fetch(SITE_ORDERS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+        keepalive: true,
+      })
+      if (!response.ok) console.warn(`[pedido ${payload.orderId}] o site não guardou o pedido (${response.status})`)
+    } catch (error) {
+      console.warn(`[pedido ${payload.orderId}] o site não guardou o pedido`, error)
+    } finally {
+      clearTimeout(timer)
+    }
+  },
   celebrate,
   wait: ms => new Promise(resolve => window.setTimeout(resolve, ms)),
 })
@@ -207,6 +233,9 @@ export async function processOrderAndSend(
   const payload = buildOrderPayload(order, message)
   const url = orderWhatsAppUrl(message)
 
+  // Guarda no banco do site ao mesmo tempo que avisa o n8n (erros só no console).
+  const recording = deps.record?.(payload).catch(() => {})
+
   let savedToN8n = false
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), N8N_TIMEOUT_MS)
@@ -225,6 +254,7 @@ export async function processOrderAndSend(
   } finally {
     clearTimeout(timer)
   }
+  await recording
 
   // Confete logo antes de sair para o WhatsApp.
   void deps.celebrate()

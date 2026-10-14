@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { BookOpen, Boxes, Camera, ClipboardList, Hourglass, KeyRound, Layers, Tag } from 'lucide-react'
+import { BellRing, BookOpen, Boxes, Camera, ClipboardCheck, ClipboardList, Hourglass, KeyRound, Layers, Tag } from 'lucide-react'
 
 interface Lesson {
   id: string
@@ -47,7 +47,51 @@ const LESSONS: Lesson[] = [
     ],
     tip: (
       <>
-        O estoque <strong>não baixa sozinho</strong>: quando confirmar uma venda no WhatsApp, diminua no painel.
+        Para o estoque baixar com um toque, confirme o pedido em <strong>Últimos pedidos do site</strong> (veja
+        “Confirmar pedido e baixar o estoque”).
+      </>
+    ),
+  },
+  {
+    id: 'confirmar',
+    icon: ClipboardCheck,
+    title: 'Confirmar pedido e baixar o estoque',
+    steps: [
+      <>
+        Cada pedido feito no site aparece em <strong>Últimos pedidos do site</strong>, com o mesmo número{' '}
+        <strong>OB-…</strong> da mensagem do WhatsApp.
+      </>,
+      <>
+        Depois de combinar com o cliente na conversa, toque em <strong>Confirmar e baixar estoque</strong>. O painel
+        tira do estoque os bolos do pedido (nunca abaixo de 0) e mostra o que mudou, ex.: “Prestígio 3 → 1”.
+      </>,
+      <>
+        Errou? Toque em <strong>Desfazer</strong> no pedido: a confirmação some e o estoque volta.
+      </>,
+      <>Bolos sem controle de estoque e bolos do Monte seu Bolo não mexem no estoque.</>,
+    ],
+    tip: <>Toque em Atualizar para ver pedidos que chegaram depois que você abriu o painel.</>,
+  },
+  {
+    id: 'esgotou',
+    icon: BellRing,
+    title: 'Aviso de bolo esgotado no WhatsApp',
+    steps: [
+      <>
+        Quando um bolo chega a <strong>0</strong> (pelo − ou ao confirmar um pedido), aparece o aviso{' '}
+        <strong>Esgotou</strong> com o botão <strong>Avisar no WhatsApp</strong>.
+      </>,
+      <>
+        O botão abre o WhatsApp com a mensagem pronta para o número da loja: é só tocar em <strong>Enviar</strong>.
+      </>,
+      <>
+        Em <strong>Cardápio do site</strong>, a faixa <strong>Esgotados agora</strong> lista os bolos zerados e tem o
+        mesmo botão.
+      </>,
+    ],
+    tip: (
+      <>
+        Se o n8n estiver configurado para isso, o aviso também vai sozinho, sem precisar tocar em nada (veja o README).
       </>
     ),
   },
@@ -134,6 +178,7 @@ const LESSONS: Lesson[] = [
       </>,
       <>
         Em <strong>Últimos pedidos do site</strong>, toque em <strong>Atualizar</strong> para ver os mais recentes.
+        Pedidos pendentes têm a etiqueta <strong>Pendente</strong>; os já confirmados, <strong>Confirmado</strong>.
       </>,
     ],
   },

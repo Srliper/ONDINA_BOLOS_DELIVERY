@@ -7,6 +7,8 @@ import { z } from 'zod'
  */
 
 const itemSchema = z.object({
+  /** Só nos bolos prontos (pedidos a partir do estoque): usado para baixar o estoque. */
+  productId: z.string().max(60).optional(),
   name: z.string(),
   quantity: z.number(),
   subtotal: z.number(),
@@ -30,6 +32,50 @@ export const storedOrderSchema = z.object({
 })
 
 export type StoredOrder = z.infer<typeof storedOrderSchema>
+
+/**
+ * Pedido recebido do próprio site (POST /api/orders): o mesmo formato, com limites de tamanho,
+ * porque a rota é pública. Campos extras são descartados.
+ */
+const text = (max: number) => z.string().max(max)
+export const incomingOrderSchema = z.object({
+  orderId: z.string().regex(/^OB-[0-9A-Z]{4,12}-[0-9A-Z]{2}$/),
+  createdAt: z.string().datetime(),
+  status: z.enum(['novo', 'pendente']).optional(),
+  customer: z.object({ name: text(60), fulfillment: z.enum(['entrega', 'retirada']), address: text(400) }),
+  payment: z.object({ label: text(80) }),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().max(60).optional(),
+        name: text(80),
+        quantity: z.number().int().min(1).max(100),
+        subtotal: z.number().min(0).max(100_000),
+        outOfStock: z.boolean().optional(),
+        layers: z.object({ base: text(80), recheio: text(80), cobertura: text(80), decoracao: text(80) }).optional(),
+      }),
+    )
+    .min(1)
+    .max(30),
+  total: z.number().min(0).max(1_000_000),
+})
+
+/** Baixa de estoque feita ao confirmar um pedido no painel. */
+export interface StockChange {
+  id: string
+  name: string
+  from: number
+  to: number
+}
+
+/** Pedido confirmado no painel (por quem, quando e o que saiu do estoque). */
+export interface OrderConfirmation {
+  at: string
+  by: string
+  stock: StockChange[]
+}
+
+export type SiteOrder = StoredOrder & { confirmation?: OrderConfirmation }
 
 export type OrdersResult =
   | { status: 'not-configured' }
