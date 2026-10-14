@@ -25,6 +25,9 @@ import mousseLimao from '@/assets/mousse_limao.jpg'
 import cenoura from '@/assets/cenoura.jpg'
 import chocolate from '@/assets/chocolate.jpg'
 import maracuja from '@/assets/maracuja.jpg'
+import kinderBueno from '@/assets/kinder_bueno.jpg'
+import ouroBrancoNinho from '@/assets/ouro_branco_ninho.jpg'
+import paveTradicional from '@/assets/pave_tradicional.jpg'
 
 /** Preços oficiais do cardápio da Ondina. */
 const PARTY_PRICE_PER_KG = 60
@@ -37,9 +40,12 @@ export const CATEGORY_LABEL: Record<ProductCategory, string> = {
   sobremesas: 'Doces e sobremesas',
 }
 
-const party = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category' | 'stock'>): Product => ({
+const party = (
+  p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category' | 'stock'>,
+  price = PARTY_PRICE_PER_KG,
+): Product => ({
   ...p,
-  price: PARTY_PRICE_PER_KG,
+  price,
   priceUnit: 'o quilo',
   unit: 'kg',
   category: 'festas',
@@ -84,6 +90,28 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     image: prestigio,
     isFeatured: true,
   }),
+  party(
+    {
+      id: 'kinder-bueno',
+      name: 'Kinder Bueno',
+      description: 'Novidade! Cobertura com raspas de chocolate branco, fios de chocolate, Kinder Bueno e morangos.',
+      image: kinderBueno,
+      isFeatured: true,
+    },
+    80,
+  ),
+  {
+    id: 'ouro-branco-brigadeiro-ninho',
+    name: 'Ouro Branco com brigadeiro de Ninho',
+    description: 'Cobertura de brigadeiro de Ninho com pedaços de Ouro Branco, chocolate branco ralado e morangos.',
+    price: 100,
+    priceUnit: 'bolo de 1,5 kg',
+    unit: 'un',
+    image: ouroBrancoNinho,
+    category: 'festas',
+    isFeatured: false,
+    stock: null,
+  },
   party({
     id: 'oreo',
     name: 'Oreo',
@@ -241,6 +269,18 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     },
     SIMPLE_COFFEE_CAKE_PRICE,
   ),
+  {
+    id: 'pave-tradicional',
+    name: 'Pavê tradicional',
+    description: 'Camadas de creme e chocolate, coberto com raspas de chocolate ao leite e morangos.',
+    price: PARTY_PRICE_PER_KG,
+    priceUnit: 'o quilo',
+    unit: 'kg',
+    image: paveTradicional,
+    category: 'sobremesas',
+    isFeatured: false,
+    stock: null,
+  },
   {
     id: 'pave-kinder-bueno',
     name: 'Pavê de Kinder Bueno',
