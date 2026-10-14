@@ -17,6 +17,8 @@ import ninhoGanache from '@/assets/ninho_ganache.jpg'
 import laranja from '@/assets/laranja.jpg'
 import limao from '@/assets/limao.jpg'
 import paveKinderBueno from '@/assets/pave_kinder_bueno.jpg'
+import beijinhoDoceLeite from '@/assets/beijinho_doce_leite.jpg'
+import abacaxi from '@/assets/abacaxi.jpg'
 
 /** Preços oficiais do cardápio da Ondina. */
 const PARTY_PRICE_PER_KG = 60
@@ -137,6 +139,20 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     name: 'Beijinho com abacaxi',
     description: 'Massa branca, recheio de beijinho e pedaços de abacaxi, cobertura de chantilly com raspas de chocolate branco e morangos.',
     image: beijinhoAbacaxi,
+    isFeatured: false,
+  }),
+  party({
+    id: 'beijinho-doce-de-leite',
+    name: 'Beijinho com doce de leite',
+    description: 'Massa branca, recheio duplo de beijinho e doce de leite, cobertura de chantilly com raspas de chocolate branco, fios de doce de leite e morangos.',
+    image: beijinhoDoceLeite,
+    isFeatured: false,
+  }),
+  party({
+    id: 'abacaxi',
+    name: 'Abacaxi',
+    description: 'Massa branca, creme belga com pedaços de abacaxi e cobertura de chantilly com raspas de chocolate branco e morangos.',
+    image: abacaxi,
     isFeatured: false,
   }),
   party({
