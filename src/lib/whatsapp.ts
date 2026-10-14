@@ -1,9 +1,10 @@
-import { formatAddress, paymentLabel, PENDING_PAYMENT_LABEL, type CheckoutData, type PaymentMethod } from '@/lib/checkout'
+import { formatAddress, paymentLabel, PENDING_PAYMENT_NOTE, type CheckoutData, type PaymentMethod } from '@/lib/checkout'
 import { celebrate } from '@/lib/confetti'
 import { MAPS_URL, WHATSAPP_NUMBER } from '@/lib/contact'
 import { formatBRLPlain } from '@/lib/format'
 import { DELIVERY_CITY, shippingFee } from '@/lib/shipping'
-import { lacksStock, pendingItems } from '@/lib/stock'
+import { createOrderId, type OrderLine, type OrderStatus, type Shortage } from '@/lib/order-flow'
+import { lacksStock } from '@/lib/stock'
 import type { CartItem } from '@/types/product'
 
 export { MAPS_URL, WHATSAPP_NUMBER }
@@ -26,31 +27,59 @@ export const orderWhatsAppUrl = (text: string) =>
 
 /* ---------- Mensagem do pedido ---------- */
 
+/** O que o servidor decidiu ao registrar o pedido (estoque conferido lá). */
+export interface RegisteredOrder {
+  orderId: string
+  status: OrderStatus
+  shortages: Shortage[]
+}
+
 export interface OrderInput {
   items: readonly CartItem[]
   total: number
   checkout: CheckoutData
+  /** Sem registro (servidor fora do ar), vale a conferência de estoque feita no navegador. */
+  registered?: RegisteredOrder | undefined
 }
+
+/** Itens sem estoque: pela resposta do servidor, ou pelo estoque que o navegador conhece. */
+function missingItems({ items, registered }: OrderInput): CartItem[] {
+  if (!registered) return items.filter(lacksStock)
+  const ids = new Set(registered.shortages.map(shortage => shortage.productId))
+  return items.filter(item => item.type === 'ready' && ids.has(item.product.id))
+}
+
+const isPending = (order: OrderInput) =>
+  order.registered ? order.registered.status === 'pendente' : missingItems(order).length > 0
+
+/** Linhas do carrinho como o servidor recebe (ids e quantidades; preços ele recalcula). */
+export const toOrderLines = (items: readonly CartItem[]): OrderLine[] =>
+  items.map(item =>
+    item.type === 'ready'
+      ? { productId: item.product.id, quantity: item.quantity }
+      : { custom: item.layerIds, quantity: item.quantity },
+  )
 
 const shippingText = ({ customer }: CheckoutData) =>
   customer.fulfillment === 'entrega'
     ? `${formatBRLPlain(shippingFee('entrega'))} (entrega grátis em ${DELIVERY_CITY})`
     : 'Retirada no Local (sem frete)'
 
-const paymentText = ({ customer, payment }: CheckoutData) =>
-  payment
-    ? paymentLabel(payment.method, customer.fulfillment) +
-      (payment.changeFor !== undefined ? ` (troco para ${formatBRLPlain(payment.changeFor)})` : '')
-    : PENDING_PAYMENT_LABEL
+const paymentText = ({ customer, payment }: CheckoutData, pending = false) =>
+  paymentLabel(payment.method, customer.fulfillment) +
+  (payment.changeFor !== undefined ? ` (troco para ${formatBRLPlain(payment.changeFor)})` : '') +
+  (pending ? ` — ${PENDING_PAYMENT_NOTE}` : '')
 
 /** Mensagem do pedido no formato oficial (texto puro, ainda não codificado). */
-export function buildOrderMessage({ items, total, checkout }: OrderInput): string {
-  const missing = pendingItems(items)
+export function buildOrderMessage(order: OrderInput): string {
+  const { items, total, checkout, registered } = order
+  const missing = missingItems(order)
+  const pending = isPending(order)
   const itemLines = items.flatMap(item => {
     const subtotal = formatBRLPlain(item.price * item.quantity)
     if (item.type === 'ready') {
       const kg = item.product.unit === 'kg' ? ' (kg)' : ''
-      return [`• ${item.quantity}x ${item.name}${kg} - ${subtotal}${lacksStock(item) ? ' ⚠️ sem estoque' : ''}`]
+      return [`• ${item.quantity}x ${item.name}${kg} - ${subtotal}${missing.includes(item) ? ' ⚠️ sem estoque' : ''}`]
     }
     const { base, recheio, cobertura, decoracao } = item.customConfig
     return [
@@ -63,13 +92,14 @@ export function buildOrderMessage({ items, total, checkout }: OrderInput): strin
   })
 
   return [
-    missing.length
+    pending
       ? 'Olá, Ondina Bolos! Gostaria de deixar um pedido pendente.'
       : 'Olá, Ondina Bolos! Gostaria de fazer um pedido.',
+    ...(registered ? [`🧾 *Pedido:* ${registered.orderId}`] : []),
     '',
-    ...(missing.length
+    ...(pending
       ? [
-          `⏳ *PEDIDO PENDENTE:* sem estoque de ${missing.map(item => item.name).join(', ')}. Aguardo a confirmação da disponibilidade para combinar o pagamento.`,
+          `⏳ *PEDIDO PENDENTE (falta de estoque):* ${missing.map(item => item.name).join(', ') || 'algum item'}. Aguardo a confirmação da disponibilidade para seguir com o pagamento.`,
           '',
         ]
       : []),
@@ -81,7 +111,7 @@ export function buildOrderMessage({ items, total, checkout }: OrderInput): strin
     '',
     `👤 *Nome:* ${checkout.customer.name}`,
     `📍 *Endereço:* ${formatAddress(checkout.customer)}`,
-    `💳 *Forma de Pagamento:* ${paymentText(checkout)}`,
+    `💳 *Forma de Pagamento:* ${paymentText(checkout, pending)}`,
     `🗺️ *Referência do mapa:* ${MAPS_URL}`,
   ].join('\n')
 }
@@ -104,7 +134,7 @@ export interface OrderPayload {
     /** Campos separados, só na entrega. */
     details?: DeliveryCustomer['address']
   }
-  payment: { method: PaymentMethod | null; label: string; changeFor?: number }
+  payment: { method: PaymentMethod; label: string; changeFor?: number }
   shipping: { method: CheckoutData['customer']['fulfillment']; fee: number; city: string }
   items: {
     type: CartItem['type']
@@ -121,17 +151,16 @@ export interface OrderPayload {
   message: string
 }
 
-/** Id curto para cruzar o registro do n8n com a conversa (ex.: OB-MG6Z1K2A-7Q). */
-export const createOrderId = (now: Date) =>
-  `OB-${now.getTime().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 4).toUpperCase()}`
+export { createOrderId }
 
 export function buildOrderPayload(order: OrderInput, message: string, now = new Date()): OrderPayload {
   const { customer, payment } = order.checkout
+  const missing = missingItems(order)
   return {
-    orderId: createOrderId(now),
+    orderId: order.registered?.orderId ?? createOrderId(now),
     createdAt: now.toISOString(),
     source: 'site',
-    status: payment && pendingItems(order.items).length === 0 ? 'novo' : 'pendente',
+    status: isPending(order) ? 'pendente' : 'novo',
     customer: {
       name: customer.name,
       fulfillment: customer.fulfillment,
@@ -139,9 +168,9 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
       ...(customer.fulfillment === 'entrega' ? { details: customer.address } : {}),
     },
     payment: {
-      method: payment?.method ?? null,
-      label: paymentText(order.checkout),
-      ...(payment?.changeFor !== undefined ? { changeFor: payment.changeFor } : {}),
+      method: payment.method,
+      label: paymentText(order.checkout, isPending(order)),
+      ...(payment.changeFor !== undefined ? { changeFor: payment.changeFor } : {}),
     },
     items: order.items.map(item => ({
       type: item.type,
@@ -149,7 +178,7 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
       quantity: item.quantity,
       unitPrice: item.price,
       subtotal: item.price * item.quantity,
-      ...(lacksStock(item) ? { outOfStock: true as const } : {}),
+      ...(missing.includes(item) ? { outOfStock: true as const } : {}),
       ...(item.type === 'custom' ? { layers: item.customConfig } : {}),
     })),
     shipping: { method: customer.fulfillment, fee: shippingFee(customer.fulfillment), city: customer.city },
@@ -162,6 +191,8 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
 
 /** O que o envio usa do navegador — trocável nos testes. */
 export interface SendDeps {
+  /** Registra o pedido no servidor do site (confere o estoque); rejeita se não der. */
+  register: (lines: OrderLine[], checkout: CheckoutData) => Promise<RegisteredOrder>
   fetch: typeof fetch
   /** Abre a conversa em nova aba; devolve null se o navegador bloquear o pop-up. */
   open: (url: string) => Window | null
@@ -171,6 +202,12 @@ export interface SendDeps {
 }
 
 const browserDeps = (): SendDeps => ({
+  register: async (lines, checkout) => {
+    const { placeOrder } = await import('@/lib/orders-server')
+    const result = await placeOrder({ data: { lines, customer: checkout.customer, payment: checkout.payment } })
+    if (!result.ok) throw new Error(result.error)
+    return { orderId: result.orderId, status: result.status, shortages: result.shortages }
+  },
   fetch: (input, init) => window.fetch(input, init),
   open: url => {
     // Sem "noopener" no window.open: com ele o navegador sempre devolve null e não
@@ -186,14 +223,35 @@ const browserDeps = (): SendDeps => ({
 
 export interface SendResult {
   orderId: string
+  /** Pedido registrado no painel (estoque conferido no servidor). */
+  registered: boolean
+  pending: boolean
   /** O n8n confirmou o recebimento (2xx) dentro do tempo limite. */
   savedToN8n: boolean
   whatsappUrl: string
 }
 
+/** Quanto esperamos o servidor registrar o pedido antes de seguir sem ele. */
+export const REGISTER_TIMEOUT_MS = 6000
+
+const withTimeout = <T>(promise: Promise<T>, ms: number) =>
+  new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('tempo esgotado')), ms)
+    promise.then(
+      value => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      error => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+
 /**
- * Registra o pedido no n8n e abre a conversa no WhatsApp.
- * O n8n nunca bloqueia o cliente: se cair, demorar ou recusar, o erro só vai para o console
+ * Registra o pedido no site (estoque conferido no servidor) e no n8n, e abre a conversa no WhatsApp.
+ * Nenhum dos dois bloqueia o cliente: se cair, demorar ou recusar, o erro vai para o console
  * e o WhatsApp abre do mesmo jeito — o pedido não pode se perder.
  */
 export async function processOrderAndSend(
@@ -202,7 +260,14 @@ export async function processOrderAndSend(
   checkout: CheckoutData,
   deps: SendDeps = browserDeps(),
 ): Promise<SendResult> {
-  const order = { items, total, checkout }
+  let registered: RegisteredOrder | undefined
+  try {
+    registered = await withTimeout(deps.register(toOrderLines(items), checkout), REGISTER_TIMEOUT_MS)
+  } catch (error) {
+    console.error('[pedido] não foi possível registrar no site; segue pelo WhatsApp', error)
+  }
+
+  const order = { items, total, checkout, registered }
   const message = buildOrderMessage(order)
   const payload = buildOrderPayload(order, message)
   const url = orderWhatsAppUrl(message)
@@ -234,7 +299,13 @@ export async function processOrderAndSend(
   // abre na própria aba — no celular isso leva direto ao app do WhatsApp.
   if (!deps.open(url)) deps.navigate(url)
 
-  return { orderId: payload.orderId, savedToN8n, whatsappUrl: url }
+  return {
+    orderId: payload.orderId,
+    registered: Boolean(registered),
+    pending: payload.status === 'pendente',
+    savedToN8n,
+    whatsappUrl: url,
+  }
 }
 
 /* ---------- Contato avulso ---------- */

@@ -284,7 +284,16 @@
  .cart-button { width:40px; height:40px; }
  .cake-item h3 { min-height:0; }
 }
-@media(max-width:560px) { .cake-grid { grid-template-columns:1fr; } .cake-image { aspect-ratio:4/3; } .cake-item h3 { font-size:21px; } .cake-description { font-size:13px; } }
+/* Celular: 2 bolos por linha, para o cardápio não virar uma rolagem sem fim. */
+@media(max-width:560px) {
+ .cake-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:26px 12px; }
+ .cake-item h3 { font-size:16px; line-height:1.25; }
+ .cake-description { font-size:11.5px; line-height:1.5; margin-bottom:8px; }
+ .cake-price { font-size:11px; margin-bottom:10px; }
+ .cake-price strong { font-size:13px; }
+ .add-button { height:40px; gap:6px; font-size:12px; }
+ .add-button svg { width:15px; height:15px; }
+}
 
 /* Gaveta do carrinho */
 .sheet-overlay { background:oklch(0.301 0.064 43 / 38%); backdrop-filter:blur(3px); }
@@ -844,3 +853,36 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .admin-login-help { text-align:left; font-size:12.5px; line-height:1.55; color:var(--muted-foreground); }
 .admin-login-help summary { cursor:pointer; font-weight:600; color:var(--foreground); text-align:center; }
 .admin-login-help ol { margin:8px 0 4px; padding-left:20px; display:grid; gap:4px; }
+
+/* Painel: pedidos com status, pagamento e bloqueio por falta de estoque */
+.admin-order-filters { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 14px; }
+.admin-filter { display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:0 12px; border:1px solid var(--border); border-radius:999px; background:transparent; font:inherit; font-size:12.5px; color:var(--foreground); cursor:pointer; }
+.admin-filter[aria-pressed=true] { background:var(--foreground); border-color:var(--foreground); color:var(--background); }
+.admin-filter span { min-width:20px; padding:0 6px; border-radius:999px; background:var(--secondary); color:var(--foreground); font-size:11px; font-weight:700; line-height:18px; text-align:center; }
+.admin-filter span.is-alert { background:oklch(0.86 0.11 82); }
+.admin-order-badges { display:flex; flex-wrap:wrap; gap:6px; }
+.admin-status { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:700; background:var(--secondary); color:var(--foreground); }
+.admin-status svg { width:13px; height:13px; }
+.admin-status.is-pendente { background:oklch(0.93 0.09 85); color:oklch(0.38 0.09 65); }
+.admin-status.is-aguardando_pagamento { background:oklch(0.94 0.04 250); color:oklch(0.38 0.1 255); }
+.admin-status.is-em_preparo { background:oklch(0.94 0.05 30); color:var(--rose-ink); }
+.admin-status.is-saiu_para_entrega { background:oklch(0.94 0.05 200); color:oklch(0.38 0.08 210); }
+.admin-status.is-entregue { background:oklch(0.95 0.05 150); color:#0b4f2c; }
+.admin-status.is-cancelado { background:oklch(0.93 0 0); color:oklch(0.45 0 0); text-decoration:line-through; }
+.admin-order-tag.is-paid { background:oklch(0.95 0.05 150); color:#0b4f2c; }
+.admin-order.is-pendente { border-color:oklch(0.86 0.11 82); box-shadow:0 0 0 1px oklch(0.86 0.11 82 / 50%); }
+.admin-order.is-cancelado, .admin-order.is-entregue { opacity:.75; }
+.admin-order-blocked { display:grid; gap:6px; padding:10px 12px; border-radius:12px; background:oklch(0.97 0.04 85); border:1px solid oklch(0.86 0.11 82 / 60%); font-size:12.5px; line-height:1.45; }
+.admin-order-blocked ul { margin:0; padding-left:18px; }
+.admin-order-blocked .admin-muted { font-size:12px; line-height:1.4; }
+.admin-order-actions { display:grid; grid-template-columns:1fr; gap:6px; margin-top:4px; }
+.admin-order-actions label { font-size:11.5px; font-weight:600; color:var(--muted-foreground); }
+.admin-order-actions select { min-height:40px; padding:0 10px; border:1px solid var(--border); border-radius:10px; background:var(--card); font:inherit; font-size:13.5px; color:var(--foreground); }
+.admin-order-btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; padding:0 14px; border:1px solid var(--foreground); border-radius:999px; background:transparent; font:inherit; font-size:13px; font-weight:600; color:var(--foreground); cursor:pointer; }
+.admin-order-btn.is-primary { background:var(--foreground); color:var(--background); }
+.admin-order-btn:disabled { opacity:.45; cursor:not-allowed; }
+.admin-order-btn svg { width:15px; height:15px; }
+.admin-order-history { font-size:12px; color:var(--muted-foreground); }
+.admin-order-history summary { cursor:pointer; font-weight:600; }
+.admin-order-history ol { margin:6px 0 0; padding-left:16px; display:grid; gap:3px; }
+.admin-defaults { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin:0 0 14px; padding:12px 14px; border-radius:14px; background:oklch(0.97 0.04 85); border:1px solid oklch(0.86 0.11 82 / 60%); font-size:13px; line-height:1.5; }

@@ -51,6 +51,8 @@ export interface ReadyCartItem extends CartItemBase {
 export interface CustomCartItem extends CartItemBase {
   type: 'custom'
   customConfig: CustomCakeConfig
+  /** Ids das camadas (o servidor recalcula o preço por eles). */
+  layerIds: Record<keyof CustomCakeConfig, string>
   /** Camadas de baixo para cima (foto, ilustração provisória e encaixe) — para a miniatura. */
   layers: LayerVisual[]
 }

@@ -100,21 +100,28 @@ Cinco senhas erradas seguidas bloqueiam o acesso por 5 minutos.
 
 ## Pedidos no painel
 
-O painel `/admin` mostra os últimos 50 pedidos lendo do n8n **pelo servidor** (só com login).
-No n8n:
+Cada pedido finalizado no site é **registrado no banco do próprio site** (o mesmo do cardápio:
+Upstash Redis na Vercel, ou `.data/orders.json` no computador) antes de abrir o WhatsApp. O servidor
+recalcula os preços pelo catálogo e confere o estoque:
 
-1. **Guardar cada pedido** — no fluxo do webhook `pedido-recebido`, adicione um nó *Google Sheets →
-   Append row* (ou uma *Data Table* do n8n) com, no mínimo, a coluna `payload` =
-   `{{ JSON.stringify($json.body) }}`. Colunas extras (nº, data, nome, total) são opcionais.
-2. **Webhook de leitura** — crie outro fluxo: *Webhook* (método **GET**, caminho `pedidos`,
-   autenticação **Header Auth** com o nome `x-ondina-key` e uma chave longa) → *Google Sheets → Get
-   rows* → *Respond to Webhook* (*All Incoming Items*).
-3. **No servidor do site** (Vercel → *Environment Variables*):
-   - `N8N_ORDERS_URL` = `https://n8n.ondinabolos.com/webhook/pedidos`
-   - `N8N_ORDERS_KEY` = a mesma chave do Header Auth
+| Situação ao finalizar | Status do pedido | Estoque |
+| --- | --- | --- |
+| Tudo em estoque (ou bolo sem controle / montado) | **Aguardando pagamento** | baixa na hora |
+| Faltou algum bolo | **PENDENTE (Falta de estoque)** | não mexe |
 
-O painel aceita uma lista com o JSON do pedido direto ou com a coluna `payload` em texto; linhas em
-outro formato são ignoradas (e o painel avisa quantas).
+No `/admin`, em **Pedidos do site**, a equipe vê cliente, endereço com CEP, itens e total, e muda o
+**status da entrega**: Aguardando pagamento → Pago / Em preparo → Saiu para entrega (ou Pronto para
+retirada) → Entregue, ou Cancelado (devolve o estoque reservado). **Confirmar pagamento** marca como
+pago e manda para o preparo. Pix só vai para o preparo depois de pago; dinheiro e cartão são pagos
+na entrega/retirada.
+
+Pedido **PENDENTE** fica bloqueado: o servidor recusa qualquer avanço (seletor ou pagamento). Ele
+só sai dali com **Verificar estoque**, depois de a equipe dar entrada no estoque — aí o estoque é
+reservado e o pedido vai para Aguardando pagamento.
+
+Se o registro falhar (banco fora do ar), o cliente segue normalmente pelo WhatsApp e pelo n8n — o
+pedido nunca se perde. O webhook do n8n (`VITE_N8N_WEBHOOK_URL`) continua recebendo cada pedido,
+com o mesmo número **OB-…** do painel.
 
 ## Frete
 

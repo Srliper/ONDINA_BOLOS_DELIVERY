@@ -47,7 +47,8 @@ const LESSONS: Lesson[] = [
     ],
     tip: (
       <>
-        O estoque <strong>não baixa sozinho</strong>: quando confirmar uma venda no WhatsApp, diminua no painel.
+        O estoque <strong>baixa sozinho</strong> quando um pedido do site é feito com tudo disponível, e volta se o
+        pedido for cancelado. Vendas feitas fora do site (balcão, telefone) você diminui aqui.
       </>
     ),
   },
@@ -61,15 +62,21 @@ const LESSONS: Lesson[] = [
         deixar o pedido.
       </>,
       <>
-        Nesse caso o site <strong>pula a etapa de pagamento</strong>: o pedido chega no WhatsApp com{' '}
-        <strong>⏳ PEDIDO PENDENTE</strong> e forma de pagamento “A combinar”.
+        Ao finalizar, o site confere o estoque. Se faltar algum bolo (ou o cliente pedir mais do que há, ex.: 3 kg com 2
+        kg em estoque), o pedido é criado como <strong>PENDENTE (Falta de estoque)</strong> e chega no WhatsApp com{' '}
+        <strong>⏳ PEDIDO PENDENTE</strong>. Nada é cobrado.
       </>,
       <>
-        O mesmo vale quando o cliente pede mais do que há em estoque (ex.: pede 3 kg e há 2 kg).
+        Pedido pendente fica <strong>travado</strong>: não dá para mandar para preparo, entrega nem confirmar o
+        pagamento, nem pelo seletor de status.
       </>,
-      <>Responda na conversa confirmando se dá para fazer e combine o pagamento por lá.</>,
+      <>
+        Para liberar: dê entrada no estoque em <strong>Cardápio do site → Bolos</strong> e, no pedido, toque em{' '}
+        <strong>Verificar estoque</strong>. Com estoque suficiente, ele é reservado e o pedido passa para{' '}
+        <strong>Aguardando pagamento</strong>.
+      </>,
     ],
-    tip: <>Em “Últimos pedidos do site”, os pedidos pendentes aparecem com a etiqueta Pendente.</>,
+    tip: <>Se não for possível fazer o bolo, mude o status para Cancelado e avise o cliente na conversa.</>,
   },
   {
     id: 'precos',
@@ -108,7 +115,13 @@ const LESSONS: Lesson[] = [
         Toque em <strong>Salvar</strong>. O bolo já aparece no cardápio do site.
       </>,
     ],
-    tip: <>Para trocar a foto de um bolo que já existe: lápis → Enviar foto → Salvar.</>,
+    tip: (
+      <>
+        Para trocar a foto de um bolo que já existe: lápis → Enviar foto → Salvar. Se aparecer o aviso de{' '}
+        <strong>bolos novos do cardápio padrão</strong>, toque em <strong>Adicionar ao cardápio</strong> para eles
+        entrarem no site.
+      </>
+    ),
   },
   {
     id: 'monte',
@@ -133,9 +146,20 @@ const LESSONS: Lesson[] = [
         <strong>Abrir conversas (WhatsApp Web)</strong> no computador.
       </>,
       <>
-        Em <strong>Últimos pedidos do site</strong>, toque em <strong>Atualizar</strong> para ver os mais recentes.
+        Em <strong>Pedidos do site</strong> ficam todos os pedidos, com cliente, endereço (com CEP), itens e total. Use os
+        filtros (Em aberto, Pendentes, Aguardando pagamento…) e <strong>Atualizar</strong> para ver os novos.
+      </>,
+      <>
+        Quando o pagamento cair (ex.: Pix), toque em <strong>Confirmar pagamento</strong>: o pedido vai para{' '}
+        <strong>Pago / Em preparo</strong>. Pix precisa disso antes do preparo; dinheiro e cartão são pagos na entrega
+        ou retirada.
+      </>,
+      <>
+        Depois, mude o <strong>Status da entrega</strong>: Saiu para entrega (ou Pronto para retirada) e Entregue. Cada
+        mudança fica no <strong>Histórico</strong> do pedido, com quem fez.
       </>,
     ],
+    tip: <>Cancelar um pedido devolve ao estoque o que ele tinha reservado.</>,
   },
 ]
 

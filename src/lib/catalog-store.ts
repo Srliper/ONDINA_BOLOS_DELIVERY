@@ -93,6 +93,15 @@ export function getImageStorage(id: string): CatalogStorage {
   return fileStorage(`${catalogFile().replace(/[^/\\]+$/, '')}images/${id}.json`)
 }
 
+/** Pedidos do site: um documento JSON no mesmo banco (ou .data/orders.json ao lado do catálogo). */
+export function getOrdersStorage(): CatalogStorage {
+  const url = env('KV_REST_API_URL') ?? env('UPSTASH_REDIS_REST_URL')
+  const token = env('KV_REST_API_TOKEN') ?? env('UPSTASH_REDIS_REST_TOKEN')
+  if (url && token) return upstashStorage(url, token, fetch, 'ondina:orders')
+  if (env('VERCEL')) return noStorage
+  return fileStorage(`${catalogFile().replace(/[^/\\]+$/, '')}orders.json`)
+}
+
 /** Lê o catálogo guardado; sem nada guardado (ou guardado com defeito), usa o padrão. */
 export async function loadCatalog(storage = getCatalogStorage()): Promise<Catalog> {
   let raw: string | null = null
