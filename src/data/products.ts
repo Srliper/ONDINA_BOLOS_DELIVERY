@@ -22,6 +22,9 @@ import abacaxi from '@/assets/abacaxi.jpg'
 import maca from '@/assets/maca.jpg'
 import ninhoDanete from '@/assets/ninho_danete.jpg'
 import mousseLimao from '@/assets/mousse_limao.jpg'
+import cenoura from '@/assets/cenoura.jpg'
+import chocolate from '@/assets/chocolate.jpg'
+import maracuja from '@/assets/maracuja.jpg'
 
 /** Preços oficiais do cardápio da Ondina. */
 const PARTY_PRICE_PER_KG = 60
@@ -173,6 +176,13 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     isFeatured: false,
   }),
   party({
+    id: 'maracuja',
+    name: 'Maracujá',
+    description: 'Massa branca, brigadeiro branco com calda de maracujá e cobertura de chantilly com raspas de chocolate branco e geleia de maracujá.',
+    image: maracuja,
+    isFeatured: false,
+  }),
+  party({
     id: 'chocolate-morangos',
     name: 'Chocolate com morangos',
     description: 'Massa de chocolate com cobertura de raspas de chocolate ao leite, granulado e morangos frescos. Recheio combinado pelo WhatsApp.',
@@ -198,6 +208,20 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     name: 'Limão',
     description: 'Com cobertura de mousse de limão e raspas de limão.',
     image: limao,
+    isFeatured: false,
+  }),
+  coffee({
+    id: 'cenoura',
+    name: 'Cenoura com chocolate',
+    description: 'Bolo de cenoura com cobertura de chocolate.',
+    image: cenoura,
+    isFeatured: false,
+  }),
+  coffee({
+    id: 'chocolate',
+    name: 'Chocolate',
+    description: 'Bolo de chocolate com cobertura de chocolate e granulado.',
+    image: chocolate,
     isFeatured: false,
   }),
   coffee({
