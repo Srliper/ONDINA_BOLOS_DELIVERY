@@ -1,6 +1,6 @@
 import type { LayerVisual } from '@/lib/layer-photo'
 
-export type ProductCategory = 'festas' | 'cafes'
+export type ProductCategory = 'festas' | 'cafes' | 'sobremesas'
 
 export interface Product {
   /** Slug estável — usado como chave no carrinho e no localStorage. */

@@ -134,7 +134,8 @@ function CartLine({ item, index }: { item: CartItem; index: number }) {
   const { id, name, price, quantity } = item
   const { increment, decrement, remove } = useCart()
   const isCustom = item.type === 'custom'
-  const step = item.type === 'ready' && item.product.unit === 'kg' ? 'quilo' : 'bolo'
+  const step =
+    item.type !== 'ready' ? 'bolo' : item.product.unit === 'kg' ? 'quilo' : item.product.category === 'sobremesas' ? 'unidade' : 'bolo'
   const quantityLabel =
     item.type === 'ready' ? formatQuantity(item.product, quantity) : `${quantity} ${quantity === 1 ? 'bolo' : 'bolos'}`
 
