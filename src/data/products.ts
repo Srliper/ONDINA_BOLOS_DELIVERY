@@ -19,6 +19,9 @@ import limao from '@/assets/limao.jpg'
 import paveKinderBueno from '@/assets/pave_kinder_bueno.jpg'
 import beijinhoDoceLeite from '@/assets/beijinho_doce_leite.jpg'
 import abacaxi from '@/assets/abacaxi.jpg'
+import maca from '@/assets/maca.jpg'
+import ninhoDanete from '@/assets/ninho_danete.jpg'
+import mousseLimao from '@/assets/mousse_limao.jpg'
 
 /** Preços oficiais do cardápio da Ondina. */
 const PARTY_PRICE_PER_KG = 60
@@ -67,7 +70,7 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
   party({
     id: 'ninho-nutella',
     name: 'Ninho com Nutella',
-    description: 'Recheio de leite Ninho com Nutella. Tamanho e decoração combinados pelo WhatsApp.',
+    description: 'Recheio de leite Ninho com Nutella, cobertura com raspas de chocolate branco, fios de Nutella e morangos.',
     image: ninhoNutella,
     isFeatured: true,
   }),
@@ -156,6 +159,20 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     isFeatured: false,
   }),
   party({
+    id: 'ninho-danete',
+    name: 'Ninho com Danete',
+    description: 'Recheio de Ninho com Danete, cobertura com raspas de chocolate branco, fios de chocolate e morangos.',
+    image: ninhoDanete,
+    isFeatured: false,
+  }),
+  party({
+    id: 'mousse-de-limao',
+    name: 'Mousse de limão',
+    description: 'Massa branca, mousse de limão e cobertura de mousse de limão com raspas de chocolate branco e rodelas de limão.',
+    image: mousseLimao,
+    isFeatured: false,
+  }),
+  party({
     id: 'chocolate-morangos',
     name: 'Chocolate com morangos',
     description: 'Massa de chocolate com cobertura de raspas de chocolate ao leite, granulado e morangos frescos. Recheio combinado pelo WhatsApp.',
@@ -181,6 +198,13 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     name: 'Limão',
     description: 'Com cobertura de mousse de limão e raspas de limão.',
     image: limao,
+    isFeatured: false,
+  }),
+  coffee({
+    id: 'maca',
+    name: 'Maçã',
+    description: 'Com pedaços de maçã na massa e açúcar de confeiteiro com canela por cima.',
+    image: maca,
     isFeatured: false,
   }),
   coffee(
