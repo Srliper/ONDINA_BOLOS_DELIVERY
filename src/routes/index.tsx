@@ -28,6 +28,7 @@ const filters: { id: Filter; label: string }[] = [
   { id: 'todos', label: 'Todos os bolos' },
   { id: 'festas', label: CATEGORY_LABEL.festas },
   { id: 'cafes', label: CATEGORY_LABEL.cafes },
+  { id: 'sobremesas', label: CATEGORY_LABEL.sobremesas },
 ]
 const heroProduct = getProductById('naked-cake')!
 
@@ -163,8 +164,8 @@ function HeroSeal() {
 function Catalog() {
   const [category, setCategory] = useState<Filter>('todos')
   const visible = products.filter(product => category === 'todos' || product.category === category)
-  const showParty = category !== 'cafes'
-  const showCoffee = category !== 'festas'
+  const showParty = category === 'todos' || category === 'festas'
+  const showCoffee = category === 'todos' || category === 'cafes'
 
   return (
     <section className="bakery-container catalog" id="bolos" aria-labelledby="catalog-title" tabIndex={-1}>

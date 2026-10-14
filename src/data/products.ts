@@ -11,17 +11,22 @@ import amendoimDoceLeite from '@/assets/amendoim_doce_leite.jpg'
 import oreo from '@/assets/oreo.jpg'
 import doceDeLeite from '@/assets/doce_de_leite.jpg'
 import doceLeiteNozes from '@/assets/doce_leite_nozes.jpg'
-import chocoleite from '@/assets/chocoleite.jpg'
 import choconinho from '@/assets/choconinho.jpg'
 import tortaNinhoDanette from '@/assets/torta_ninho_danette.jpg'
+import ninhoGanache from '@/assets/ninho_ganache.jpg'
+import laranja from '@/assets/laranja.jpg'
+import limao from '@/assets/limao.jpg'
+import paveKinderBueno from '@/assets/pave_kinder_bueno.jpg'
 
 /** Preços oficiais do cardápio da Ondina. */
 const PARTY_PRICE_PER_KG = 60
 const COFFEE_CAKE_PRICE = 25
+const SIMPLE_COFFEE_CAKE_PRICE = 20
 
 export const CATEGORY_LABEL: Record<ProductCategory, string> = {
   festas: 'Bolos para festas',
   cafes: 'Bolos para café',
+  sobremesas: 'Doces e sobremesas',
 }
 
 const party = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category' | 'stock'>): Product => ({
@@ -33,9 +38,12 @@ const party = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category' | 's
   stock: null,
 })
 
-const coffee = (p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category' | 'stock'>): Product => ({
+const coffee = (
+  p: Omit<Product, 'price' | 'priceUnit' | 'unit' | 'category' | 'stock'>,
+  price = COFFEE_CAKE_PRICE,
+): Product => ({
   ...p,
-  price: COFFEE_CAKE_PRICE,
+  price,
   priceUnit: 'até 13 fatias',
   unit: 'un',
   category: 'cafes',
@@ -104,10 +112,10 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     isFeatured: false,
   }),
   party({
-    id: 'chocoleite',
-    name: 'Chocoleite',
-    description: 'Massa de chocolate, recheio de doce de leite e cobertura de brigadeiro com raspas de chocolate ao leite, fios de chocolate branco e morangos.',
-    image: chocoleite,
+    id: 'ninho-ganache',
+    name: 'Ninho com ganache de chocolate',
+    description: 'Recheio de Ninho, cobertura com raspas de chocolate branco, fios de ganache de chocolate e morangos.',
+    image: ninhoGanache,
     isFeatured: false,
   }),
   party({
@@ -152,6 +160,35 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     image: amendoimDoceLeite,
     isFeatured: false,
   }),
+  coffee({
+    id: 'limao',
+    name: 'Limão',
+    description: 'Com cobertura de mousse de limão e raspas de limão.',
+    image: limao,
+    isFeatured: false,
+  }),
+  coffee(
+    {
+      id: 'laranja',
+      name: 'Laranja',
+      description: 'Bolo simples de laranja com açúcar de confeiteiro por cima.',
+      image: laranja,
+      isFeatured: false,
+    },
+    SIMPLE_COFFEE_CAKE_PRICE,
+  ),
+  {
+    id: 'pave-kinder-bueno',
+    name: 'Pavê de Kinder Bueno',
+    description: 'Camadas de creme e chocolate, cobertura com raspas de chocolate branco, fios de chocolate e Kinder Bueno.',
+    price: 40,
+    priceUnit: 'pote de 500 g',
+    unit: 'un',
+    image: paveKinderBueno,
+    category: 'sobremesas',
+    isFeatured: false,
+    stock: null,
+  },
 ]
 
 const defaultImages = new Map(DEFAULT_PRODUCTS.map(product => [product.id, product.image]))
@@ -173,6 +210,9 @@ export function applyProducts(next: readonly Product[]): void {
 
 export const getProductById = (id: string): Product | undefined => productsById.get(id)
 
-/** "2 kg" para bolos de festa, "2 bolos" para bolos de café. */
-export const formatQuantity = (product: Product, quantity: number): string =>
-  product.unit === 'kg' ? `${quantity} kg` : `${quantity} ${quantity === 1 ? 'bolo' : 'bolos'}`
+/** "2 kg" para bolos de festa, "2 bolos" para bolos de café, "2 unidades" para doces. */
+export const formatQuantity = (product: Product, quantity: number): string => {
+  if (product.unit === 'kg') return `${quantity} kg`
+  const [one, many] = product.category === 'sobremesas' ? ['unidade', 'unidades'] : ['bolo', 'bolos']
+  return `${quantity} ${quantity === 1 ? one : many}`
+}
