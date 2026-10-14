@@ -8,6 +8,12 @@ import beijinhoAbacaxi from '@/assets/beijinho_abacaxi.jpg'
 import chocolateMorangos from '@/assets/chocolate_morangos.jpg'
 import fubaGoiabada from '@/assets/fuba_goiabada.jpg'
 import amendoimDoceLeite from '@/assets/amendoim_doce_leite.jpg'
+import oreo from '@/assets/oreo.jpg'
+import doceDeLeite from '@/assets/doce_de_leite.jpg'
+import doceLeiteNozes from '@/assets/doce_leite_nozes.jpg'
+import chocoleite from '@/assets/chocoleite.jpg'
+import choconinho from '@/assets/choconinho.jpg'
+import tortaNinhoDanette from '@/assets/torta_ninho_danette.jpg'
 
 /** Preços oficiais do cardápio da Ondina. */
 const PARTY_PRICE_PER_KG = 60
@@ -63,6 +69,48 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     isFeatured: true,
   }),
   party({
+    id: 'oreo',
+    name: 'Oreo',
+    description: 'Massa de chocolate, brigadeiro branco com pedaços de Oreo e cobertura com raspas de chocolate ao leite e branco, Oreo e morangos.',
+    image: oreo,
+    isFeatured: true,
+  }),
+  party({
+    id: 'doce-de-leite-nozes',
+    name: 'Doce de leite com nozes',
+    description: 'Massa branca, doce de leite com pedaços de nozes e cobertura de chantilly com raspas de chocolate branco, nozes e morangos.',
+    image: doceLeiteNozes,
+    isFeatured: false,
+  }),
+  party({
+    id: 'torta-ninho-danette',
+    name: 'Torta de Ninho com Danette',
+    description: 'Base de chocolate com Danette, creme de Ninho e cobertura de chantilly com morangos.',
+    image: tortaNinhoDanette,
+    isFeatured: false,
+  }),
+  party({
+    id: 'doce-de-leite',
+    name: 'Doce de leite',
+    description: 'Massa branca, recheio de doce de leite e cobertura de chantilly com raspas de chocolate branco, fios de doce de leite e morangos.',
+    image: doceDeLeite,
+    isFeatured: false,
+  }),
+  party({
+    id: 'choconinho',
+    name: 'Choconinho',
+    description: 'Massa de chocolate, recheio de ninho e cobertura de brigadeiro com raspas de chocolate ao leite, chocolate branco e morangos.',
+    image: choconinho,
+    isFeatured: false,
+  }),
+  party({
+    id: 'chocoleite',
+    name: 'Chocoleite',
+    description: 'Massa de chocolate, recheio de doce de leite e cobertura de brigadeiro com raspas de chocolate ao leite, fios de chocolate branco e morangos.',
+    image: chocoleite,
+    isFeatured: false,
+  }),
+  party({
     id: 'ninho-morango',
     name: 'Ninho com morango',
     description: 'Massa branca, mousse de ninho com morango e cobertura de mousse de ninho com raspas de chocolate branco e morangos.',
@@ -86,7 +134,7 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
   party({
     id: 'chocolate-morangos',
     name: 'Chocolate com morangos',
-    description: 'Bolo de chocolate finalizado com morangos frescos. Recheio e tamanho combinados pelo WhatsApp.',
+    description: 'Massa de chocolate com cobertura de raspas de chocolate ao leite, granulado e morangos frescos. Recheio combinado pelo WhatsApp.',
     image: chocolateMorangos,
     isFeatured: false,
   }),
