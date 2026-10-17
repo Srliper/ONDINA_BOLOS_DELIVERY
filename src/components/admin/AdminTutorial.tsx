@@ -34,7 +34,7 @@ const LESSONS: Lesson[] = [
         <strong>+</strong>. Cada toque já salva no site.
       </>,
       <>
-        Bolos de festa contam em <strong>kg</strong>; bolos de café, em <strong>bolos</strong> (unidades).
+        Bolos de festa contam em <strong>kg</strong>; bolos de café, em <strong>bolos</strong>; doces e sobremesas, em <strong>unidades</strong>.
       </>,
       <>
         Para digitar um número de uma vez, toque no lápis (<strong>Editar</strong>), preencha <strong>Estoque</strong>{' '}
@@ -141,7 +141,7 @@ const LESSONS: Lesson[] = [
         Na aba <strong>Bolos</strong>, toque em <strong>Adicionar bolo</strong>.
       </>,
       <>
-        Preencha <strong>Nome</strong>, <strong>Preço</strong>, <strong>Categoria</strong> (festa ou café),{' '}
+        Preencha <strong>Nome</strong>, <strong>Preço</strong>, <strong>Categoria</strong> (festa, café ou doces e sobremesas),{' '}
         <strong>Como é cobrado</strong> (ex.: “o quilo”) e, se quiser, o <strong>Estoque</strong>.
       </>,
       <>

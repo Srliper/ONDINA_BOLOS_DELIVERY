@@ -7,6 +7,7 @@ import { CartDrawer } from '@/components/CartDrawer'
 import { CustomCakeBanner } from '@/components/CustomCakeBanner'
 import { Header } from '@/components/Header'
 import { ProductCard } from '@/components/ProductCard'
+import { ScrollIntro } from '@/components/ScrollIntro'
 import { TeamSection } from '@/components/TeamSection'
 import { WhatsAppWidget } from '@/components/WhatsAppWidget'
 import aboutPhoto from '@/assets/three_cakes.jpg'
@@ -28,6 +29,7 @@ const filters: { id: Filter; label: string }[] = [
   { id: 'todos', label: 'Todos os bolos' },
   { id: 'festas', label: CATEGORY_LABEL.festas },
   { id: 'cafes', label: CATEGORY_LABEL.cafes },
+  { id: 'sobremesas', label: CATEGORY_LABEL.sobremesas },
 ]
 const heroProduct = getProductById('naked-cake')!
 
@@ -62,6 +64,8 @@ function Index() {
       <a className="skip-link" href="#bolos">
         Pular para o cardápio
       </a>
+      {/* A intro vem antes do menu: ocupa a tela inteira e o menu só aparece depois dela */}
+      <ScrollIntro />
       <Header />
       <main>
         <Hero />
@@ -163,8 +167,8 @@ function HeroSeal() {
 function Catalog() {
   const [category, setCategory] = useState<Filter>('todos')
   const visible = products.filter(product => category === 'todos' || product.category === category)
-  const showParty = category !== 'cafes'
-  const showCoffee = category !== 'festas'
+  const showParty = category === 'todos' || category === 'festas'
+  const showCoffee = category === 'todos' || category === 'cafes'
 
   return (
     <section className="bakery-container catalog" id="bolos" aria-labelledby="catalog-title" tabIndex={-1}>
