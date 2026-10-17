@@ -44,7 +44,7 @@ const common = {
 
 export const productSchema = z.object({
   ...common,
-  category: z.enum(['festas', 'cafes']),
+  category: z.enum(['festas', 'cafes', 'sobremesas']),
   price_unit: z.string().trim().min(1, 'Informe como o preço é cobrado.').max(40),
   unit: z.enum(['kg', 'un']),
   featured: z.boolean(),

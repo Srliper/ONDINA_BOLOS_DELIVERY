@@ -365,6 +365,7 @@ function ItemForm({
               <select id={`${formId}-category`} value={form.category} onChange={e => set('category')(e.target.value)}>
                 <option value="festas">{CATEGORY_LABEL.festas}</option>
                 <option value="cafes">{CATEGORY_LABEL.cafes}</option>
+                <option value="sobremesas">{CATEGORY_LABEL.sobremesas}</option>
               </select>,
             )}
             {field('price_unit', 'Como é cobrado', text('price_unit', { placeholder: 'o quilo, até 13 fatias…' }))}
@@ -477,7 +478,12 @@ function StockControl({
   busy: boolean
   onChange: (delta: number) => void
 }) {
-  const unit = product.unit === 'kg' ? 'kg' : product.stock === 1 ? 'bolo' : 'bolos'
+  const unit =
+    product.unit === 'kg'
+      ? 'kg'
+      : product.category === 'sobremesas'
+        ? product.stock === 1 ? 'unidade' : 'unidades'
+        : product.stock === 1 ? 'bolo' : 'bolos'
   const label =
     product.stock === null ? 'Sem controle' : product.stock === 0 ? 'Esgotado' : `${product.stock} ${unit}`
   return (
