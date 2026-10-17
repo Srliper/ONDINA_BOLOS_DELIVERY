@@ -749,7 +749,7 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .admin-muted code { font-size:12px; padding:1px 5px; border-radius:6px; background:var(--secondary); }
 .admin-order-list { list-style:none; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px; }
 .admin-order { display:flex; flex-direction:column; gap:6px; padding:14px; border:1px solid var(--border); border-radius:16px; background:var(--background); }
-.admin-order-top { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted-foreground); }
+.admin-order-top { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 8px; font-size:12px; color:var(--muted-foreground); }
 .admin-order-id { font-weight:700; color:var(--rose-ink); letter-spacing:.02em; }
 .admin-order-customer { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14.5px; }
 .admin-order-tag { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; background:var(--secondary); font-size:11px; font-weight:600; color:var(--foreground); }
@@ -844,6 +844,18 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .admin-login-help { text-align:left; font-size:12.5px; line-height:1.55; color:var(--muted-foreground); }
 .admin-login-help summary { cursor:pointer; font-weight:600; color:var(--foreground); text-align:center; }
 .admin-login-help ol { margin:8px 0 4px; padding-left:20px; display:grid; gap:4px; }
+
+/* ---------- Confirmar pedido e aviso de esgotado ---------- */
+.admin-order.is-confirmed { border-color:oklch(0.8 0.08 150); }
+.admin-order-tag.is-confirmed { background:oklch(0.95 0.05 150); color:#0b4f2c; margin-right:auto; }
+.admin-order-confirmed { font-size:12px; line-height:1.5; color:#0b4f2c; }
+.admin-order-confirm { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:42px; margin-top:4px; border:0; border-radius:999px; background:var(--foreground); color:var(--background); font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+.admin-order-confirm:disabled { opacity:.7; cursor:progress; }
+.admin-order-confirm svg, .admin-order-undo svg { width:15px; height:15px; }
+.admin-order-undo { display:inline-flex; align-items:center; gap:5px; align-self:flex-start; padding:4px 0; border:0; background:transparent; font:inherit; font-size:12px; color:var(--muted-foreground); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.admin-soldout { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0; padding:10px 12px; border-radius:12px; background:oklch(0.96 0.03 18); border:1px solid oklch(0.85 0.06 18); font-size:12.5px; line-height:1.5; }
+.admin-soldout>svg { flex:none; width:17px; height:17px; color:var(--rose-ink); }
+.admin-soldout p { flex:1; min-width:200px; }
 
 /* Intro do topo: sequência de frames presa na tela durante a rolagem (src/components/ScrollIntro.tsx).
    "Pular" fica à esquerda porque o WhatsApp flutuante ocupa o canto direito. */

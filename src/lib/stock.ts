@@ -1,4 +1,6 @@
 import { formatQuantity } from '@/data/products'
+import type { Catalog } from '@/lib/catalog'
+import type { StockChange } from '@/lib/orders'
 import type { CartItem, Product, ReadyCartItem } from '@/types/product'
 
 /**
@@ -33,4 +35,55 @@ export function shortageText(item: ReadyCartItem): string {
   return stock <= 0
     ? 'Sem estoque: vai como pedido pendente.'
     : `Só ${formatQuantity(item.product, stock)} em estoque: vai como pedido pendente.`
+}
+
+/* ---------- Baixa de estoque ao confirmar um pedido no painel ---------- */
+
+const withProducts = (catalog: Catalog, products: Catalog['products'], now: Date): Catalog => ({
+  ...catalog,
+  products,
+  version: catalog.version + 1,
+  updated_at: now.toISOString(),
+})
+
+/**
+ * Tira do estoque o que o pedido levou (só bolos prontos com estoque marcado; nunca abaixo de 0).
+ * Devolve o catálogo novo, o que mudou e os bolos que acabaram de esgotar.
+ */
+export function takeFromStock(
+  catalog: Catalog,
+  items: readonly { productId?: string | undefined; quantity: number }[],
+  now = new Date(),
+): { catalog: Catalog; changes: StockChange[]; soldOut: { id: string; name: string }[] } {
+  const wanted = new Map<string, number>()
+  for (const item of items) {
+    if (item.productId) wanted.set(item.productId, (wanted.get(item.productId) ?? 0) + item.quantity)
+  }
+  const changes: StockChange[] = []
+  const products = catalog.products.map(product => {
+    const quantity = wanted.get(product.id)
+    if (!quantity || product.stock === null) return product
+    const to = Math.max(0, product.stock - quantity)
+    if (to === product.stock) return product
+    changes.push({ id: product.id, name: product.name, from: product.stock, to })
+    return { ...product, stock: to }
+  })
+  return {
+    catalog: changes.length ? withProducts(catalog, products, now) : catalog,
+    changes,
+    soldOut: changes.filter(change => change.to === 0).map(({ id, name }) => ({ id, name })),
+  }
+}
+
+/** Desfaz uma baixa: devolve ao estoque o que tinha saído (se o bolo ainda existir e tiver estoque marcado). */
+export function returnToStock(catalog: Catalog, changes: readonly StockChange[], now = new Date()): Catalog {
+  const back = new Map(changes.map(change => [change.id, change.from - change.to]))
+  let changed = false
+  const products = catalog.products.map(product => {
+    const amount = back.get(product.id)
+    if (!amount || product.stock === null) return product
+    changed = true
+    return { ...product, stock: Math.min(9999, product.stock + amount) }
+  })
+  return changed ? withProducts(catalog, products, now) : catalog
 }

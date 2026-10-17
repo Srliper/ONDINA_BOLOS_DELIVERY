@@ -17,3 +17,5 @@
 
 - Estoque: `stock` dos bolos (kg ou unidades; `null` = sem controle) em `src/lib/catalog.ts`; regras em `src/lib/stock.ts`. Faltou estoque → o checkout pula o pagamento (`payment: null`) e o pedido vai como PENDENTE no WhatsApp e no n8n (`status: "pendente"`).
 - Fotos enviadas pelo painel: `src/lib/image-api.ts` (`/api/images`, só JPEG/PNG/WebP conferidos pelos bytes) + `src/lib/image-resize.ts` no navegador. Tutorial do painel: `src/components/admin/AdminTutorial.tsx` — atualize-o quando mudar o painel.
+- Pedidos guardados pelo site: `src/lib/order-store.ts` (Upstash lista+hash ou `.data/orders.json`) e `src/lib/order-api.ts` (`/api/orders`: POST público com limites; lista, confirmar e desfazer só com sessão). Confirmar baixa o estoque com `takeFromStock` (`src/lib/stock.ts`). Guardar o pedido nunca pode impedir o WhatsApp.
+- Esgotado: `src/lib/stock-alert.ts` (link `wa.me` para a loja + webhook opcional `N8N_STOCK_ALERT_URL`, erro silencioso).
