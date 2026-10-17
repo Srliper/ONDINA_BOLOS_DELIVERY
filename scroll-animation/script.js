@@ -1,15 +1,15 @@
 /*
- * Animação de rolagem com sequência de imagens (frame-0001.jpg … frame-0300.jpg).
+ * Animação de rolagem com sequência de imagens (frame-0001.jpg … frame-0240.jpg).
  * O palco fica preso na tela (position: sticky) e o frame acompanha a rolagem da seção.
  */
 (() => {
   'use strict'
 
   const CONFIG = {
-    frameCount: 300,
+    frameCount: 240,
     framePath: (n) => `frames/frame-${String(n).padStart(4, '0')}.jpg`,
     /** Frame mostrado parado quando o usuário pede movimento reduzido (bolo inteiro). */
-    staticFrame: 120,
+    staticFrame: 96,
     /** 0–1: quanto o frame exibido anda em direção ao alvo a cada quadro (menor = mais suave). */
     smoothing: 0.16,
     /** Downloads em paralelo. */
@@ -36,8 +36,8 @@
   const bctx = backdrop.getContext('2d', { alpha: false })
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
 
-  // Celular ou aparelho com pouca memória: usa um frame sim, outro não (150 imagens em vez de 300).
-  // Cada frame decodificado ocupa alguns MB; 300 deles podem derrubar o Safari do iPhone.
+  // Celular ou aparelho com pouca memória: usa um frame sim, outro não (120 imagens em vez de 240).
+  // Cada frame decodificado ocupa alguns MB; 240 deles podem derrubar o Safari do iPhone.
   const lowMemory =
     (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
     (navigator.connection && navigator.connection.saveData) ||

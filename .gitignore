@@ -36,6 +36,3 @@ dist-ssr
 
 # Banco local do catálogo (desenvolvimento)
 .data/
-
-# Sequência de frames da animação de rolagem (22 MB) — copie localmente, ver scroll-animation/README.md
-scroll-animation/frames/
