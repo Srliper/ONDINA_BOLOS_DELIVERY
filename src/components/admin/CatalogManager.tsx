@@ -110,8 +110,8 @@ export function CatalogManager() {
 
   const items = (lists?.[tab] ?? []) as AnyItem[]
 
-  // Bolos do cardápio padrão (código) que não estão no banco — ex.: sabores novos lançados depois
-  // de o cardápio ter sido salvo pelo painel. Cada um entra pela mesma API do botão "Adicionar".
+  // Bolos do cardápio padrão que não estão na lista: os novos entram sozinhos (withNewDefaults),
+  // então aqui sobram só os que a equipe excluiu. Voltam pela mesma API do botão "Adicionar".
   const missingDefaults = lists
     ? seedCatalog().products.filter(product => !lists.products.some(saved => saved.id === product.id))
     : []
@@ -124,7 +124,7 @@ export function CatalogManager() {
         await request(api('products'), { method: 'POST', body: JSON.stringify(product) })
         added++
       }
-      toast.success(`${added} bolo(s) adicionado(s) ao cardápio`)
+      toast.success(`${added} bolo(s) de volta ao cardápio`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Não foi possível adicionar os bolos.')
     } finally {
@@ -157,12 +157,12 @@ export function CatalogManager() {
       {tab === 'products' && missingDefaults.length > 0 && storage !== 'none' && (
         <div className="admin-defaults" role="status">
           <span>
-            <strong>{missingDefaults.length} bolo(s) novo(s)</strong> do cardápio padrão ainda não estão no site:{' '}
+            <strong>{missingDefaults.length} bolo(s) do cardápio padrão</strong> foram excluídos e não aparecem no site:{' '}
             {missingDefaults.map(product => product.name).join(', ')}.
           </span>
           <button type="button" className="admin-refresh" onClick={() => void importDefaults()} disabled={importing}>
             {importing ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <Plus aria-hidden="true" />}
-            Adicionar ao cardápio
+            Devolver ao cardápio
           </button>
         </div>
       )}

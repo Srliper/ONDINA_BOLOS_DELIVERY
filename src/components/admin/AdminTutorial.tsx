@@ -117,9 +117,9 @@ const LESSONS: Lesson[] = [
     ],
     tip: (
       <>
-        Para trocar a foto de um bolo que já existe: lápis → Enviar foto → Salvar. Se aparecer o aviso de{' '}
-        <strong>bolos novos do cardápio padrão</strong>, toque em <strong>Adicionar ao cardápio</strong> para eles
-        entrarem no site.
+        Para trocar a foto de um bolo que já existe: lápis → Enviar foto → Salvar. Bolos novos do cardápio padrão
+        entram no site sozinhos; se um bolo padrão for excluído e você quiser de volta, toque em{' '}
+        <strong>Devolver ao cardápio</strong> no aviso da aba Bolos.
       </>
     ),
   },

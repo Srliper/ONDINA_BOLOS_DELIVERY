@@ -1,4 +1,4 @@
-import { CatalogError, catalogSchema, seedCatalog, type Catalog } from '@/lib/catalog'
+import { CatalogError, catalogSchema, seedCatalog, withNewDefaults, type Catalog } from '@/lib/catalog'
 
 /**
  * Onde o catálogo fica guardado (só no servidor):
@@ -113,7 +113,7 @@ export async function loadCatalog(storage = getCatalogStorage()): Promise<Catalo
   if (!raw) return seedCatalog()
   try {
     const parsed = catalogSchema.safeParse(JSON.parse(raw))
-    if (parsed.success) return parsed.data
+    if (parsed.success) return withNewDefaults(parsed.data)
     console.error('[catálogo] dados guardados fora do formato; usando o cardápio padrão', parsed.error.issues[0])
   } catch (error) {
     console.error('[catálogo] JSON inválido no banco; usando o cardápio padrão', error)

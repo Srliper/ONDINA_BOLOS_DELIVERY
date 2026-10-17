@@ -14,6 +14,8 @@ export interface Product {
   /** Unidade da quantidade no carrinho: bolos de festa são pedidos por quilo. */
   unit: 'kg' | 'un'
   image: string
+  /** Outras fotos reais do mesmo bolo (ex.: outro tamanho), mostradas no cartão. */
+  gallery?: readonly string[]
   category: ProductCategory
   isFeatured: boolean
   /**

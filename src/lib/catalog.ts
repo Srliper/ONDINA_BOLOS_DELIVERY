@@ -6,7 +6,7 @@ import {
   LAYER_OFFSET_Y,
   LAYER_ORDER,
 } from '@/data/bolo-layers'
-import { applyProducts, DEFAULT_PRODUCTS, defaultProductImage } from '@/data/products'
+import { applyProducts, DEFAULT_PRODUCTS, defaultProductGallery, defaultProductImage } from '@/data/products'
 import type { BoloLayer } from '@/types/bolo-layers'
 import type { Product } from '@/types/product'
 
@@ -72,6 +72,8 @@ export const catalogSchema = z.object({
   products: z.array(productSchema),
   fillings: z.array(fillingSchema),
   layers: z.array(layerSchema),
+  /** Bolos do cardápio padrão que a equipe excluiu de propósito: não voltam sozinhos. */
+  removed_defaults: z.array(z.string()).default([]),
 })
 
 export type CatalogProduct = z.infer<typeof productSchema>
@@ -99,6 +101,7 @@ export function seedCatalog(): Catalog {
   return {
     version: 0,
     updated_at: new Date(0).toISOString(),
+    removed_defaults: [],
     products: DEFAULT_PRODUCTS.map(product => ({
       id: product.id,
       name: product.name,
@@ -142,18 +145,22 @@ export function seedCatalog(): Catalog {
 const FALLBACK_IMAGE = '/favicon.png'
 
 export function toProducts(catalog: Catalog): Product[] {
-  return catalog.products.map(item => ({
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    price: item.price,
-    priceUnit: item.price_unit,
-    unit: item.unit,
-    image: item.image_url || defaultProductImage(item.id) || FALLBACK_IMAGE,
-    category: item.category,
-    isFeatured: item.featured,
-    stock: item.stock,
-  }))
+  return catalog.products.map(item => {
+    const gallery = defaultProductGallery(item.id)
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      priceUnit: item.price_unit,
+      unit: item.unit,
+      image: item.image_url || defaultProductImage(item.id) || FALLBACK_IMAGE,
+      ...(gallery ? { gallery } : {}),
+      category: item.category,
+      isFeatured: item.featured,
+      stock: item.stock,
+    }
+  })
 }
 
 const defaultLayerImage = (id: string) => (hasDefaultLayerArt(id) ? `/layers/${id}.png` : FALLBACK_IMAGE)
@@ -251,7 +258,8 @@ export function createItem<E extends EntityName>(
     throw new CatalogError(400, 'Dados inválidos.', { image_url: 'Informe o endereço da imagem.' })
   }
   const list = [...(catalog[entity] as EntityItem<E>[]), item]
-  return { catalog: bump(catalog, { [entity]: list } as Partial<Catalog>, now), item }
+  const removed_defaults = catalog.removed_defaults.filter(removed => entity !== 'products' || removed !== item.id)
+  return { catalog: bump(catalog, { [entity]: list, removed_defaults } as Partial<Catalog>, now), item }
 }
 
 export function updateItem<E extends EntityName>(
@@ -286,5 +294,34 @@ export function deleteItem(catalog: Catalog, entity: EntityName, id: string, now
       throw new CatalogError(409, 'É preciso manter pelo menos uma opção nessa etapa do Monte seu Bolo.')
     }
   }
-  return bump(catalog, { [entity]: rest } as Partial<Catalog>, now)
+  // Bolo do cardápio padrão excluído fica anotado, para não voltar sozinho (veja withNewDefaults).
+  const removed_defaults =
+    entity === 'products' && isDefaultProduct(id) && !catalog.removed_defaults.includes(id)
+      ? [...catalog.removed_defaults, id]
+      : catalog.removed_defaults
+  return bump(catalog, { [entity]: rest, removed_defaults } as Partial<Catalog>, now)
+}
+
+const isDefaultProduct = (id: string) => DEFAULT_PRODUCTS.some(product => product.id === id)
+
+/**
+ * Junta ao catálogo salvo os bolos do cardápio padrão que ainda não estão nele (sabores lançados
+ * depois de o cardápio ter sido salvo pelo painel), cada um logo depois do seu vizinho no padrão.
+ * Bolos que a equipe excluiu (removed_defaults) não voltam. Sem duplicar: compara pelo id.
+ */
+export function withNewDefaults(catalog: Catalog): Catalog {
+  const saved = new Set(catalog.products.map(product => product.id))
+  const removed = new Set(catalog.removed_defaults)
+  const missing = seedCatalog().products.filter(product => !saved.has(product.id) && !removed.has(product.id))
+  if (missing.length === 0) return catalog
+
+  const order = DEFAULT_PRODUCTS.map(product => product.id)
+  const products = [...catalog.products]
+  for (const product of missing) {
+    // Depois do último bolo que vem antes dele no padrão e já está na lista; senão, no começo.
+    const before = order.slice(0, order.indexOf(product.id)).reverse()
+    const anchor = before.map(id => products.findIndex(entry => entry.id === id)).find(index => index !== -1)
+    products.splice(anchor === undefined ? 0 : anchor + 1, 0, product)
+  }
+  return { ...catalog, products }
 }
