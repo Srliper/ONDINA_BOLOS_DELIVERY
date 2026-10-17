@@ -64,9 +64,10 @@ function Index() {
       <a className="skip-link" href="#bolos">
         Pular para o cardápio
       </a>
+      {/* A intro vem antes do menu: ocupa a tela inteira e o menu só aparece depois dela */}
+      <ScrollIntro />
       <Header />
       <main>
-        <ScrollIntro />
         <Hero />
         <Catalog />
         <CustomCakeBanner />

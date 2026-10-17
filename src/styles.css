@@ -847,14 +847,18 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 
 /* Intro do topo: sequência de frames presa na tela durante a rolagem (src/components/ScrollIntro.tsx).
    "Pular" fica à esquerda porque o WhatsApp flutuante ocupa o canto direito. */
-/* O palco fica logo abaixo do menu (que também é sticky): --nav-h é a altura dele, com a borda */
-.intro { --nav-h:91px; position:relative; height:400vh; }
-@media (max-width:600px) { .intro { --nav-h:77px; } }
-.intro-stage { position:sticky; top:var(--nav-h); height:calc(100vh - var(--nav-h)); height:calc(100svh - var(--nav-h)); overflow:hidden; background:var(--background); }
+/* Tela cheia: a intro vem antes do menu na página, então o menu só aparece quando ela termina */
+.intro { position:relative; height:400vh; }
+.intro-stage { position:sticky; top:0; height:100vh; height:100svh; overflow:hidden; background:var(--background); }
 .intro-backdrop, .intro-canvas, .intro-fallback { position:absolute; inset:0; width:100%; height:100%; display:block; }
 .intro-backdrop { filter:blur(28px) saturate(1.1); transform:scale(1.15); opacity:.85; }
 .intro-fallback { object-fit:cover; }
-.intro-stage::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(to top, oklch(0.301 0.064 43 / 40%) 0%, transparent 38%); }
+.intro-stage::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(to top, oklch(0.301 0.064 43 / 40%) 0%, transparent 38%), linear-gradient(to bottom, oklch(0.987 0.008 55 / 70%) 0%, transparent 22%); }
+.intro-brand { position:absolute; left:20px; top:max(18px, env(safe-area-inset-top)); z-index:3; display:flex; align-items:center; gap:10px; color:var(--foreground); }
+.intro-brand img { width:44px; height:44px; object-fit:cover; border-radius:50%; }
+.intro-brand strong { display:block; font-family:var(--font-serif); font-size:22px; font-style:italic; font-weight:600; line-height:1.1; }
+.intro-brand small { display:block; font-size:10px; color:var(--muted-foreground); }
+@media (max-width:600px) { .intro-brand img { width:36px; height:36px; } .intro-brand strong { font-size:19px; } }
 .intro-captions { position:absolute; inset:auto 0 0 0; z-index:2; display:grid; padding:0 20px max(64px, calc(env(safe-area-inset-bottom) + 48px)); }
 .intro-caption { grid-area:1 / 1; max-width:520px; font-family:var(--font-serif); font-size:clamp(26px, min(6.5vw, 7.5vh), 56px); line-height:1.1; color:#fff; text-shadow:0 2px 18px oklch(0.301 0.064 43 / 45%); opacity:0; translate:0 16px; transition:opacity .5s ease, translate .5s ease; }
 .intro-caption small { display:block; margin-bottom:10px; font-family:var(--font-sans); font-size:12px; text-transform:uppercase; }
@@ -866,8 +870,12 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .intro-skip { position:absolute; left:20px; bottom:max(20px, env(safe-area-inset-bottom)); z-index:3; display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:999px; background:oklch(0.987 0.008 55 / 85%); color:var(--foreground); font-size:11px; text-decoration:none; backdrop-filter:blur(8px); }
 .intro-skip:hover { background:var(--background); }
 .intro-skip:focus-visible { outline:2px solid var(--rose-ink); outline-offset:2px; }
-.intro-note { position:absolute; right:20px; top:14px; z-index:3; font-size:10px; color:oklch(0.301 0.064 43 / 70%); }
+.intro-note { position:absolute; right:20px; top:max(30px, calc(env(safe-area-inset-top) + 12px)); z-index:3; font-size:10px; color:oklch(0.301 0.064 43 / 70%); }
 @media (min-width:900px) { .intro-captions { padding-left:8vw; padding-bottom:14vh; } }
 /* Celular deitado: pouca altura, o texto desce e não esconde o bolo */
 @media (max-height:500px) { .intro-captions { padding-bottom:56px; } .intro-caption small { margin-bottom:4px; } }
-@media (prefers-reduced-motion: reduce) { .intro { height:auto; } .intro-stage { position:relative; top:0; height:min(calc(100svh - var(--nav-h)), 760px); } }
+@media (prefers-reduced-motion: reduce) { .intro { height:auto; } .intro-stage { position:relative; height:min(100svh, 760px); } }
+
+/* Enquanto a intro ocupa a tela, o WhatsApp flutuante espera (ScrollIntro marca data-intro no <html>) */
+.wa-widget { transition:opacity .3s ease, visibility .3s; }
+[data-intro=on] .wa-widget { opacity:0; visibility:hidden; }
