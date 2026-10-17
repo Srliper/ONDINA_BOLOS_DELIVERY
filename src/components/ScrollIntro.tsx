@@ -94,7 +94,8 @@ export function ScrollIntro() {
           images[i] = await loadImage(introFramePath(numbers[i]!))
           done += 1
           setLoaded(done / total)
-          if (i === 0 || Math.round(current) === i) requestRender()
+          // Redesenha a cada chegada: o frame novo pode ser o mais próximo do atual (ex.: o primeiro falhou)
+          requestRender()
         }
       }
       for (let k = 0; k < CONCURRENCY; k++) void worker()
@@ -145,7 +146,13 @@ export function ScrollIntro() {
       requestRender()
     }
 
-    const progress = () => scrollProgress(section.getBoundingClientRect().top, section.offsetHeight, stage.offsetHeight)
+    // O palco prende abaixo do menu (top do sticky), não no topo da janela
+    const progress = () =>
+      scrollProgress(
+        section.getBoundingClientRect().top - (parseFloat(getComputedStyle(stage).top) || 0),
+        section.offsetHeight,
+        stage.offsetHeight,
+      )
 
     const onScroll = () => {
       if (reducedMotion.matches) return

@@ -103,7 +103,8 @@
         images[i] = await loadImage(CONFIG.framePath(frameNumbers[i]))
         done += 1
         updateLoader(done / total)
-        if (i === 0 || Math.round(current) === i) requestRender()
+        // Redesenha a cada chegada: o frame novo pode ser o mais próximo do atual (ex.: o primeiro falhou)
+        requestRender()
       }
     }
     for (let k = 0; k < CONFIG.concurrency; k++) next()
