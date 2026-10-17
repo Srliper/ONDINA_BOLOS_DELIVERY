@@ -7,7 +7,9 @@ import {
   isEntityName,
   updateItem,
   type Catalog,
+  type CatalogProduct,
 } from '@/lib/catalog'
+import type { SoldOutNotifier } from '@/lib/stock-alert'
 
 /**
  * Rotas REST do catálogo (montadas em src/routes/api/):
@@ -23,6 +25,8 @@ export interface CatalogApiDeps {
   load: () => Promise<Catalog>
   save: (catalog: Catalog) => Promise<void>
   isAdmin: () => Promise<boolean>
+  /** Avisa (n8n) quando um bolo passa a ter estoque 0. Nunca pode impedir o salvamento. */
+  notifySoldOut?: SoldOutNotifier
 }
 
 const json = (status: number, body: unknown) =>
@@ -83,8 +87,13 @@ export async function handleCatalogRequest(
       return json(201, { data: result.item })
     }
     if ((method === 'PUT' || method === 'PATCH') && id) {
+      const before = findItem(catalog, entity, id)
       const result = updateItem(catalog, entity, id, await readJson(request))
       await deps.save(result.catalog)
+      if (entity === 'products') {
+        const [was, now] = [before as CatalogProduct | undefined, result.item as CatalogProduct]
+        if (now.stock === 0 && was?.stock !== 0) await deps.notifySoldOut?.([{ id: now.id, name: now.name }])
+      }
       return json(200, { data: result.item })
     }
     if (method === 'DELETE' && id) {

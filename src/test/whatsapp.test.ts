@@ -156,6 +156,18 @@ describe('processOrderAndSend', () => {
     vi.useRealTimers()
   })
 
+  it('guarda o pedido no site com o id do bolo, e falha ao guardar não impede o WhatsApp', async () => {
+    const { deps, calls } = setup(() => Promise.resolve(new Response('{}')))
+    const saved: unknown[] = []
+    deps.record = async payload => {
+      saved.push(payload)
+      throw new Error('banco fora do ar')
+    }
+    const result = await processOrderAndSend(items, 60, checkout, deps)
+    expect(saved).toEqual([expect.objectContaining({ orderId: result.orderId, items: [expect.objectContaining({ productId: 'prestigio' })] })])
+    expect(calls).toEqual(['confete', 'open'])
+  })
+
   it('se o pop-up for bloqueado, abre o WhatsApp na própria aba', async () => {
     const { deps, calls } = setup(() => Promise.resolve(new Response('{}')), null)
     await processOrderAndSend(items, 60, checkout, deps)

@@ -161,10 +161,30 @@ Estoque*). Vazio = sem controle (sempre disponível).
   deixar o pedido. O checkout **pula a etapa de pagamento** e a mensagem do WhatsApp chega como
   **⏳ PEDIDO PENDENTE**, com pagamento “A combinar”. No n8n, o pedido vai com `status: "pendente"`
   e `payment.method: null`; o painel mostra a etiqueta *Pendente*.
-- O estoque não baixa sozinho: depois de confirmar a venda na conversa, ajuste no painel.
+- Para baixar o estoque com um toque, confirme o pedido no painel (abaixo).
 - Bolos montados no Monte seu Bolo são sempre sob encomenda (sem estoque).
 
 Regras em `src/lib/stock.ts` (testes em `src/test/stock.test.ts`).
+
+### Confirmar pedido e baixar o estoque
+
+Cada pedido enviado pelo site também fica guardado no banco do site (`POST /api/orders`, além do
+n8n; se falhar, o WhatsApp abre do mesmo jeito). Em `/admin` → *Últimos pedidos do site*, o botão
+**Confirmar e baixar estoque** tira do estoque os bolos prontos do pedido (nunca abaixo de 0) e
+registra quem confirmou; **Desfazer** devolve o estoque. Ficam guardados os últimos 300 pedidos
+(Upstash: lista `ondina:orders` e hash `ondina:orders:confirmed`; no computador, `.data/orders.json`).
+Sem banco configurado, o painel volta a mostrar a lista do n8n, só para consulta.
+
+### Aviso de bolo esgotado no WhatsApp
+
+Quando um bolo chega a 0 (pelo − ou ao confirmar um pedido), o painel mostra **Esgotou** com o botão
+**Avisar no WhatsApp**, que abre a conversa com o número da loja e a mensagem pronta. A faixa
+*Esgotados agora* no cardápio tem o mesmo atalho.
+
+Aviso automático (opcional): crie no n8n um fluxo *Webhook (POST)* → nó do WhatsApp que envia
+`{{ $json.body.message }}` para o número da loja, e configure na Vercel `N8N_STOCK_ALERT_URL` com o
+endereço desse webhook. O site manda `{ event: "estoque-esgotado", products, message, by }` com o
+cabeçalho `x-ondina-key` = `N8N_ORDERS_KEY`. Se o n8n falhar, o estoque é salvo do mesmo jeito.
 
 ## Fotos pelo painel
 
