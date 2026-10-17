@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { ArrowDown } from 'lucide-react'
+import logo from '@/assets/ondina_logo.png'
 import {
   fitRect,
   frameNumbers,
@@ -155,6 +156,8 @@ export function ScrollIntro() {
       )
 
     const onScroll = () => {
+      // Enquanto a intro cobre a maior parte da tela, o WhatsApp flutuante fica escondido (ver styles.css)
+      document.documentElement.dataset['intro'] = section.getBoundingClientRect().bottom > window.innerHeight * 0.5 ? 'on' : 'off'
       if (reducedMotion.matches) return
       const p = progress()
       target = p * (numbers.length - 1)
@@ -169,6 +172,7 @@ export function ScrollIntro() {
         setLoaded(1)
         staticImage = (await loadImage(introFramePath(INTRO_STATIC_FRAME))) ?? (await loadImage(introFramePath(1)))
         if (!disposed) draw(0)
+        onScroll()
       } else {
         staticImage = null
         preloadAll()
@@ -193,6 +197,7 @@ export function ScrollIntro() {
       observer.disconnect()
       window.removeEventListener('scroll', onScroll)
       reducedMotion.removeEventListener('change', applyMode)
+      delete document.documentElement.dataset['intro']
     }
   }, [])
 
@@ -219,6 +224,15 @@ export function ScrollIntro() {
               <em>{c.accent}</em>
             </p>
           ))}
+        </div>
+
+        {/* O menu só aparece depois da intro; aqui fica só a marca */}
+        <div className="intro-brand">
+          <img src={logo} alt="" width={44} height={44} />
+          <div>
+            <strong>Ondina Bolos</strong>
+            <small>Desde 2003</small>
+          </div>
         </div>
 
         <div ref={loaderRef} className="intro-loader" aria-hidden="true">
