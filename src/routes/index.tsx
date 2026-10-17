@@ -7,6 +7,7 @@ import { CartDrawer } from '@/components/CartDrawer'
 import { CustomCakeBanner } from '@/components/CustomCakeBanner'
 import { Header } from '@/components/Header'
 import { ProductCard } from '@/components/ProductCard'
+import { ScrollIntro } from '@/components/ScrollIntro'
 import { TeamSection } from '@/components/TeamSection'
 import { WhatsAppWidget } from '@/components/WhatsAppWidget'
 import aboutPhoto from '@/assets/three_cakes.jpg'
@@ -65,6 +66,7 @@ function Index() {
       </a>
       <Header />
       <main>
+        <ScrollIntro />
         <Hero />
         <Catalog />
         <CustomCakeBanner />
