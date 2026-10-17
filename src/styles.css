@@ -844,3 +844,27 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .admin-login-help { text-align:left; font-size:12.5px; line-height:1.55; color:var(--muted-foreground); }
 .admin-login-help summary { cursor:pointer; font-weight:600; color:var(--foreground); text-align:center; }
 .admin-login-help ol { margin:8px 0 4px; padding-left:20px; display:grid; gap:4px; }
+
+/* Intro do topo: sequência de frames presa na tela durante a rolagem (src/components/ScrollIntro.tsx).
+   "Pular" fica à esquerda porque o WhatsApp flutuante ocupa o canto direito. */
+.intro { position:relative; height:400vh; }
+.intro-stage { position:sticky; top:0; height:100vh; height:100svh; overflow:hidden; background:var(--background); }
+.intro-backdrop, .intro-canvas, .intro-fallback { position:absolute; inset:0; width:100%; height:100%; display:block; }
+.intro-backdrop { filter:blur(28px) saturate(1.1); transform:scale(1.15); opacity:.85; }
+.intro-fallback { object-fit:cover; }
+.intro-stage::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(to top, oklch(0.301 0.064 43 / 40%) 0%, transparent 38%); }
+.intro-captions { position:absolute; inset:auto 0 0 0; z-index:2; display:grid; padding:0 20px max(64px, calc(env(safe-area-inset-bottom) + 48px)); }
+.intro-caption { grid-area:1 / 1; max-width:520px; font-family:var(--font-serif); font-size:clamp(30px, 6.5vw, 56px); line-height:1.1; color:#fff; text-shadow:0 2px 18px oklch(0.301 0.064 43 / 45%); opacity:0; translate:0 16px; transition:opacity .5s ease, translate .5s ease; }
+.intro-caption small { display:block; margin-bottom:10px; font-family:var(--font-sans); font-size:12px; text-transform:uppercase; }
+.intro-caption em { color:oklch(0.93 0.04 20); }
+.intro-caption.is-visible { opacity:1; translate:0 0; }
+.intro-loader { position:absolute; left:50%; bottom:24px; z-index:3; width:140px; height:3px; translate:-50% 0; border-radius:3px; background:oklch(1 0 0 / 35%); overflow:hidden; transition:opacity .4s ease; }
+.intro-loader span { display:block; height:100%; background:var(--rose-ink); transform-origin:0 50%; scale:var(--loaded, 0) 1; transition:scale .2s linear; }
+.intro[data-loaded=true] .intro-loader { opacity:0; }
+.intro-skip { position:absolute; left:20px; bottom:max(20px, env(safe-area-inset-bottom)); z-index:3; display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:999px; background:oklch(0.987 0.008 55 / 85%); color:var(--foreground); font-size:11px; text-decoration:none; backdrop-filter:blur(8px); }
+.intro-skip:hover { background:var(--background); }
+.intro-skip:focus-visible { outline:2px solid var(--rose-ink); outline-offset:2px; }
+.intro-note { position:absolute; right:20px; top:104px; z-index:3; font-size:10px; color:oklch(0.301 0.064 43 / 70%); }
+@media (max-width:600px) { .intro-note { top:88px; } }
+@media (min-width:900px) { .intro-captions { padding-left:8vw; padding-bottom:14vh; } }
+@media (prefers-reduced-motion: reduce) { .intro { height:auto; } .intro-stage { position:relative; height:min(100svh, 760px); } }

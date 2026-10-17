@@ -1,34 +1,22 @@
 # Animação de rolagem (sequência de frames)
 
 Página independente em HTML, CSS e JavaScript puros: `index.html`, `styles.css`, `script.js`.
+No app, a mesma intro é o componente `src/components/ScrollIntro.tsx`.
 
-## Onde colocar os frames
+## Onde ficam os frames
 
-```
-scroll-animation/
-├── index.html
-├── styles.css
-├── script.js
-└── frames/
-    ├── frame-0001.jpg
-    ├── ...
-    └── frame-0240.jpg
-```
-
-A pasta `frames/` fica ao lado do `index.html` e está no git (240 frames, 18 MB).
-A sequência original tinha 300 arquivos, mas 60 eram cópias idênticas do frame anterior
-(conversão de 24 para 30 quadros por segundo); elas foram removidas e os demais renumerados,
-o que deixa a troca mais uniforme na rolagem.
-Para mudar o nome da pasta ou a quantidade de frames, edite `CONFIG` no início do `script.js`.
+Os frames são os mesmos da intro do app: `public/intro/frames/frame-0001.jpg` … `frame-0240.jpg`
+(240 frames, 18 MB). A sequência original tinha 300 arquivos, mas 60 eram cópias idênticas do frame
+anterior (conversão de 24 para 30 quadros por segundo); elas foram removidas e os demais renumerados.
+Para mudar a pasta ou a quantidade de frames, edite `CONFIG` no início do `script.js`.
 
 ## Testar
 
-Abra por um servidor (não pelo `file://`):
+Abra por um servidor a partir da raiz do repositório (a página lê `../public/intro/frames/`):
 
 ```
-cd scroll-animation
 python3 -m http.server 8000
-# abra http://localhost:8000
+# abra http://localhost:8000/scroll-animation/
 ```
 
 ## Comportamento
