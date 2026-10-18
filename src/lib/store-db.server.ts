@@ -1,25 +1,21 @@
 import { CatalogError, type Catalog } from '@/lib/catalog'
 import { notifySoldOut, notifyStore } from '@/lib/catalog-deps.server'
-import { getOrdersStorage, getStockRequestsStorage, saveCatalog } from '@/lib/catalog-store'
-import { applyGatewayPayment, OrderError, ordersDocSchema, replaceOrder, type Order, type OrdersDoc } from '@/lib/order-flow'
+import { getOrdersStorage, getStockRequestsStorage, loadCatalog, saveCatalog } from '@/lib/catalog-store'
+import { applyGatewayPayment, expireUnpaid, isPaymentExpired, OrderError, ordersDocSchema, replaceOrder, type Order, type OrdersDoc } from '@/lib/order-flow'
 import type { PaymentGateway } from '@/lib/payment-gateway'
 import type { SoldOutProduct } from '@/lib/stock-alert'
+import { exclusive } from '@/lib/redis-guard.server'
 import { StockRequestError, stockRequestsDocSchema, type StockRequestsDoc } from '@/lib/stock-requests'
 
 /**
  * Banco dos pedidos e dos avisos de estoque (só no servidor). O banco é online e sem servidor
  * próprio: Upstash Redis pela API REST (paga por uso, nada ligado o tempo todo), ou arquivos em
- * .data/ no computador. Leitura → mudança → gravação, uma de cada vez nesta instância.
+ * .data/ no computador. Leitura → mudança → gravação, uma de cada vez (trava no Redis).
  */
 
-/* ---------- Fila de escrita ---------- */
+/* ---------- Fila de escrita (em todas as cópias do site) ---------- */
 
-let queue: Promise<unknown> = Promise.resolve()
-export function exclusive<T>(task: () => Promise<T>): Promise<T> {
-  const run = queue.then(task, task)
-  queue = run.catch(() => undefined)
-  return run
-}
+export { createRateLimit, exclusive } from '@/lib/redis-guard.server'
 
 /* ---------- Pedidos ---------- */
 
@@ -53,6 +49,22 @@ export async function persist(doc: OrdersDoc, before: Catalog, after: Catalog, b
   const soldOut = newlySoldOut(before, after)
   if (soldOut.length) await notifySoldOut(soldOut, by)
   return soldOut
+}
+
+/**
+ * Cancela os pedidos online que passaram do prazo sem pagamento e devolve o estoque deles.
+ * Chamado ao listar e abrir pedidos (sem tarefa agendada): quase sempre só lê.
+ */
+export async function sweepExpired(now = new Date()): Promise<OrdersDoc> {
+  if (getOrdersStorage().kind === 'none') return { orders: [] }
+  const doc = await loadOrders()
+  if (!doc.orders.some(order => isPaymentExpired(order, now))) return doc
+  return exclusive(async () => {
+    const [catalog, fresh] = await Promise.all([loadCatalog(), loadOrders()])
+    const result = expireUnpaid(fresh, catalog, now)
+    if (result.expired.length) await persist(result.doc, catalog, result.catalog, 'sistema')
+    return result.doc
+  })
 }
 
 /**
@@ -113,17 +125,5 @@ export async function attempt<T>(task: () => Promise<T>): Promise<Result<T>> {
     }
     console.error('[servidor] erro inesperado', error)
     return { ok: false, error: 'Erro inesperado no servidor.' }
-  }
-}
-
-/** Limite simples contra abuso: ações por IP numa janela de tempo (por instância). */
-export function createRateLimit(max: number, windowMs: number) {
-  const recentByKey = new Map<string, number[]>()
-  return (key: string, now = Date.now()): boolean => {
-    const recent = (recentByKey.get(key) ?? []).filter(at => now - at < windowMs)
-    if (recent.length >= max) return true
-    recent.push(now)
-    recentByKey.set(key, recent)
-    return false
   }
 }

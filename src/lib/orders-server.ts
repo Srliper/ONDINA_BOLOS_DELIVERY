@@ -17,6 +17,7 @@ import {
   loadStockRequests,
   persist,
   saveOrders,
+  sweepExpired,
   syncGatewayPayment,
   type Result,
 } from '@/lib/store-db.server'
@@ -27,6 +28,7 @@ import {
   changeStatus,
   confirmPayment,
   createOrder,
+  expireUnpaid,
   findOrder,
   markRead,
   messageTextSchema,
@@ -54,8 +56,8 @@ import {
 
 /* ---------- Site: registrar o pedido ---------- */
 
-const orderRateLimited = createRateLimit(6, 10 * 60_000)
-const messageRateLimited = createRateLimit(20, 10 * 60_000)
+const orderRateLimited = createRateLimit(6, 10 * 60_000, 'pedido')
+const messageRateLimited = createRateLimit(20, 10 * 60_000, 'mensagem')
 const clientIp = () => getRequestIP({ xForwardedFor: true }) ?? 'desconhecido'
 
 export type PlaceOrderResult = Result<{
@@ -72,16 +74,18 @@ export const placeOrder = createServerFn({ method: 'POST' })
   .validator(placeOrderSchema)
   .handler(({ data }): Promise<PlaceOrderResult> =>
     attempt(async () => {
+      if (await orderRateLimited(clientIp())) {
+        throw new OrderError(429, 'Muitos pedidos seguidos. Tente de novo em alguns minutos.')
+      }
+      if (data.payment.method === 'online' && !configuredGateway()) {
+        throw new OrderError(409, 'O pagamento pelo site está indisponível agora. Envie o pedido pelo WhatsApp.')
+      }
       const created = await exclusive(async () => {
-        if (orderRateLimited(clientIp())) {
-          throw new OrderError(429, 'Muitos pedidos seguidos. Tente de novo em alguns minutos.')
-        }
-        if (data.payment.method === 'online' && !configuredGateway()) {
-          throw new OrderError(409, 'O pagamento pelo site está indisponível agora. Envie o pedido pelo WhatsApp.')
-        }
         const [catalog, doc] = await Promise.all([loadCatalog(), loadOrders()])
-        const result = createOrder(catalog, data)
-        await persist(addOrder(doc, result.order), catalog, result.catalog)
+        // Antes de conferir o estoque, devolve o que estava preso em pedidos online não pagos.
+        const swept = expireUnpaid(doc, catalog)
+        const result = createOrder(swept.catalog, data)
+        await persist(addOrder(swept.doc, result.order), catalog, result.catalog)
         return result.order
       })
       if (created.channel === 'site') {
@@ -119,7 +123,7 @@ const siteOrigin = () =>
 const NOT_FOUND = 'Pedido não encontrado. Confira o link que você recebeu.'
 
 async function trackedOrder(id: string, token: string): Promise<Order> {
-  const order = (await loadOrders()).orders.find(entry => entry.id === id)
+  const order = (await sweepExpired()).orders.find(entry => entry.id === id)
   if (!order || !tokenMatches(order, token)) throw new OrderError(404, NOT_FOUND)
   return order
 }
@@ -150,7 +154,7 @@ export const getTrackedOrder = createServerFn({ method: 'POST' })
           return updated
         })
       }
-      return { order: trackedView(order) }
+      return { order: trackedView(order, new Date()) }
     }),
   )
 
@@ -162,10 +166,12 @@ export const startOrderPayment = createServerFn({ method: 'POST' })
       const gateway = configuredGateway()
       if (!gateway) throw new OrderError(503, 'O pagamento online está indisponível agora. Fale com a Ondina pelo WhatsApp.')
       const order = await trackedOrder(data.id, data.token)
-      if (!canPayOnline(order)) {
+      if (!canPayOnline(order, new Date())) {
         throw new OrderError(
           409,
-          order.paid
+          order.status === 'aguardando_pagamento' && order.payment.method === 'online' && !order.paid
+            ? 'O prazo para pagar este pedido acabou. Faça um pedido novo ou fale com a Ondina.'
+            : order.paid
             ? 'Este pedido já está pago.'
             : order.status === 'pendente'
               ? 'O pedido está aguardando estoque: o pagamento abre quando a Ondina confirmar.'
@@ -186,7 +192,7 @@ export const sendCustomerMessage = createServerFn({ method: 'POST' })
   .validator(trackSchema.extend({ text: messageTextSchema }))
   .handler(({ data }): Promise<Result<{ order: TrackedOrder }>> =>
     attempt(async () => {
-      if (messageRateLimited(clientIp())) throw new OrderError(429, 'Muitas mensagens seguidas. Espere alguns minutos.')
+      if (await messageRateLimited(clientIp())) throw new OrderError(429, 'Muitas mensagens seguidas. Espere alguns minutos.')
       const order = await exclusive(async () => {
         const doc = await loadOrders()
         const current = doc.orders.find(entry => entry.id === data.id)
@@ -196,7 +202,7 @@ export const sendCustomerMessage = createServerFn({ method: 'POST' })
         return updated
       })
       await notifyStore({ event: 'mensagem-cliente', orderId: order.id, customer: order.customer.name, text: data.text })
-      return { order: trackedView(order) }
+      return { order: trackedView(order, new Date()) }
     }),
   )
 
@@ -214,7 +220,7 @@ export const listOrders = createServerFn({ method: 'GET' }).handler(
       await requireMember()
       const storage = getOrdersStorage().kind
       const [orders, legacy] = await Promise.all([
-        storage === 'none' ? [] : loadOrders().then(doc => doc.orders),
+        storage === 'none' ? [] : sweepExpired().then(doc => doc.orders),
         listLegacyOrders(),
       ])
       return { orders, legacy, storage }
@@ -228,7 +234,7 @@ export const adminPulse = createServerFn({ method: 'GET' }).handler(
       await requireMember()
       const empty = ordersPulse([])
       if (getOrdersStorage().kind === 'none') return { pulse: empty, restockWaiting: 0, restockIds: [] }
-      const [doc, requests] = await Promise.all([loadOrders(), loadStockRequests()])
+      const [doc, requests] = await Promise.all([sweepExpired(), loadStockRequests()])
       const waiting = requests.requests.filter(entry => entry.status === 'aguardando')
       return { pulse: ordersPulse(doc.orders), restockWaiting: waiting.length, restockIds: waiting.map(entry => entry.id) }
     }),

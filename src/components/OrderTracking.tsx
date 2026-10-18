@@ -292,11 +292,18 @@ function StatusBlock({ order, paying, onPay }: { order: TrackedOrder; paying: bo
           </button>
           <p className="track-help">
             <ShieldCheck aria-hidden="true" /> Pix ou cartão, na página segura do Mercado Pago.
+            {order.payBy && <> Pague até {formatDate(order.payBy)}; depois disso o pedido é cancelado.</>}
           </p>
         </div>
       )}
 
-      {!order.paid && !order.canPay && order.status === 'aguardando_pagamento' && (
+      {!order.paid && !order.canPay && order.payBy && (
+        <p className="checkout-notice" role="status">
+          O prazo para pagar acabou e o pedido será cancelado. Faça um pedido novo ou escreva para a Ondina abaixo.
+        </p>
+      )}
+
+      {!order.paid && !order.canPay && !order.payBy && order.status === 'aguardando_pagamento' && (
         <p className="admin-muted">A Ondina confirma o pagamento pela conversa do WhatsApp ({order.paymentLabel}).</p>
       )}
     </>

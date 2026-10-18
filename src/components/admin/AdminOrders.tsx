@@ -21,6 +21,7 @@ import { formatBRL } from '@/lib/format'
 import {
   MAX_MESSAGE_LENGTH,
   ORDER_STATUSES,
+  paymentDeadline,
   shortageText,
   statusLabel,
   trackingPath,
@@ -351,6 +352,7 @@ function OrderCard({
   const [reply, setReply] = useState('')
   const delivery = order.customer.fulfillment === 'entrega'
   const unread = unreadForStore(order)
+  const deadline = paymentDeadline(order)
   // Mensagem nova abre a conversa sozinha; depois, quem manda é a equipe.
   const [chatOpen, setChatOpen] = useState(unread > 0)
   useEffect(() => {
@@ -450,6 +452,12 @@ function OrderCard({
         <span>{order.payment.label}</span>
         <strong>{formatBRL(order.total)}</strong>
       </div>
+      {deadline && (
+        <p className="admin-muted">
+          Pagamento online até {formatDate(deadline.toISOString())}. Sem pagamento, o pedido é cancelado sozinho e o
+          estoque volta.
+        </p>
+      )}
 
       {pending && (
         <div className="admin-order-blocked" role="note">

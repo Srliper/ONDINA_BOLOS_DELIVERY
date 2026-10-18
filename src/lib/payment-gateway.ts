@@ -1,4 +1,4 @@
-import { trackingPath, type GatewayPayment, type Order } from '@/lib/order-flow'
+import { paymentDeadline, trackingPath, type GatewayPayment, type Order } from '@/lib/order-flow'
 
 /**
  * Gateway de pagamento do site: Mercado Pago (Checkout Pro — Pix e cartão, na página segura deles).
@@ -29,6 +29,8 @@ export function buildPreference(order: Order, baseUrl: string) {
   const back = `${base}${trackingPath(order)}`
   // O Mercado Pago só aceita voltar sozinho e notificar em endereço público com https.
   const isPublic = base.startsWith('https://')
+  // O link de pagamento vence junto com o prazo do pedido (depois disso o estoque volta).
+  const deadline = paymentDeadline(order)?.toISOString()
   return {
     external_reference: order.id,
     items: [
@@ -50,6 +52,7 @@ export function buildPreference(order: Order, baseUrl: string) {
     statement_descriptor: 'ONDINA BOLOS',
     // Boleto demora dias para compensar: no bolo, só Pix e cartão.
     payment_methods: { excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }], installments: 3 },
+    ...(deadline ? { expires: true, expiration_date_to: deadline, date_of_expiration: deadline } : {}),
     metadata: { order_id: order.id },
   }
 }

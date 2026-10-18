@@ -1,6 +1,7 @@
 import { currentAdminSession } from '@/lib/admin-auth'
 import type { CatalogApiDeps } from '@/lib/catalog-api'
 import { getImageStorage, loadCatalog, saveCatalog } from '@/lib/catalog-store'
+import { exclusive } from '@/lib/redis-guard.server'
 import type { ImageApiDeps } from '@/lib/image-api'
 import { createSoldOutNotifier } from '@/lib/stock-alert'
 import { createStoreNotifier } from '@/lib/store-alert'
@@ -25,6 +26,7 @@ export const catalogApiDeps: CatalogApiDeps = {
   save: catalog => saveCatalog(catalog),
   isAdmin,
   notifySoldOut,
+  exclusive,
 }
 
 /** Dependências reais da rota de fotos (/api/images). Só no servidor. */

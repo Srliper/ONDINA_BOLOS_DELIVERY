@@ -27,6 +27,8 @@ export interface CatalogApiDeps {
   isAdmin: () => Promise<boolean>
   /** Avisa (n8n) quando um bolo passa a ter estoque 0. Nunca pode impedir o salvamento. */
   notifySoldOut?: SoldOutNotifier
+  /** Uma gravação de cada vez com os pedidos (que também mexem no estoque). */
+  exclusive?: <T>(task: () => Promise<T>) => Promise<T>
 }
 
 const json = (status: number, body: unknown) =>
@@ -80,15 +82,32 @@ export async function handleCatalogRequest(
     if (!(await deps.isAdmin())) throw new CatalogError(401, 'Entre na área da equipe (/admin) para alterar o catálogo.')
     if (!sameOrigin(request)) throw new CatalogError(403, 'Origem não permitida.')
 
+    const hasBody = (method === 'POST' && !id) || ((method === 'PUT' || method === 'PATCH') && Boolean(id))
+    const body = hasBody ? await readJson(request) : undefined
+    return await (deps.exclusive ?? (task => task()))(() => write(method, entity, id, body, deps))
+  } catch (error) {
+    return failure(error)
+  }
+}
+
+/** Lê o catálogo atual, aplica a escrita e grava (dentro da trava, quando houver). */
+async function write(
+  method: string,
+  entity: Parameters<typeof createItem>[1],
+  id: string | undefined,
+  body: unknown,
+  deps: CatalogApiDeps,
+): Promise<Response> {
+  try {
     const catalog = await deps.load()
     if (method === 'POST' && !id) {
-      const result = createItem(catalog, entity, await readJson(request))
+      const result = createItem(catalog, entity, body)
       await deps.save(result.catalog)
       return json(201, { data: result.item })
     }
     if ((method === 'PUT' || method === 'PATCH') && id) {
       const before = findItem(catalog, entity, id)
-      const result = updateItem(catalog, entity, id, await readJson(request))
+      const result = updateItem(catalog, entity, id, body)
       await deps.save(result.catalog)
       if (entity === 'products') {
         const [was, now] = [before as CatalogProduct | undefined, result.item as CatalogProduct]
@@ -102,10 +121,14 @@ export async function handleCatalogRequest(
     }
     return json(405, { error: 'Método não permitido nesta rota.' })
   } catch (error) {
-    if (error instanceof CatalogError) {
-      return json(error.status, { error: error.message, ...(error.issues ? { issues: error.issues } : {}) })
-    }
-    console.error('[catálogo] erro inesperado', error)
-    return json(500, { error: 'Erro inesperado no servidor.' })
+    return failure(error)
   }
+}
+
+function failure(error: unknown): Response {
+  if (error instanceof CatalogError) {
+    return json(error.status, { error: error.message, ...(error.issues ? { issues: error.issues } : {}) })
+  }
+  console.error('[catálogo] erro inesperado', error)
+  return json(500, { error: 'Erro inesperado no servidor.' })
 }

@@ -486,8 +486,56 @@ export function findOrder(doc: OrdersDoc, id: string): Order {
 /* ---------- Pagamento online (gateway) ---------- */
 
 /** O cliente pode pagar pelo site agora: pedido do site, liberado (com estoque) e ainda não pago. */
-export const canPayOnline = (order: Order): boolean =>
-  order.payment.method === 'online' && order.status === 'aguardando_pagamento' && !order.paid
+/** Prazo para pagar um pedido online; depois disso ele é cancelado e o estoque volta. */
+export const PAYMENT_WINDOW_MS = 2 * 60 * 60_000
+/** Folga antes de cancelar (quem abriu o pagamento no último minuto ainda consegue terminar). */
+export const PAYMENT_GRACE_MS = 15 * 60_000
+
+/** Até quando o pedido online espera o pagamento (conta de quando foi liberado para pagar). */
+export function paymentDeadline(order: Order): Date | undefined {
+  if (order.payment.method !== 'online' || order.status !== 'aguardando_pagamento' || order.paid) return undefined
+  const since = [...order.history].reverse().find(entry => entry.status === 'aguardando_pagamento')?.at ?? order.createdAt
+  return new Date(Date.parse(since) + PAYMENT_WINDOW_MS)
+}
+
+/** O cliente pode pagar pelo site agora: pedido do site, liberado (com estoque), não pago e no prazo. */
+export const canPayOnline = (order: Order, now?: Date): boolean => {
+  const deadline = paymentDeadline(order)
+  return Boolean(deadline) && (!now || now < deadline!)
+}
+
+/** Passou do prazo (+ folga) sem pagamento. */
+export const isPaymentExpired = (order: Order, now = new Date()): boolean => {
+  const deadline = paymentDeadline(order)
+  return Boolean(deadline) && now.getTime() >= deadline!.getTime() + PAYMENT_GRACE_MS
+}
+
+/**
+ * Pedidos online que passaram do prazo (+ folga) sem pagamento: cancela e devolve o estoque.
+ * Devolve o mesmo doc/catálogo quando nada venceu.
+ */
+export function expireUnpaid(
+  doc: OrdersDoc,
+  catalog: Catalog,
+  now = new Date(),
+): { doc: OrdersDoc; catalog: Catalog; expired: Order[] } {
+  const expired: Order[] = []
+  let current = catalog
+  const orders = doc.orders.map(order => {
+    if (!isPaymentExpired(order, now)) return order
+    if (order.stockReserved) current = moveStock(current, order.items, 1, now)
+    const cancelled = withHistory(
+      order,
+      { status: 'cancelado', stockReserved: false },
+      'sistema',
+      now,
+      'Pagamento online não feito no prazo de 2 h: pedido cancelado e estoque devolvido.',
+    )
+    expired.push(cancelled)
+    return cancelled
+  })
+  return expired.length ? { doc: { orders }, catalog: current, expired } : { doc, catalog, expired }
+}
 
 /** Pagamento como o gateway informou (conferido direto na API dele, nunca pelo navegador). */
 export interface GatewayPayment {
@@ -631,12 +679,15 @@ export interface TrackedOrder {
   shippingFee: number
   total: number
   canPay: boolean
+  /** Até quando dá para pagar online (ISO). */
+  payBy?: string
   /** Status do último pagamento online (approved, pending, rejected…). */
   gatewayStatus?: string
   messages: { at: string; from: OrderMessage['from']; text: string }[]
 }
 
-export function trackedView(order: Order): TrackedOrder {
+export function trackedView(order: Order, now?: Date): TrackedOrder {
+  const deadline = paymentDeadline(order)
   return {
     id: order.id,
     createdAt: order.createdAt,
@@ -658,7 +709,8 @@ export function trackedView(order: Order): TrackedOrder {
     shortages: order.shortages.map(shortage => shortage.name),
     shippingFee: order.shippingFee,
     total: order.total,
-    canPay: canPayOnline(order),
+    canPay: canPayOnline(order, now),
+    ...(deadline ? { payBy: deadline.toISOString() } : {}),
     ...(order.gateway?.status ? { gatewayStatus: order.gateway.status } : {}),
     messages: order.messages.map(({ at, from, text }) => ({ at, from, text })),
   }
