@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react'
 import {
+  BarChart3,
   Bell,
   BellRing,
   BookOpen,
   Boxes,
   Camera,
   ClipboardList,
+  Clock,
   CreditCard,
   Hourglass,
   KeyRound,
@@ -281,10 +283,15 @@ const LESSONS: Lesson[] = [
         <strong>para entregar</strong>), mensagem ou cliente esperando bolo? Toca um aviso e aparece na tela.
       </>,
       <>
-        Toque em <strong>Ligar notificações</strong> no quadro <strong>Avisos</strong> para receber a notificação do
-        aparelho mesmo com outra aba na frente. O número entre parênteses no título da aba mostra o que precisa de
-        atenção.
+        No seu celular, toque em <strong>Ligar notificações</strong> no quadro <strong>Avisos</strong> e permita. A
+        partir daí, o celular avisa de pedido novo, pagamento, mensagem e bolo esgotado{' '}
+        <strong>mesmo com o painel fechado</strong>. Cada pessoa liga no próprio aparelho.
       </>,
+      <>
+        No <strong>iPhone</strong>: abra o painel no Safari, toque em <strong>Compartilhar</strong> →{' '}
+        <strong>Adicionar à Tela de Início</strong>, abra pelo ícone novo e só então ligue as notificações.
+      </>,
+      <>O número entre parênteses no título da aba mostra o que precisa de atenção.</>,
       <>
         O filtro <strong>A entregar</strong> em Pedidos do site mostra só o que já está pago (ou é pago na entrega) e
         falta entregar.
@@ -292,10 +299,43 @@ const LESSONS: Lesson[] = [
     ],
     tip: (
       <>
-        Para receber no WhatsApp da loja mesmo com o painel fechado, quem cuida do site liga o aviso do n8n (variável{' '}
-        <code>N8N_STORE_ALERT_URL</code>, no README).
+        Se o botão não aparecer para o celular, quem cuida do site precisa configurar as chaves das notificações (VAPID,
+        no README). Também dá para receber no WhatsApp da loja pelo n8n.
       </>
     ),
+  },
+  {
+    id: 'vendas',
+    icon: BarChart3,
+    title: 'Ver as vendas',
+    steps: [
+      <>
+        Em <strong>Vendas</strong> (logo abaixo dos pedidos), escolha <strong>7</strong>, <strong>30</strong> ou{' '}
+        <strong>90 dias</strong>.
+      </>,
+      <>
+        <strong>Vendido</strong> soma só o que foi pago; <strong>A receber</strong> é o que ainda falta pagar (inclui
+        dinheiro e cartão na entrega). Cancelados ficam fora das contas.
+      </>,
+      <>
+        As barras mostram as vendas de cada dia; embaixo, quanto veio do site e do WhatsApp e os bolos mais vendidos.
+      </>,
+    ],
+  },
+  {
+    id: 'prazo',
+    icon: Clock,
+    title: 'Data de entrega e prazo de pagamento',
+    steps: [
+      <>
+        Todo pedido novo vem com <strong>Para quando</strong>: o dia e a faixa (manhã, tarde ou noite de sábado) que o
+        cliente escolheu. Aparece no cartão do pedido.
+      </>,
+      <>
+        Pedido pago no site tem <strong>2 horas</strong> para ser pago. O cartão mostra até quando. Sem pagamento, ele é{' '}
+        <strong>cancelado sozinho</strong> e o estoque volta para o cardápio.
+      </>,
+    ],
   },
 ]
 
