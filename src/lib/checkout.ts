@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { phoneSchema } from '@/lib/phone'
 import { DELIVERY_CITY, isDeliveryCity, STORE_ADDRESS } from '@/lib/shipping'
 
 /* ---------- Entrega ou retirada + endereço ---------- */
@@ -41,6 +42,8 @@ export const customerSchema = z.object({
     .regex(/^[A-Za-zÀ-ÿ' .-]+$/, 'Use só letras no nome.')
     .regex(/^\S+(\s+\S+)+$/, 'Informe nome e sobrenome.'),
   city: text(2, 60, 'sua cidade'),
+  /** WhatsApp do cliente: a equipe usa para avisar do pedido e do estoque. */
+  phone: phoneSchema,
 })
 
 export const DELIVERY_ONLY_IN_CITY = `Entregamos só em ${DELIVERY_CITY}. Para a sua cidade, escolha Retirada no Local.`
@@ -63,18 +66,32 @@ export type DeliveryAddress = z.output<typeof addressSchema>
 
 /* ---------- Pagamento ---------- */
 
-export type PaymentMethod = 'pix' | 'cartao' | 'dinheiro'
+/**
+ * pix/cartão/dinheiro: combinados pelo WhatsApp (ou pagos na entrega/retirada).
+ * online: pago aqui no site, pelo gateway (Mercado Pago — Pix ou cartão).
+ */
+export type PaymentMethod = 'pix' | 'cartao' | 'dinheiro' | 'online'
 
-export const PAYMENT_METHODS: readonly PaymentMethod[] = ['pix', 'cartao', 'dinheiro']
+/** Formas combinadas com a loja (pedido pelo WhatsApp). */
+export const PAYMENT_METHODS: readonly Exclude<PaymentMethod, 'online'>[] = ['pix', 'cartao', 'dinheiro']
+
+export const ALL_PAYMENT_METHODS = ['pix', 'cartao', 'dinheiro', 'online'] as const
+
+/** Onde o cliente finaliza: pela conversa do WhatsApp ou aqui no site (pagamento online). */
+export type OrderChannel = 'whatsapp' | 'site'
+
+export const channelOf = (method: PaymentMethod): OrderChannel => (method === 'online' ? 'site' : 'whatsapp')
 
 export const paymentLabel = (method: PaymentMethod, fulfillment: Fulfillment['fulfillment']): string =>
-  method === 'pix'
-    ? 'Pix'
-    : method === 'cartao'
-      ? fulfillment === 'entrega'
-        ? 'Cartão na entrega'
-        : 'Cartão na retirada'
-      : 'Dinheiro'
+  method === 'online'
+    ? 'Pagamento online (Pix ou cartão)'
+    : method === 'pix'
+      ? 'Pix'
+      : method === 'cartao'
+        ? fulfillment === 'entrega'
+          ? 'Cartão na entrega'
+          : 'Cartão na retirada'
+        : 'Dinheiro'
 
 export interface Payment {
   method: PaymentMethod

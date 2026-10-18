@@ -23,6 +23,7 @@ const checkout: CheckoutData = {
   customer: fulfillmentSchema.parse({
     fulfillment: 'entrega',
     name: 'Ana Souza',
+    phone: '(15) 99123-4567',
     city: 'São Miguel Arcanjo',
     address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', cep: '18230-000', complement: '', reference: '' },
   }),
@@ -30,6 +31,18 @@ const checkout: CheckoutData = {
 }
 
 describe('buildOrderMessage', () => {
+  it('com o pedido registrado, traz o número e o link da página do pedido', () => {
+    const items = [item('prestigio', 1)]
+    const message = buildOrderMessage({
+      items,
+      total: getCartTotal(items),
+      checkout,
+      registered: { orderId: 'OB-1', status: 'aguardando_pagamento', shortages: [], trackingUrl: 'https://ondinabolos.com.br/pedido/OB-1?t=abc' },
+    })
+    expect(message).toContain('🧾 *Pedido:* OB-1')
+    expect(message.split('\n').at(-1)).toBe('🔗 *Acompanhe o pedido:* https://ondinabolos.com.br/pedido/OB-1?t=abc')
+  })
+
   it('segue o formato oficial, com as camadas do bolo personalizado', () => {
     const items = [...toCartItems([{ custom: CUSTOM, quantity: 1 }]), item('prestigio', 2)]
     expect(buildOrderMessage({ items, total: getCartTotal(items), checkout })).toBe(
@@ -59,7 +72,7 @@ describe('buildOrderMessage', () => {
     const message = buildOrderMessage({
       items: [item('prestigio', 1)],
       total: 60,
-      checkout: { customer: { fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul' }, payment: { method: 'cartao' } },
+      checkout: { customer: { fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul', phone: '5515991234567' }, payment: { method: 'cartao' } },
     })
     expect(message).toContain('📍 *Endereço:* Retirada na loja (Rua Tapixi, 412')
     expect(message).toContain('💳 *Forma de Pagamento:* Cartão na retirada')

@@ -3,7 +3,7 @@ import { celebrate } from '@/lib/confetti'
 import { MAPS_URL, WHATSAPP_NUMBER } from '@/lib/contact'
 import { formatBRLPlain } from '@/lib/format'
 import { DELIVERY_CITY, shippingFee } from '@/lib/shipping'
-import { createOrderId, type OrderLine, type OrderStatus, type Shortage } from '@/lib/order-flow'
+import { createOrderId, trackingPath, type OrderLine, type OrderStatus, type Shortage } from '@/lib/order-flow'
 import { lacksStock } from '@/lib/stock'
 import type { CartItem } from '@/types/product'
 
@@ -32,6 +32,8 @@ export interface RegisteredOrder {
   orderId: string
   status: OrderStatus
   shortages: Shortage[]
+  /** Página do pedido no site (acompanhar e conversar com a loja). */
+  trackingUrl?: string | undefined
 }
 
 export interface OrderInput {
@@ -113,6 +115,7 @@ export function buildOrderMessage(order: OrderInput): string {
     `📍 *Endereço:* ${formatAddress(checkout.customer)}`,
     `💳 *Forma de Pagamento:* ${paymentText(checkout, pending)}`,
     `🗺️ *Referência do mapa:* ${MAPS_URL}`,
+    ...(registered?.trackingUrl ? [`🔗 *Acompanhe o pedido:* ${registered.trackingUrl}`] : []),
   ].join('\n')
 }
 
@@ -128,6 +131,8 @@ export interface OrderPayload {
   status: 'novo' | 'pendente'
   customer: {
     name: string
+    /** WhatsApp do cliente (só dígitos, com 55). */
+    phone: string
     fulfillment: CheckoutData['customer']['fulfillment']
     /** Endereço em uma linha (ou "Retirada na loja ..."). */
     address: string
@@ -165,6 +170,7 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
     status: isPending(order) ? 'pendente' : 'novo',
     customer: {
       name: customer.name,
+      phone: customer.phone,
       fulfillment: customer.fulfillment,
       address: formatAddress(customer),
       ...(customer.fulfillment === 'entrega' ? { details: customer.address } : {}),
@@ -209,7 +215,12 @@ const browserDeps = (): SendDeps => ({
     const { placeOrder } = await import('@/lib/orders-server')
     const result = await placeOrder({ data: { lines, customer: checkout.customer, payment: checkout.payment } })
     if (!result.ok) throw new Error(result.error)
-    return { orderId: result.orderId, status: result.status, shortages: result.shortages }
+    return {
+      orderId: result.orderId,
+      status: result.status,
+      shortages: result.shortages,
+      trackingUrl: `${window.location.origin}${trackingPath({ id: result.orderId, accessToken: result.accessToken })}`,
+    }
   },
   fetch: (input, init) => window.fetch(input, init),
   open: url => {

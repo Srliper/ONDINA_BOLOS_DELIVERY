@@ -12,3 +12,9 @@ export function announceSoldOut(products: readonly SoldOutProduct[]) {
     action: { label: 'Avisar no WhatsApp', onClick: () => window.open(storeAlertUrl(products), '_blank', 'noopener') },
   })
 }
+
+/** Avisa a lista de pedidos e a procura por esgotados que chegou novidade (o painel recarrega). */
+export const ORDERS_CHANGED_EVENT = 'ondina:orders-changed'
+
+/** A equipe mudou algo no painel (status, pagamento, resposta): os avisos só atualizam os números. */
+export const ADMIN_ACTED_EVENT = 'ondina:admin-acted'

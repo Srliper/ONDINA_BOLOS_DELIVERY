@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ApiImagesRouteImport } from './routes/api/images'
+import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as ApiCatalogEntityRouteImport } from './routes/api/catalog.$entity'
 import { Route as ApiImagesIdRouteImport } from './routes/api/images.$id'
+import { Route as ApiPaymentsWebhookRouteImport } from './routes/api/payments.webhook'
 import { Route as ApiCatalogEntityIdRouteImport } from './routes/api/catalog.$entity.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -31,6 +33,11 @@ const ApiImagesRoute = ApiImagesRouteImport.update({
   path: '/api/images',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PedidoIdRoute = PedidoIdRouteImport.update({
+  id: '/pedido/$id',
+  path: '/pedido/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCatalogEntityRoute = ApiCatalogEntityRouteImport.update({
   id: '/api/catalog/$entity',
   path: '/api/catalog/$entity',
@@ -40,6 +47,11 @@ const ApiImagesIdRoute = ApiImagesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiImagesRoute,
+} as any)
+const ApiPaymentsWebhookRoute = ApiPaymentsWebhookRouteImport.update({
+  id: '/api/payments/webhook',
+  path: '/api/payments/webhook',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCatalogEntityIdRoute = ApiCatalogEntityIdRouteImport.update({
   id: '/$id',
@@ -51,16 +63,20 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/images': typeof ApiImagesRouteWithChildren
+  '/pedido/$id': typeof PedidoIdRoute
   '/api/catalog/$entity': typeof ApiCatalogEntityRouteWithChildren
   '/api/images/$id': typeof ApiImagesIdRoute
+  '/api/payments/webhook': typeof ApiPaymentsWebhookRoute
   '/api/catalog/$entity/$id': typeof ApiCatalogEntityIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/images': typeof ApiImagesRouteWithChildren
+  '/pedido/$id': typeof PedidoIdRoute
   '/api/catalog/$entity': typeof ApiCatalogEntityRouteWithChildren
   '/api/images/$id': typeof ApiImagesIdRoute
+  '/api/payments/webhook': typeof ApiPaymentsWebhookRoute
   '/api/catalog/$entity/$id': typeof ApiCatalogEntityIdRoute
 }
 export interface FileRoutesById {
@@ -68,8 +84,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/images': typeof ApiImagesRouteWithChildren
+  '/pedido/$id': typeof PedidoIdRoute
   '/api/catalog/$entity': typeof ApiCatalogEntityRouteWithChildren
   '/api/images/$id': typeof ApiImagesIdRoute
+  '/api/payments/webhook': typeof ApiPaymentsWebhookRoute
   '/api/catalog/$entity/$id': typeof ApiCatalogEntityIdRoute
 }
 export interface FileRouteTypes {
@@ -78,24 +96,30 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/api/images'
+    | '/pedido/$id'
     | '/api/catalog/$entity'
     | '/api/images/$id'
+    | '/api/payments/webhook'
     | '/api/catalog/$entity/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
     | '/api/images'
+    | '/pedido/$id'
     | '/api/catalog/$entity'
     | '/api/images/$id'
+    | '/api/payments/webhook'
     | '/api/catalog/$entity/$id'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/api/images'
+    | '/pedido/$id'
     | '/api/catalog/$entity'
     | '/api/images/$id'
+    | '/api/payments/webhook'
     | '/api/catalog/$entity/$id'
   fileRoutesById: FileRoutesById
 }
@@ -103,7 +127,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   ApiImagesRoute: typeof ApiImagesRouteWithChildren
+  PedidoIdRoute: typeof PedidoIdRoute
   ApiCatalogEntityRoute: typeof ApiCatalogEntityRouteWithChildren
+  ApiPaymentsWebhookRoute: typeof ApiPaymentsWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -129,6 +155,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiImagesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pedido/$id': {
+      id: '/pedido/$id'
+      path: '/pedido/$id'
+      fullPath: '/pedido/$id'
+      preLoaderRoute: typeof PedidoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/catalog/$entity': {
       id: '/api/catalog/$entity'
       path: '/api/catalog/$entity'
@@ -142,6 +175,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/images/$id'
       preLoaderRoute: typeof ApiImagesIdRouteImport
       parentRoute: typeof ApiImagesRoute
+    }
+    '/api/payments/webhook': {
+      id: '/api/payments/webhook'
+      path: '/api/payments/webhook'
+      fullPath: '/api/payments/webhook'
+      preLoaderRoute: typeof ApiPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/catalog/$entity/$id': {
       id: '/api/catalog/$entity/$id'
@@ -180,7 +220,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   ApiImagesRoute: ApiImagesRouteWithChildren,
+  PedidoIdRoute: PedidoIdRoute,
   ApiCatalogEntityRoute: ApiCatalogEntityRouteWithChildren,
+  ApiPaymentsWebhookRoute: ApiPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
