@@ -55,9 +55,7 @@ export function CartDrawer() {
               : cart.isEmpty
               ? 'Nenhum bolo escolhido ainda.'
               : showCheckout
-                ? pending
-                  ? 'Dois passos rápidos e o pedido pendente segue para o WhatsApp.'
-                  : 'Três passos rápidos e o pedido segue pronto para o WhatsApp.'
+                ? 'Três passos rápidos e o pedido segue pronto para o WhatsApp.'
                 : 'Confira os itens e envie pelo WhatsApp. A confirmação é feita na conversa.'}
           </SheetDescription>
         </SheetHeader>
@@ -69,6 +67,15 @@ export function CartDrawer() {
               Abrimos o WhatsApp com o seu pedido <strong>{sent.orderId}</strong>. Toque em <strong>Enviar</strong> na
               conversa para a Ondina receber e confirmar.
             </p>
+            {sent.pending && (
+              <p className="cart-pending" role="status">
+                <Hourglass aria-hidden="true" />
+                <span>
+                  Faltou estoque de algum bolo: o pedido ficou <strong>PENDENTE</strong>. Nada é cobrado agora — a
+                  Ondina avisa quando o bolo estiver disponível.
+                </span>
+              </p>
+            )}
             <a className="checkout-button" href={sent.whatsappUrl} target="_blank" rel="noreferrer">
               <MessageCircle aria-hidden="true" />
               Abrir o WhatsApp de novo
@@ -109,8 +116,8 @@ export function CartDrawer() {
                 <p className="cart-pending" role="status">
                   <Hourglass aria-hidden="true" />
                   <span>
-                    Tem bolo sem estoque: o pedido vai como <strong>pendente</strong>, sem pagamento agora. A Ondina
-                    confirma pelo WhatsApp.
+                    Tem bolo sem estoque: o pedido vai como <strong>PENDENTE</strong> e nada é cobrado agora. A Ondina
+                    confirma o estoque pelo WhatsApp.
                   </span>
                 </p>
               )}

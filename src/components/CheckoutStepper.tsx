@@ -21,7 +21,7 @@ import {
   parseMoney,
   paymentLabel,
   PAYMENT_METHODS,
-  PENDING_PAYMENT_LABEL,
+  PENDING_PAYMENT_NOTE,
   PICKUP_ADDRESS,
   validateChange,
   type CheckoutData,
@@ -44,9 +44,6 @@ export interface CheckoutStepperProps {
 }
 
 const STEPS = ['Endereço', 'Pagamento', 'Resumo'] as const
-/** Etapas mostradas: pedido pendente (falta estoque) não passa pelo pagamento. */
-const PENDING_STEPS = [0, 2] as const
-const FULL_STEPS = [0, 1, 2] as const
 const slide: Transition = { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
 
 interface FormValues {
@@ -56,6 +53,7 @@ interface FormValues {
   street: string
   number: string
   district: string
+  cep: string
   complement: string
   reference: string
 }
@@ -68,6 +66,7 @@ const EMPTY_FORM: FormValues = {
   street: '',
   number: '',
   district: '',
+  cep: '',
   complement: '',
   reference: '',
 }
@@ -110,7 +109,6 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
   const headingRef = useRef<HTMLHeadingElement>(null)
   const missing = pendingItems(items)
   const pending = missing.length > 0
-  const visibleSteps = pending ? PENDING_STEPS : FULL_STEPS
 
   const { errors } = useMemo(() => parseFulfillment(values), [values])
   const changeFor = parseMoney(change)
@@ -135,7 +133,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
       return
     }
     setCustomer(parsed.data)
-    goTo(pending ? 2 : 1)
+    goTo(1)
   }
 
   const submitPayment = () => {
@@ -150,16 +148,16 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
     <MotionConfig reducedMotion="user">
       <div className="checkout">
         <ol className="checkout-steps" aria-label="Etapas do pedido">
-          {visibleSteps.map((index, position) => (
+          {STEPS.map((label, index) => (
             <li
-              key={STEPS[index]}
+              key={label}
               className={index === step ? 'is-current' : index < step ? 'is-done' : undefined}
               aria-current={index === step ? 'step' : undefined}
             >
               <span className="checkout-step-dot" aria-hidden="true">
-                {index < step ? <Check /> : position + 1}
+                {index < step ? <Check /> : index + 1}
               </span>
-              {STEPS[index]}
+              {label}
             </li>
           ))}
         </ol>
@@ -191,13 +189,13 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
                       : 'Confira seu pedido'}
               </h3>
 
-              {pending && step !== 1 && (
+              {pending && (
                 <p className="checkout-notice is-pending" role="status">
                   <Hourglass aria-hidden="true" />
                   <span>
                     <strong>Sem estoque agora:</strong> {missing.map(item => item.name).join(', ')}. O pedido vai como{' '}
-                    <strong>pendente</strong>, sem pagamento pelo site: a Ondina confirma a disponibilidade e combina o
-                    pagamento pelo WhatsApp.
+                    <strong>PENDENTE</strong>: nada é cobrado agora, e ele só segue para o preparo quando a Ondina
+                    confirmar o estoque.
                   </span>
                 </p>
               )}
@@ -217,13 +215,14 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
                   missingMethod={paymentTried && !method}
                 />
               )}
-              {step === 2 && customer && (pending || method) && (
+              {step === 2 && customer && method && (
                 <ReviewStep
                   items={items}
                   total={total}
                   customer={customer}
-                  method={pending ? undefined : method}
-                  changeFor={!pending && method === 'dinheiro' ? changeFor : undefined}
+                  method={method}
+                  changeFor={method === 'dinheiro' ? changeFor : undefined}
+                  pending={pending}
                 />
               )}
             </motion.section>
@@ -234,14 +233,14 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
           <button
             type="button"
             className="checkout-back"
-            onClick={() => (step === 0 ? onBack() : goTo(pending ? 0 : step - 1))}
+            onClick={() => (step === 0 ? onBack() : goTo(step - 1))}
           >
             <ArrowLeft aria-hidden="true" />
             {step === 0 ? 'Carrinho' : 'Voltar'}
           </button>
           {step === 0 && (
             <button type="button" className="checkout-next" onClick={submitAddress}>
-              {pending ? 'Revisar pedido' : 'Pagamento'} <ArrowRight aria-hidden="true" />
+              Pagamento <ArrowRight aria-hidden="true" />
             </button>
           )}
           {step === 1 && (
@@ -250,7 +249,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
             </button>
           )}
         </div>
-        {step === 2 && customer && (pending || method) && (
+        {step === 2 && customer && method && (
           <button
             type="button"
             className="checkout-button checkout-send"
@@ -260,11 +259,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
               if (sending) return
               setSending(true)
               try {
-                await onConfirm({
-                  customer,
-                  payment:
-                    pending || !method ? null : { method, changeFor: method === 'dinheiro' ? changeFor : undefined },
-                })
+                await onConfirm({ customer, payment: { method, changeFor: method === 'dinheiro' ? changeFor : undefined } })
               } finally {
                 setSending(false)
               }
@@ -337,13 +332,13 @@ function AddressStep({
 
       <TextField
         id="name"
-        label="Seu nome"
+        label="Nome completo"
         value={values.name}
         onValue={onChange('name')}
         error={errors.name}
         autoComplete="name"
         maxLength={60}
-        placeholder="Como podemos te chamar"
+        placeholder="Nome e sobrenome"
       />
 
       {isDelivery ? (
@@ -371,6 +366,17 @@ function AddressStep({
               placeholder="412"
             />
           </div>
+          <TextField
+            id="cep"
+            label="CEP"
+            value={values.cep}
+            onValue={onChange('cep')}
+            error={errors.cep}
+            autoComplete="postal-code"
+            inputMode="numeric"
+            maxLength={9}
+            placeholder="18230-000"
+          />
           <TextField
             id="district"
             label="Bairro"
@@ -669,13 +675,15 @@ function ReviewStep({
   customer,
   method,
   changeFor,
+  pending,
 }: {
   items: readonly CartItem[]
   total: number
   customer: Fulfillment
-  /** undefined = pedido pendente (pagamento combinado depois). */
-  method: PaymentMethod | undefined
+  method: PaymentMethod
   changeFor: number | undefined
+  /** Falta estoque: o pedido vai como PENDENTE e nada é cobrado antes da confirmação. */
+  pending: boolean
 }) {
   return (
     <div className="checkout-review">
@@ -721,8 +729,9 @@ function ReviewStep({
         <div>
           <dt>Pagamento</dt>
           <dd>
-            {method ? paymentLabel(method, customer.fulfillment) : PENDING_PAYMENT_LABEL}
+            {paymentLabel(method, customer.fulfillment)}
             {changeFor !== undefined && ` (troco para ${formatBRL(changeFor)})`}
+            {pending && ` — ${PENDING_PAYMENT_NOTE}`}
           </dd>
         </div>
       </dl>
@@ -732,9 +741,9 @@ function ReviewStep({
         <strong>{formatBRL(total + shippingFee(customer.fulfillment))}</strong>
       </div>
       <p className="checkout-review-note">
-        {method
-          ? 'A Ondina confirma o pedido e o horário pela conversa.'
-          : 'Nada é cobrado agora. A Ondina avisa pela conversa quando o bolo estiver disponível.'}
+        {pending
+          ? 'Nada é cobrado agora. A Ondina avisa pela conversa quando o bolo estiver disponível.'
+          : 'A Ondina confirma o pedido e o horário pela conversa.'}
       </p>
     </div>
   )

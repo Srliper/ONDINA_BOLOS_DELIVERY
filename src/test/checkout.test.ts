@@ -11,7 +11,7 @@ const delivery = {
   fulfillment: 'entrega' as const,
   name: '  Ana Souza ',
   city: 'São Miguel Arcanjo',
-  address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', complement: '', reference: ' perto da praça ' },
+  address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', cep: '18230000', complement: '', reference: ' perto da praça ' },
 }
 
 describe('fulfillmentSchema', () => {
@@ -21,7 +21,7 @@ describe('fulfillmentSchema', () => {
       fulfillment: 'entrega',
       name: 'Ana Souza',
       city: 'São Miguel Arcanjo',
-      address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', complement: undefined, reference: 'perto da praça' },
+      address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', cep: '18230-000', complement: undefined, reference: 'perto da praça' },
     })
   })
 
@@ -30,11 +30,26 @@ describe('fulfillmentSchema', () => {
       fulfillment: 'entrega',
       name: 'A1',
       city: 'São Miguel Arcanjo',
-      address: { street: '123', number: 'quatro', district: ' ', complement: '', reference: '' },
+      address: { street: '123', number: 'quatro', district: ' ', cep: '1823', complement: '', reference: '' },
     })
     expect(result.success).toBe(false)
     const fields = result.success ? [] : result.error.issues.map(issue => issue.path.at(-1))
-    expect(fields).toEqual(expect.arrayContaining(['name', 'street', 'number', 'district']))
+    expect(fields).toEqual(expect.arrayContaining(['name', 'street', 'number', 'district', 'cep']))
+  })
+
+  it('pede nome completo (nome e sobrenome)', () => {
+    const result = fulfillmentSchema.safeParse({ fulfillment: 'retirada', name: 'Ana', city: 'Pilar do Sul' })
+    expect(result.success ? '' : result.error.issues[0]?.message).toMatch(/nome e sobrenome/)
+  })
+
+  it('aceita o CEP com ou sem hífen e guarda no formato 00000-000', () => {
+    for (const cep of ['18230-000', '18230000', ' 18230-000 ']) {
+      const parsed = fulfillmentSchema.parse({ ...delivery, address: { ...delivery.address, cep } })
+      expect(parsed.fulfillment === 'entrega' && parsed.address.cep).toBe('18230-000')
+    }
+    for (const cep of ['', '1823-000', 'abcde-fgh', '182300000']) {
+      expect(fulfillmentSchema.safeParse({ ...delivery, address: { ...delivery.address, cep } }).success).toBe(false)
+    }
   })
 
   it('aceita S/N e número com letra', () => {
@@ -44,9 +59,9 @@ describe('fulfillmentSchema', () => {
   })
 
   it('na retirada só pede nome e cidade', () => {
-    expect(fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana', city: 'Pilar do Sul' })).toEqual({
+    expect(fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul' })).toEqual({
       fulfillment: 'retirada',
-      name: 'Ana',
+      name: 'Ana Souza',
       city: 'Pilar do Sul',
     })
   })
@@ -88,8 +103,8 @@ describe('pagamento', () => {
 describe('formatAddress', () => {
   it('monta o endereço em uma linha', () => {
     expect(formatAddress(fulfillmentSchema.parse({ ...delivery, address: { ...delivery.address, number: 'sn' } }))).toBe(
-      'Rua Tapixi, S/N — Vila Tomaz, São Miguel Arcanjo — Referência: perto da praça',
+      'Rua Tapixi, S/N — Vila Tomaz, São Miguel Arcanjo — CEP 18230-000 — Referência: perto da praça',
     )
-    expect(formatAddress({ fulfillment: 'retirada', name: 'Ana', city: 'Pilar do Sul' })).toMatch(/^Retirada na loja \(Rua Tapixi, 412/)
+    expect(formatAddress({ fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul' })).toMatch(/^Retirada na loja \(Rua Tapixi, 412/)
   })
 })

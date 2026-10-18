@@ -12,11 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ApiImagesRouteImport } from './routes/api/images'
-import { Route as ApiOrdersRouteImport } from './routes/api/orders'
 import { Route as ApiCatalogEntityRouteImport } from './routes/api/catalog.$entity'
 import { Route as ApiImagesIdRouteImport } from './routes/api/images.$id'
 import { Route as ApiCatalogEntityIdRouteImport } from './routes/api/catalog.$entity.$id'
-import { Route as ApiOrdersIdConfirmRouteImport } from './routes/api/orders.$id.confirm'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -31,11 +29,6 @@ const AdminRoute = AdminRouteImport.update({
 const ApiImagesRoute = ApiImagesRouteImport.update({
   id: '/api/images',
   path: '/api/images',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiOrdersRoute = ApiOrdersRouteImport.update({
-  id: '/api/orders',
-  path: '/api/orders',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCatalogEntityRoute = ApiCatalogEntityRouteImport.update({
@@ -53,42 +46,31 @@ const ApiCatalogEntityIdRoute = ApiCatalogEntityIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiCatalogEntityRoute,
 } as any)
-const ApiOrdersIdConfirmRoute = ApiOrdersIdConfirmRouteImport.update({
-  id: '/$id/confirm',
-  path: '/$id/confirm',
-  getParentRoute: () => ApiOrdersRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/images': typeof ApiImagesRouteWithChildren
-  '/api/orders': typeof ApiOrdersRouteWithChildren
   '/api/catalog/$entity': typeof ApiCatalogEntityRouteWithChildren
   '/api/images/$id': typeof ApiImagesIdRoute
   '/api/catalog/$entity/$id': typeof ApiCatalogEntityIdRoute
-  '/api/orders/$id/confirm': typeof ApiOrdersIdConfirmRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/images': typeof ApiImagesRouteWithChildren
-  '/api/orders': typeof ApiOrdersRouteWithChildren
   '/api/catalog/$entity': typeof ApiCatalogEntityRouteWithChildren
   '/api/images/$id': typeof ApiImagesIdRoute
   '/api/catalog/$entity/$id': typeof ApiCatalogEntityIdRoute
-  '/api/orders/$id/confirm': typeof ApiOrdersIdConfirmRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/images': typeof ApiImagesRouteWithChildren
-  '/api/orders': typeof ApiOrdersRouteWithChildren
   '/api/catalog/$entity': typeof ApiCatalogEntityRouteWithChildren
   '/api/images/$id': typeof ApiImagesIdRoute
   '/api/catalog/$entity/$id': typeof ApiCatalogEntityIdRoute
-  '/api/orders/$id/confirm': typeof ApiOrdersIdConfirmRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,38 +78,31 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/api/images'
-    | '/api/orders'
     | '/api/catalog/$entity'
     | '/api/images/$id'
     | '/api/catalog/$entity/$id'
-    | '/api/orders/$id/confirm'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
     | '/api/images'
-    | '/api/orders'
     | '/api/catalog/$entity'
     | '/api/images/$id'
     | '/api/catalog/$entity/$id'
-    | '/api/orders/$id/confirm'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/api/images'
-    | '/api/orders'
     | '/api/catalog/$entity'
     | '/api/images/$id'
     | '/api/catalog/$entity/$id'
-    | '/api/orders/$id/confirm'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   ApiImagesRoute: typeof ApiImagesRouteWithChildren
-  ApiOrdersRoute: typeof ApiOrdersRouteWithChildren
   ApiCatalogEntityRoute: typeof ApiCatalogEntityRouteWithChildren
 }
 
@@ -154,13 +129,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiImagesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/orders': {
-      id: '/api/orders'
-      path: '/api/orders'
-      fullPath: '/api/orders'
-      preLoaderRoute: typeof ApiOrdersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/catalog/$entity': {
       id: '/api/catalog/$entity'
       path: '/api/catalog/$entity'
@@ -182,13 +150,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCatalogEntityIdRouteImport
       parentRoute: typeof ApiCatalogEntityRoute
     }
-    '/api/orders/$id/confirm': {
-      id: '/api/orders/$id/confirm'
-      path: '/$id/confirm'
-      fullPath: '/api/orders/$id/confirm'
-      preLoaderRoute: typeof ApiOrdersIdConfirmRouteImport
-      parentRoute: typeof ApiOrdersRoute
-    }
   }
 }
 
@@ -202,18 +163,6 @@ const ApiImagesRouteChildren: ApiImagesRouteChildren = {
 
 const ApiImagesRouteWithChildren = ApiImagesRoute._addFileChildren(
   ApiImagesRouteChildren,
-)
-
-interface ApiOrdersRouteChildren {
-  ApiOrdersIdConfirmRoute: typeof ApiOrdersIdConfirmRoute
-}
-
-const ApiOrdersRouteChildren: ApiOrdersRouteChildren = {
-  ApiOrdersIdConfirmRoute: ApiOrdersIdConfirmRoute,
-}
-
-const ApiOrdersRouteWithChildren = ApiOrdersRoute._addFileChildren(
-  ApiOrdersRouteChildren,
 )
 
 interface ApiCatalogEntityRouteChildren {
@@ -231,7 +180,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   ApiImagesRoute: ApiImagesRouteWithChildren,
-  ApiOrdersRoute: ApiOrdersRouteWithChildren,
   ApiCatalogEntityRoute: ApiCatalogEntityRouteWithChildren,
 }
 export const routeTree = rootRouteImport

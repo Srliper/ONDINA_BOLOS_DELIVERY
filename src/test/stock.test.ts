@@ -5,7 +5,6 @@ import { applyCatalog, catalogSchema, seedCatalog, updateItem, type Catalog } fr
 import { handleCatalogRequest } from '@/lib/catalog-api'
 import { fulfillmentSchema, type CheckoutData } from '@/lib/checkout'
 import { handleImageRequest, parseImageDataUrl, type ImageApiDeps } from '@/lib/image-api'
-import { parseOrders } from '@/lib/orders'
 import { isPendingOrder, isSoldOut, lacksStock, stockLabel } from '@/lib/stock'
 import { buildOrderMessage, buildOrderPayload } from '@/lib/whatsapp'
 
@@ -21,7 +20,7 @@ function withStock(stock: Record<string, number | null>): Catalog {
 
 afterEach(() => applyCatalog(seedCatalog()))
 
-const retirada: CheckoutData['customer'] = fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana', city: 'São Miguel Arcanjo' })
+const retirada: CheckoutData['customer'] = fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana Souza', city: 'São Miguel Arcanjo' })
 
 describe('estoque no catálogo', () => {
   it('começa sem controle e aceita catálogos salvos antes do estoque', () => {
@@ -77,28 +76,25 @@ describe('pedido pendente', () => {
     expect(isPendingOrder(toCartItems([{ productId: 'ninho-nutella', quantity: 9 }]))).toBe(false)
   })
 
-  it('a mensagem e o registro no n8n vão sem pagamento e marcados como pendentes', () => {
+  it('sem o servidor, a mensagem e o registro no n8n vão marcados como pendentes pelo estoque do navegador', () => {
     withStock({ 'fuba-goiabada': 0 })
     const items = toCartItems([
       { productId: 'fuba-goiabada', quantity: 1 },
       { productId: 'prestigio', quantity: 1 },
     ])
-    const order = { items, total: 85, checkout: { customer: retirada, payment: null } }
+    const order = { items, total: 85, checkout: { customer: retirada, payment: { method: 'pix' as const } } }
     const message = buildOrderMessage(order)
     expect(message).toContain('Gostaria de deixar um pedido pendente.')
-    expect(message).toContain('⏳ *PEDIDO PENDENTE:* sem estoque de Fubá com goiabada.')
+    expect(message).toContain('⏳ *PEDIDO PENDENTE (falta de estoque):* Fubá com goiabada.')
     expect(message).toContain('• 1x Fubá com goiabada - R$ 25,00 ⚠️ sem estoque')
     expect(message).toContain('• 1x Prestígio (kg) - R$ 60,00\n')
-    expect(message).toContain('💳 *Forma de Pagamento:* A combinar (pedido pendente)')
+    expect(message).toContain('💳 *Forma de Pagamento:* Pix — depois da confirmação do estoque')
 
     const payload = buildOrderPayload(order, message, NOW)
     expect(payload.status).toBe('pendente')
-    expect(payload.payment).toEqual({ method: null, label: 'A combinar (pedido pendente)' })
+    expect(payload.payment).toEqual({ method: 'pix', label: 'Pix — depois da confirmação do estoque' })
     expect(payload.items[0]).toMatchObject({ name: 'Fubá com goiabada', outOfStock: true })
     expect(payload.items[1]).not.toHaveProperty('outOfStock')
-
-    const { orders } = parseOrders([payload])
-    expect(orders[0]).toMatchObject({ status: 'pendente', items: [{ outOfStock: true }, {}] })
   })
 
   it('com estoque, o pedido segue normal', () => {

@@ -1,12 +1,19 @@
-import { useCallback, useEffect, useState } from 'react'
-import { CheckCircle2, Hourglass, Loader2, Palette, RefreshCw, Store, Truck, Undo2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { BadgeCheck, CircleDollarSign, Hourglass, Loader2, PackageSearch, Palette, RefreshCw, Store, Truck } from 'lucide-react'
 import { toast } from 'sonner'
-import { TEAM } from '@/data/team'
-import { getAdminOrders } from '@/lib/admin-auth'
-import { formatBRL } from '@/lib/format'
-import type { OrderConfirmation, OrdersResult, SiteOrder, StockChange } from '@/lib/orders'
-import type { SoldOutProduct } from '@/lib/stock-alert'
 import { announceSoldOut, CATALOG_CHANGED_EVENT } from '@/components/admin/sold-out'
+import { formatBRL } from '@/lib/format'
+import {
+  ORDER_STATUSES,
+  shortageText,
+  statusLabel,
+  transitionError,
+  type Order,
+  type OrderStatus,
+} from '@/lib/order-flow'
+import type { LegacyOrder } from '@/lib/orders'
+import { confirmOrderPayment, listOrders, recheckOrderStock, setOrderStatus } from '@/lib/orders-server'
+import type { SoldOutProduct } from '@/lib/stock-alert'
 
 const dateFormat = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
@@ -21,38 +28,49 @@ const formatDate = (iso: string) => {
   return Number.isNaN(date.getTime()) ? iso : dateFormat.format(date)
 }
 
-const firstName = (memberId: string) => TEAM.find(member => member.id === memberId)?.name.split(' ')[0] ?? memberId
+type Filter = 'abertos' | OrderStatus | 'todos'
 
-const changeText = (change: StockChange) => `${change.name} ${change.from} → ${change.to}`
+/** Em aberto = ainda precisa de alguma ação da equipe. */
+const isOpen = (order: Order) => order.status !== 'entregue' && order.status !== 'cancelado'
 
-type View =
-  | { source: 'site'; orders: SiteOrder[] }
-  | { source: 'n8n'; result: OrdersResult }
-  | { source: 'error'; message: string }
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'abertos', label: 'Em aberto' },
+  { id: 'pendente', label: 'Pendentes' },
+  { id: 'aguardando_pagamento', label: 'Aguardando pagamento' },
+  { id: 'em_preparo', label: 'Em preparo' },
+  { id: 'saiu_para_entrega', label: 'Saiu / pronto' },
+  { id: 'entregue', label: 'Entregues' },
+  { id: 'cancelado', label: 'Cancelados' },
+  { id: 'todos', label: 'Todos' },
+]
 
-async function api<T>(url: string, method = 'GET'): Promise<T> {
-  const response = await fetch(url, { method, credentials: 'same-origin' })
-  const body = (await response.json().catch(() => ({}))) as { data?: T; error?: string }
-  if (!response.ok) throw new Error(body.error ?? `Erro ${response.status}`)
-  return body.data as T
-}
+const matches = (order: Order, filter: Filter) =>
+  filter === 'todos' ? true : filter === 'abertos' ? isOpen(order) : order.status === filter
 
-/**
- * Últimos pedidos: os que o site guardou no banco (com "Confirmar e baixar estoque");
- * sem banco, cai para a leitura do n8n (só consulta).
- */
+type Storage = 'upstash' | 'file' | 'none'
+
+/** Pedidos do site, gravados no banco do próprio site: status da entrega, pagamento e estoque. */
 export function AdminOrders() {
-  const [view, setView] = useState<View>()
+  const [orders, setOrders] = useState<Order[]>()
+  const [legacy, setLegacy] = useState<LegacyOrder[]>([])
+  const [storage, setStorage] = useState<Storage>()
+  const [error, setError] = useState<string>()
   const [loading, setLoading] = useState(true)
-  const [busy, setBusy] = useState<string>()
+  const [filter, setFilter] = useState<Filter>('abertos')
+  const [busyId, setBusyId] = useState<string>()
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await api<{ storage: string; orders: SiteOrder[] }>('/api/orders')
-      setView(data.storage === 'none' ? { source: 'n8n', result: await getAdminOrders() } : { source: 'site', orders: data.orders })
-    } catch (error) {
-      setView({ source: 'error', message: error instanceof Error ? error.message : 'Não foi possível carregar os pedidos.' })
+      const result = await listOrders()
+      if (result.ok) {
+        setOrders(result.orders)
+        setLegacy(result.legacy)
+        setStorage(result.storage)
+        setError(undefined)
+      } else setError(result.error)
+    } catch {
+      setError('Não foi possível carregar os pedidos.')
     } finally {
       setLoading(false)
     }
@@ -62,152 +80,162 @@ export function AdminOrders() {
     void load()
   }, [load])
 
-  const confirm = async (order: SiteOrder) => {
-    setBusy(order.orderId)
+  const counts = useMemo(() => {
+    const map = new Map<Filter, number>()
+    for (const option of FILTERS) map.set(option.id, (orders ?? []).filter(order => matches(order, option.id)).length)
+    return map
+  }, [orders])
+
+  const visible = (orders ?? []).filter(order => matches(order, filter))
+
+  /** Roda uma ação no servidor e troca o pedido na lista pela versão gravada. */
+  const run = async (
+    order: Order,
+    action: () => Promise<
+      { ok: true; order: Order; released: boolean; soldOut: SoldOutProduct[] } | { ok: false; error: string }
+    >,
+    success: (updated: Order, released: boolean) => string | undefined,
+  ) => {
+    setBusyId(order.id)
     try {
-      const result = await api<{ confirmation: OrderConfirmation; soldOut: SoldOutProduct[] }>(
-        `/api/orders/${encodeURIComponent(order.orderId)}/confirm`,
-        'POST',
-      )
-      const changes = result.confirmation.stock
-      toast.success(
-        changes.length ? `Pedido confirmado. Estoque: ${changes.map(changeText).join(', ')}` : 'Pedido confirmado.',
-      )
-      announceSoldOut(result.soldOut)
+      const result = await action()
+      if (!result.ok) {
+        toast.error(result.error)
+        return
+      }
+      setOrders(list => list?.map(entry => (entry.id === result.order.id ? result.order : entry)))
+      const message = success(result.order, result.released)
+      if (message) toast.success(message)
+      // O estoque pode ter mudado (reserva ou devolução): o cardápio do painel recarrega e avisa o que esgotou.
       window.dispatchEvent(new Event(CATALOG_CHANGED_EVENT))
-      await load()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Não foi possível confirmar.')
+      announceSoldOut(result.soldOut)
+    } catch {
+      toast.error('Não foi possível falar com o servidor. Tente de novo.')
     } finally {
-      setBusy(undefined)
+      setBusyId(undefined)
     }
   }
 
-  const undo = async (order: SiteOrder) => {
-    if (!window.confirm(`Desfazer a confirmação de ${order.orderId}? O estoque que saiu volta para o cardápio.`)) return
-    setBusy(order.orderId)
-    try {
-      await api(`/api/orders/${encodeURIComponent(order.orderId)}/confirm`, 'DELETE')
-      toast.success('Confirmação desfeita e estoque devolvido.')
-      window.dispatchEvent(new Event(CATALOG_CHANGED_EVENT))
-      await load()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Não foi possível desfazer.')
-    } finally {
-      setBusy(undefined)
+  const changeStatus = (order: Order, status: OrderStatus) => {
+    if (status === 'cancelado' && !window.confirm(`Cancelar o pedido ${order.id}? O estoque reservado volta para o cardápio.`)) {
+      return
     }
+    void run(
+      order,
+      () => setOrderStatus({ data: { id: order.id, status } }),
+      updated => `${updated.id}: ${statusLabel(updated.status, updated.customer.fulfillment)}`,
+    )
   }
+
+  const confirmPayment = (order: Order) =>
+    void run(
+      order,
+      () => confirmOrderPayment({ data: { id: order.id } }),
+      updated => `Pagamento confirmado — ${updated.id} foi para o preparo.`,
+    )
+
+  const recheck = (order: Order) =>
+    void run(
+      order,
+      () => recheckOrderStock({ data: { id: order.id } }),
+      (updated, released) => {
+        if (released) return `Estoque reservado: ${updated.id} liberado para pagamento.`
+        toast.warning(`Ainda falta estoque: ${updated.shortages.map(s => s.name).join(', ')}.`)
+        return undefined
+      },
+    )
 
   return (
     <section className="admin-card admin-orders" aria-labelledby="admin-orders-list-title" aria-busy={loading}>
       <div className="admin-orders-head">
-        <h2 id="admin-orders-list-title">Últimos pedidos do site</h2>
+        <h2 id="admin-orders-list-title">Pedidos do site</h2>
         <button type="button" className="admin-refresh" onClick={() => void load()} disabled={loading}>
           {loading ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <RefreshCw aria-hidden="true" />}
           Atualizar
         </button>
       </div>
 
-      {!view && loading && <p className="admin-muted">Carregando pedidos…</p>}
-
-      {view?.source === 'error' && (
+      {!orders && loading && <p className="admin-muted">Carregando pedidos…</p>}
+      {error && (
         <p className="admin-error" role="alert">
-          {view.message}
+          {error}
+        </p>
+      )}
+      {storage === 'none' && (
+        <p className="admin-muted">
+          O banco de dados ainda não foi configurado no servidor, então os pedidos não ficam guardados aqui (eles
+          continuam chegando pelo WhatsApp e pelo n8n). Conecte o Upstash Redis na Vercel — veja o README.
         </p>
       )}
 
-      {view?.source === 'site' &&
-        (view.orders.length === 0 ? (
-          <p className="admin-muted">
-            Nenhum pedido guardado ainda. Cada pedido enviado pelo site aparece aqui, com o botão para confirmar e baixar
-            o estoque.
-          </p>
-        ) : (
-          <>
-            <p className="admin-muted">
-              Depois de combinar com o cliente no WhatsApp, toque em <strong>Confirmar e baixar estoque</strong>.
-            </p>
+      {orders && storage !== 'none' && (
+        <>
+          <div className="admin-order-filters" role="group" aria-label="Filtrar pedidos">
+            {FILTERS.map(option => (
+              <button
+                key={option.id}
+                type="button"
+                className="admin-filter"
+                aria-pressed={filter === option.id}
+                onClick={() => setFilter(option.id)}
+              >
+                {option.label}
+                <span className={option.id === 'pendente' && counts.get('pendente') ? 'is-alert' : undefined}>
+                  {counts.get(option.id) ?? 0}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {visible.length === 0 ? (
+            <p className="admin-muted">{orders.length === 0 ? 'Nenhum pedido registrado ainda.' : 'Nenhum pedido neste filtro.'}</p>
+          ) : (
             <ul className="admin-order-list">
-              {view.orders.map(order => (
-                <OrderRow
-                  key={order.orderId}
+              {visible.map(order => (
+                <OrderCard
+                  key={order.id}
                   order={order}
-                  busy={busy === order.orderId}
-                  onConfirm={() => void confirm(order)}
-                  onUndo={() => void undo(order)}
+                  busy={busyId === order.id}
+                  onStatus={status => changeStatus(order, status)}
+                  onConfirmPayment={() => confirmPayment(order)}
+                  onRecheck={() => recheck(order)}
                 />
               ))}
             </ul>
-          </>
-        ))}
+          )}
+        </>
+      )}
 
-      {view?.source === 'n8n' && <N8nOrders result={view.result} />}
+      {legacy.length > 0 && (
+        <details className="admin-legacy">
+          <summary>Pedidos antigos ({legacy.length}) — antes do controle de status, só para consulta</summary>
+          <ul className="admin-order-list">
+            {legacy.map(order => (
+              <LegacyCard key={order.orderId} order={order} />
+            ))}
+          </ul>
+        </details>
+      )}
     </section>
   )
 }
 
-/** Sem banco no servidor: lista só para consulta, lida do n8n. */
-function N8nOrders({ result }: { result: OrdersResult }) {
-  if (result.status === 'not-configured') {
-    return (
-      <p className="admin-muted">
-        Para ver e confirmar os pedidos aqui, ligue o banco de dados (Upstash) na Vercel — o passo a passo está no
-        README. Enquanto isso, os pedidos continuam chegando no WhatsApp e no n8n normalmente.
-      </p>
-    )
-  }
-  if (result.status === 'error') {
-    return (
-      <p className="admin-error" role="alert">
-        {result.message}
-      </p>
-    )
-  }
-  if (result.orders.length === 0) return <p className="admin-muted">Nenhum pedido registrado ainda.</p>
-  return (
-    <>
-      <ul className="admin-order-list">
-        {result.orders.map(order => (
-          <OrderRow key={order.orderId} order={order} />
-        ))}
-      </ul>
-      {result.skipped > 0 && (
-        <p className="admin-muted">{result.skipped} registro(s) do n8n fora do formato esperado não foram mostrados.</p>
-      )}
-    </>
-  )
-}
-
-function OrderRow({
-  order,
-  busy = false,
-  onConfirm,
-  onUndo,
-}: {
-  order: SiteOrder
-  busy?: boolean
-  onConfirm?: () => void
-  onUndo?: () => void
-}) {
+/** Pedido do formato antigo: só os dados, sem ações. */
+function LegacyCard({ order }: { order: LegacyOrder }) {
   const delivery = order.customer.fulfillment === 'entrega'
-  const confirmation = order.confirmation
-  const hasStockItems = order.items.some(item => item.productId)
   return (
-    <li className={`admin-order${confirmation ? ' is-confirmed' : ''}`}>
+    <li className="admin-order is-legacy">
       <div className="admin-order-top">
         <span className="admin-order-id">{order.orderId}</span>
-        {confirmation ? (
-          <span className="admin-order-tag is-confirmed">
-            <CheckCircle2 aria-hidden="true" /> Confirmado
-          </span>
-        ) : (
-          order.status === 'pendente' && (
-            <span className="admin-order-tag is-pending">
-              <Hourglass aria-hidden="true" /> Pendente
-            </span>
-          )
-        )}
         <time dateTime={order.createdAt}>{formatDate(order.createdAt)}</time>
+      </div>
+      <div className="admin-order-badges">
+        {order.status === 'pendente' && <span className="admin-status is-pendente">Pendente</span>}
+        {order.confirmation && (
+          <span className="admin-order-tag is-paid">
+            <BadgeCheck aria-hidden="true" /> Confirmado ({order.confirmation.by})
+          </span>
+        )}
       </div>
       <p className="admin-order-customer">
         <strong>{order.customer.name}</strong>
@@ -224,11 +252,6 @@ function OrderRow({
               {item.layers && <Palette aria-hidden="true" />}
               {item.quantity}× {item.name}
               {item.outOfStock && <em className="admin-order-shortage">sem estoque</em>}
-              {item.layers && (
-                <small>
-                  {item.layers.base} · {item.layers.recheio} · {item.layers.cobertura} · {item.layers.decoracao}
-                </small>
-              )}
             </span>
             <span>{formatBRL(item.subtotal)}</span>
           </li>
@@ -238,24 +261,140 @@ function OrderRow({
         <span>{order.payment.label}</span>
         <strong>{formatBRL(order.total)}</strong>
       </div>
+    </li>
+  )
+}
 
-      {confirmation && (
-        <p className="admin-order-confirmed">
-          Confirmado por {firstName(confirmation.by)} em {formatDate(confirmation.at)}.
-          {confirmation.stock.length > 0 && <> Estoque: {confirmation.stock.map(changeText).join(', ')}.</>}
-        </p>
+function OrderCard({
+  order,
+  busy,
+  onStatus,
+  onConfirmPayment,
+  onRecheck,
+}: {
+  order: Order
+  busy: boolean
+  onStatus: (status: OrderStatus) => void
+  onConfirmPayment: () => void
+  onRecheck: () => void
+}) {
+  const delivery = order.customer.fulfillment === 'entrega'
+  const pending = order.status === 'pendente'
+  const canPay = !pending && !order.paid && order.status !== 'cancelado'
+  const selectId = `order-status-${order.id}`
+
+  return (
+    <li className={`admin-order is-${order.status}`} aria-busy={busy}>
+      <div className="admin-order-top">
+        <span className="admin-order-id">{order.id}</span>
+        <time dateTime={order.createdAt}>{formatDate(order.createdAt)}</time>
+      </div>
+
+      <div className="admin-order-badges">
+        <span className={`admin-status is-${order.status}`}>
+          {pending && <Hourglass aria-hidden="true" />}
+          {statusLabel(order.status, order.customer.fulfillment)}
+        </span>
+        <span className={`admin-order-tag${order.paid ? ' is-paid' : ''}`}>
+          {order.paid ? <BadgeCheck aria-hidden="true" /> : <CircleDollarSign aria-hidden="true" />}
+          {order.paid ? 'Pago' : 'Não pago'}
+        </span>
+      </div>
+
+      <p className="admin-order-customer">
+        <strong>{order.customer.name}</strong>
+        <span className={`admin-order-tag${delivery ? ' is-delivery' : ''}`}>
+          {delivery ? <Truck aria-hidden="true" /> : <Store aria-hidden="true" />}
+          {delivery ? 'Entrega' : 'Retirada'}
+        </span>
+      </p>
+      <p className="admin-order-address">{order.customer.address}</p>
+
+      <ul className="admin-order-items">
+        {order.items.map((item, index) => (
+          <li key={`${item.productId ?? 'custom'}-${index}`}>
+            <span>
+              {item.layerIds && <Palette aria-hidden="true" />}
+              {item.quantity}
+              {item.unit === 'kg' ? ' kg' : '×'} {item.name}
+              {order.shortages.some(s => s.productId === item.productId) && (
+                <em className="admin-order-shortage">sem estoque</em>
+              )}
+              {item.detail && <small>{item.detail}</small>}
+            </span>
+            <span>{formatBRL(item.subtotal)}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="admin-order-bottom">
+        <span>{order.payment.label}</span>
+        <strong>{formatBRL(order.total)}</strong>
+      </div>
+
+      {pending && (
+        <div className="admin-order-blocked" role="note">
+          <p>
+            <strong>Bloqueado por falta de estoque.</strong> Não avança para preparo nem entrega até o estoque ser
+            validado.
+          </p>
+          <ul>
+            {order.shortages.map(shortage => (
+              <li key={shortage.productId}>
+                {shortageText(shortage, order.items.find(item => item.productId === shortage.productId)?.unit)}
+              </li>
+            ))}
+          </ul>
+          <p className="admin-muted">Dê entrada no estoque em “Bolos” (mais abaixo) e depois verifique.</p>
+          <button type="button" className="admin-order-btn is-primary" onClick={onRecheck} disabled={busy}>
+            {busy ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <PackageSearch aria-hidden="true" />}
+            Verificar estoque
+          </button>
+        </div>
       )}
-      {onConfirm && !confirmation && (
-        <button type="button" className="admin-order-confirm" onClick={onConfirm} disabled={busy} aria-busy={busy}>
-          {busy ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <CheckCircle2 aria-hidden="true" />}
-          {hasStockItems ? 'Confirmar e baixar estoque' : 'Confirmar pedido'}
+
+      <div className="admin-order-actions">
+        <label htmlFor={selectId}>Status da entrega</label>
+        <select
+          id={selectId}
+          value={order.status}
+          disabled={busy || order.status === 'entregue' || order.status === 'cancelado'}
+          onChange={event => onStatus(event.target.value as OrderStatus)}
+        >
+          {ORDER_STATUSES.map(status => {
+            const blocked = status !== order.status ? transitionError(order, status) : undefined
+            return (
+              <option key={status} value={status} disabled={Boolean(blocked)} title={blocked}>
+                {statusLabel(status, order.customer.fulfillment)}
+                {blocked && status !== 'pendente' ? ' 🔒' : ''}
+              </option>
+            )
+          })}
+        </select>
+        <button
+          type="button"
+          className="admin-order-btn"
+          onClick={onConfirmPayment}
+          disabled={busy || !canPay}
+          title={pending ? 'Pedido pendente: valide o estoque primeiro.' : undefined}
+        >
+          <BadgeCheck aria-hidden="true" />
+          {order.paid ? 'Pagamento confirmado' : 'Confirmar pagamento'}
         </button>
-      )}
-      {onUndo && confirmation && (
-        <button type="button" className="admin-order-undo" onClick={onUndo} disabled={busy}>
-          <Undo2 aria-hidden="true" /> Desfazer
-        </button>
-      )}
+      </div>
+
+      <details className="admin-order-history">
+        <summary>Histórico</summary>
+        <ol>
+          {order.history.map((entry, index) => (
+            <li key={index}>
+              <time dateTime={entry.at}>{formatDate(entry.at)}</time> —{' '}
+              {statusLabel(entry.status, order.customer.fulfillment)} <small>({entry.by})</small>
+              {entry.note && <small> · {entry.note}</small>}
+            </li>
+          ))}
+        </ol>
+      </details>
     </li>
   )
 }

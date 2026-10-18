@@ -28,6 +28,9 @@ import maracuja from '@/assets/maracuja.jpg'
 import kinderBueno from '@/assets/kinder_bueno.jpg'
 import ouroBrancoNinho from '@/assets/ouro_branco_ninho.jpg'
 import paveTradicional from '@/assets/pave_tradicional.jpg'
+import prestigio1kg from '@/assets/prestigio_1kg.jpg'
+import prestigioRedondo from '@/assets/prestigio_redondo.jpg'
+import doceLeiteNozes1kg from '@/assets/doce_leite_nozes_1kg.jpg'
 
 /** Preços oficiais do cardápio da Ondina. */
 const PARTY_PRICE_PER_KG = 60
@@ -88,6 +91,7 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     name: 'Prestígio',
     description: 'Massa de chocolate, recheio de prestígio e cobertura de brigadeiro com raspas de chocolate preto e morangos.',
     image: prestigio,
+    gallery: [prestigioRedondo, prestigio1kg],
     isFeatured: true,
   }),
   party(
@@ -124,6 +128,7 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
     name: 'Doce de leite com nozes',
     description: 'Massa branca, doce de leite com pedaços de nozes e cobertura de chantilly com raspas de chocolate branco, nozes e morangos.',
     image: doceLeiteNozes,
+    gallery: [doceLeiteNozes1kg],
     isFeatured: false,
   }),
   party({
@@ -299,6 +304,11 @@ const defaultImages = new Map(DEFAULT_PRODUCTS.map(product => [product.id, produ
 
 /** Foto padrão (src/assets) de um bolo do cardápio original, se houver. */
 export const defaultProductImage = (id: string): string | undefined => defaultImages.get(id)
+
+const defaultGalleries = new Map(DEFAULT_PRODUCTS.flatMap(product => (product.gallery ? [[product.id, product.gallery]] : [])))
+
+/** Fotos extras (src/assets) de um bolo do cardápio original. */
+export const defaultProductGallery = (id: string): readonly string[] | undefined => defaultGalleries.get(id)
 
 /**
  * Cardápio em uso. Começa com o padrão acima e é trocado pelo do banco de dados

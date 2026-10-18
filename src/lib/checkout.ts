@@ -26,12 +26,20 @@ export const addressSchema = z.object({
     .trim()
     .regex(/^(\d{1,5}[A-Za-z]?|s\/?n)$/i, 'Use só o número (ex.: 412) ou S/N.'),
   district: text(2, 60, 'o bairro'),
+  // "18230000" ou "18230-000" → "18230-000"
+  cep: z
+    .string()
+    .trim()
+    .regex(/^\d{5}-?\d{3}$/, 'Informe o CEP com 8 números (ex.: 18230-000).')
+    .transform(value => `${value.replace('-', '').slice(0, 5)}-${value.replace('-', '').slice(5)}`),
   complement: optionalText(60),
   reference: optionalText(120),
 })
 
 export const customerSchema = z.object({
-  name: text(2, 60, 'seu nome').regex(/^[A-Za-zÀ-ÿ' .-]+$/, 'Use só letras no nome.'),
+  name: text(2, 60, 'seu nome completo')
+    .regex(/^[A-Za-zÀ-ÿ' .-]+$/, 'Use só letras no nome.')
+    .regex(/^\S+(\s+\S+)+$/, 'Informe nome e sobrenome.'),
   city: text(2, 60, 'sua cidade'),
 })
 
@@ -93,22 +101,24 @@ export function validateChange(changeFor: number | undefined, total: number): st
 
 export interface CheckoutData {
   customer: Fulfillment
-  /** null = pedido pendente (falta estoque): sem pagamento agora, a Ondina combina na conversa. */
-  payment: Payment | null
+  /** Escolhido sempre; no pedido pendente (falta estoque) só vale depois da confirmação do estoque. */
+  payment: Payment
 }
 
-export const PENDING_PAYMENT_LABEL = 'A combinar (pedido pendente)'
+/** Complemento do pagamento no pedido pendente: nada é cobrado antes de o estoque ser confirmado. */
+export const PENDING_PAYMENT_NOTE = 'depois da confirmação do estoque'
 
 export const PICKUP_ADDRESS = STORE_ADDRESS
 
 /** Endereço em uma linha, para o resumo e a mensagem do pedido. */
 export function formatAddress(customer: Fulfillment): string {
   if (customer.fulfillment === 'retirada') return `Retirada na loja (${PICKUP_ADDRESS})`
-  const { street, number, district, complement, reference } = customer.address
+  const { street, number, district, cep, complement, reference } = customer.address
   return [
     `${street}, ${number.toUpperCase() === 'SN' ? 'S/N' : number.toUpperCase()}`,
     complement,
     `${district}, ${DELIVERY_CITY}`,
+    `CEP ${cep}`,
     reference ? `Referência: ${reference}` : undefined,
   ]
     .filter(Boolean)
