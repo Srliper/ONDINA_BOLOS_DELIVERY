@@ -17,7 +17,8 @@ const redis = (): RedisCommand | undefined => {
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 /** Apaga a trava só se ainda for nossa (outra cópia pode ter pegado depois de expirar). */
-const RELEASE_SCRIPT = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end"
+const RELEASE_SCRIPT =
+  "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end"
 
 export class BusyError extends CatalogError {
   constructor() {
@@ -77,7 +78,12 @@ export const exclusive = createWriteLock(redis())
  * Limite contra abuso: no máximo `max` ações por chave (ex.: IP) a cada `windowMs`.
  * Conta no Redis; se o Redis falhar, conta na memória (nunca bloqueia por erro do banco).
  */
-export function createRateLimit(max: number, windowMs: number, name: string, command: RedisCommand | undefined = redis()) {
+export function createRateLimit(
+  max: number,
+  windowMs: number,
+  name: string,
+  command: RedisCommand | undefined = redis(),
+) {
   const memory = new Map<string, number[]>()
   const inMemory = (key: string, now: number) => {
     const recent = (memory.get(key) ?? []).filter(at => now - at < windowMs)

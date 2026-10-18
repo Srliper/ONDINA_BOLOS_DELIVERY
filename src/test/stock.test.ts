@@ -13,14 +13,20 @@ const NOW = new Date('2026-10-13T12:00:00Z')
 /** Aplica um catálogo com estoque nos bolos indicados. */
 function withStock(stock: Record<string, number | null>): Catalog {
   let catalog = seedCatalog()
-  for (const [id, value] of Object.entries(stock)) catalog = updateItem(catalog, 'products', id, { stock: value }, NOW).catalog
+  for (const [id, value] of Object.entries(stock))
+    catalog = updateItem(catalog, 'products', id, { stock: value }, NOW).catalog
   applyCatalog(catalog)
   return catalog
 }
 
 afterEach(() => applyCatalog(seedCatalog()))
 
-const retirada: CheckoutData['customer'] = fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana Souza', city: 'São Miguel Arcanjo', phone: '5515991234567' })
+const retirada: CheckoutData['customer'] = fulfillmentSchema.parse({
+  fulfillment: 'retirada',
+  name: 'Ana Souza',
+  city: 'São Miguel Arcanjo',
+  phone: '5515991234567',
+})
 
 describe('estoque no catálogo', () => {
   it('começa sem controle e aceita catálogos salvos antes do estoque', () => {
@@ -69,7 +75,10 @@ describe('estoque no catálogo', () => {
 describe('pedido pendente', () => {
   it('fica pendente com estoque 0 ou quantidade acima do estoque', () => {
     withStock({ prestigio: 2, 'fuba-goiabada': 0 })
-    const [two, three] = [toCartItems([{ productId: 'prestigio', quantity: 2 }])[0]!, toCartItems([{ productId: 'prestigio', quantity: 3 }])[0]!]
+    const [two, three] = [
+      toCartItems([{ productId: 'prestigio', quantity: 2 }])[0]!,
+      toCartItems([{ productId: 'prestigio', quantity: 3 }])[0]!,
+    ]
     expect(lacksStock(two)).toBe(false)
     expect(lacksStock(three)).toBe(true)
     expect(isPendingOrder(toCartItems([{ productId: 'fuba-goiabada', quantity: 1 }]))).toBe(true)
@@ -129,7 +138,8 @@ describe('fotos enviadas pelo painel', () => {
         {},
         deps,
       )
-    const get = (id: string) => handleImageRequest(new Request(`https://ondinabolos.com.br/api/images/${id}`), { id }, deps)
+    const get = (id: string) =>
+      handleImageRequest(new Request(`https://ondinabolos.com.br/api/images/${id}`), { id }, deps)
     return { post, get }
   }
 
@@ -146,9 +156,9 @@ describe('fotos enviadas pelo painel', () => {
     expect((await get('../catalog')).status).toBe(404)
 
     // O endereço devolvido passa na validação do catálogo.
-    expect(updateItem(seedCatalog(), 'products', 'prestigio', { image_url: '/api/images/img-teste123' }).item.image_url).toBe(
-      '/api/images/img-teste123',
-    )
+    expect(
+      updateItem(seedCatalog(), 'products', 'prestigio', { image_url: '/api/images/img-teste123' }).item.image_url,
+    ).toBe('/api/images/img-teste123')
   })
 
   it('só a equipe envia, do próprio site, e só fotos de verdade', async () => {

@@ -22,7 +22,8 @@ const at = (ms: number) => new Date(NOW.getTime() + ms)
 
 function catalogWithStock(stock: Record<string, number | null>): Catalog {
   let catalog = seedCatalog()
-  for (const [id, value] of Object.entries(stock)) catalog = updateItem(catalog, 'products', id, { stock: value }, NOW).catalog
+  for (const [id, value] of Object.entries(stock))
+    catalog = updateItem(catalog, 'products', id, { stock: value }, NOW).catalog
   return catalog
 }
 const stockOf = (catalog: Catalog, id: string) => catalog.products.find(product => product.id === id)?.stock
@@ -63,7 +64,11 @@ describe('prazo para pagar o pedido online', () => {
 
   it('não mexe em pedido pago, pedido do WhatsApp nem pendente', () => {
     const catalog = catalogWithStock({ prestigio: 5 })
-    const paid = applyGatewayPayment(placed().order, { id: '1', status: 'approved', amount: 120, orderId: 'OB-1' }, NOW).order
+    const paid = applyGatewayPayment(
+      placed().order,
+      { id: '1', status: 'approved', amount: 120, orderId: 'OB-1' },
+      NOW,
+    ).order
     const whatsapp = createOrder(catalog, input('pix'), NOW, 'OB-2').order
     const pending = createOrder(catalogWithStock({ prestigio: 0 }), input('online'), NOW, 'OB-3').order
     const later = at(24 * 60 * 60_000)

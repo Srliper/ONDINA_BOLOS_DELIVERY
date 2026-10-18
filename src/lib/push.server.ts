@@ -13,7 +13,8 @@ export function vapidConfig(): { publicKey: string; privateKey: string; subject:
   const privateKey = process.env['VAPID_PRIVATE_KEY']
   if (!publicKey || !privateKey) return undefined
   const site = process.env['SITE_URL'] || process.env['VITE_SITE_URL']
-  const subject = process.env['VAPID_SUBJECT'] || (site?.startsWith('https://') ? site : 'mailto:equipe@ondinabolos.com.br')
+  const subject =
+    process.env['VAPID_SUBJECT'] || (site?.startsWith('https://') ? site : 'mailto:equipe@ondinabolos.com.br')
   return { publicKey, privateKey, subject }
 }
 

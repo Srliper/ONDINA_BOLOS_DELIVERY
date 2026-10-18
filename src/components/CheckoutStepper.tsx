@@ -99,7 +99,9 @@ type FieldErrors = Partial<Record<FieldName, string>>
 /** Valida a etapa 1 com o Zod e devolve os dados limpos ou os erros por campo. */
 /** Fora de São Miguel Arcanjo a entrega some: vale sempre a retirada. */
 const effectiveFulfillment = (values: FormValues): Fulfillment['fulfillment'] =>
-  values.fulfillment === 'entrega' && values.city.trim() && !isDeliveryCity(values.city) ? 'retirada' : values.fulfillment
+  values.fulfillment === 'entrega' && values.city.trim() && !isDeliveryCity(values.city)
+    ? 'retirada'
+    : values.fulfillment
 
 function parseFulfillment(values: FormValues): { data?: Fulfillment; errors: FieldErrors } {
   const { fulfillment: _chosen, name, phone, city, date: _date, period: _period, ...address } = values
@@ -147,10 +149,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
   const missing = pendingItems(items)
   const pending = missing.length > 0
 
-  const errors = useMemo(
-    () => ({ ...parseSchedule(values).errors, ...parseFulfillment(values).errors }),
-    [values],
-  )
+  const errors = useMemo(() => ({ ...parseSchedule(values).errors, ...parseFulfillment(values).errors }), [values])
   const changeFor = parseMoney(change)
   const changeError = method === 'dinheiro' ? validateChange(changeFor, total) : undefined
 
@@ -259,9 +258,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
                 </p>
               )}
 
-              {step === 0 && (
-                <AddressStep values={values} errors={showErrors ? errors : {}} onChange={set} />
-              )}
+              {step === 0 && <AddressStep values={values} errors={showErrors ? errors : {}} onChange={set} />}
               {step === 1 && customer && (
                 <PaymentStep
                   total={total}
@@ -295,11 +292,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
         </div>
 
         <div className="checkout-nav">
-          <button
-            type="button"
-            className="checkout-back"
-            onClick={() => (step === 0 ? onBack() : goTo(step - 1))}
-          >
+          <button type="button" className="checkout-back" onClick={() => (step === 0 ? onBack() : goTo(step - 1))}>
             <ArrowLeft aria-hidden="true" />
             {step === 0 ? 'Carrinho' : 'Voltar'}
           </button>
@@ -693,89 +686,89 @@ function PaymentStep({
       )}
       {channel === 'site' && (
         <p className="checkout-notice" role="status">
-          Você acompanha o pedido e conversa com a Ondina pela página do pedido, aqui no site. O pagamento é
-          confirmado na hora e o pedido segue direto para o preparo.
+          Você acompanha o pedido e conversa com a Ondina pela página do pedido, aqui no site. O pagamento é confirmado
+          na hora e o pedido segue direto para o preparo.
         </p>
       )}
 
       {channel === 'whatsapp' && (
-      <>
-      <p className="checkout-subtitle">Como você quer pagar?</p>
-      <div className="checkout-payments" role="radiogroup" aria-label="Forma de pagamento">
-        {PAYMENT_METHODS.map(option => {
-          const Icon = PAYMENT_ICONS[option]
-          return (
-            <ChoiceCard
-              key={option}
-              name="payment"
-              checked={method === option}
-              onSelect={() => onMethod(option)}
-              icon={<Icon />}
-              title={paymentLabel(option, fulfillment)}
-              hint={hints[option]}
-              wide
-            />
-          )
-        })}
-      </div>
-      {missingMethod && (
-        <p className="checkout-error" role="alert">
-          Escolha uma forma de pagamento.
-        </p>
-      )}
+        <>
+          <p className="checkout-subtitle">Como você quer pagar?</p>
+          <div className="checkout-payments" role="radiogroup" aria-label="Forma de pagamento">
+            {PAYMENT_METHODS.map(option => {
+              const Icon = PAYMENT_ICONS[option]
+              return (
+                <ChoiceCard
+                  key={option}
+                  name="payment"
+                  checked={method === option}
+                  onSelect={() => onMethod(option)}
+                  icon={<Icon />}
+                  title={paymentLabel(option, fulfillment)}
+                  hint={hints[option]}
+                  wide
+                />
+              )
+            })}
+          </div>
+          {missingMethod && (
+            <p className="checkout-error" role="alert">
+              Escolha uma forma de pagamento.
+            </p>
+          )}
 
-      <AnimatePresence initial={false} mode="wait">
-        {method === 'pix' && (
-          <motion.div
-            key="pix"
-            className="checkout-pix"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-          >
-            <SimulatedQr seed={total} />
-            <div>
-              <p className="checkout-pix-label">Valor exato</p>
-              <p className="checkout-pix-total">{formatBRL(total)}</p>
-              <p className="checkout-pix-note">
-                QR Code <strong>simulado</strong>, só para ilustrar. A chave Pix de verdade é enviada na conversa do
-                WhatsApp, depois que a Ondina confirmar o pedido.
-              </p>
-            </div>
-          </motion.div>
-        )}
-        {method === 'dinheiro' && (
-          <motion.div
-            key="dinheiro"
-            className={`checkout-field checkout-change${changeError ? ' has-error' : ''}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-          >
-            <label htmlFor={changeId}>
-              Troco para quanto? <span>(opcional)</span>
-            </label>
-            <span className="checkout-input">
-              <input
-                id={changeId}
-                value={change}
-                onChange={e => onChange(e.target.value)}
-                inputMode="decimal"
-                maxLength={9}
-                placeholder={`Ex.: ${formatBRL(Math.ceil(total / 50) * 50)}`}
-                aria-invalid={Boolean(changeError)}
-                aria-describedby={changeError ? `${changeId}-error` : undefined}
-              />
-            </span>
-            {changeError && (
-              <p id={`${changeId}-error`} className="checkout-error" role="alert">
-                {changeError}
-              </p>
+          <AnimatePresence initial={false} mode="wait">
+            {method === 'pix' && (
+              <motion.div
+                key="pix"
+                className="checkout-pix"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+              >
+                <SimulatedQr seed={total} />
+                <div>
+                  <p className="checkout-pix-label">Valor exato</p>
+                  <p className="checkout-pix-total">{formatBRL(total)}</p>
+                  <p className="checkout-pix-note">
+                    QR Code <strong>simulado</strong>, só para ilustrar. A chave Pix de verdade é enviada na conversa do
+                    WhatsApp, depois que a Ondina confirmar o pedido.
+                  </p>
+                </div>
+              </motion.div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-      </>
+            {method === 'dinheiro' && (
+              <motion.div
+                key="dinheiro"
+                className={`checkout-field checkout-change${changeError ? ' has-error' : ''}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+              >
+                <label htmlFor={changeId}>
+                  Troco para quanto? <span>(opcional)</span>
+                </label>
+                <span className="checkout-input">
+                  <input
+                    id={changeId}
+                    value={change}
+                    onChange={e => onChange(e.target.value)}
+                    inputMode="decimal"
+                    maxLength={9}
+                    placeholder={`Ex.: ${formatBRL(Math.ceil(total / 50) * 50)}`}
+                    aria-invalid={Boolean(changeError)}
+                    aria-describedby={changeError ? `${changeId}-error` : undefined}
+                  />
+                </span>
+                {changeError && (
+                  <p id={`${changeId}-error`} className="checkout-error" role="alert">
+                    {changeError}
+                  </p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
       )}
     </>
   )
@@ -808,14 +801,7 @@ function ChoiceCard({
       whileTap={disabled ? {} : { scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 400, damping: 26 }}
     >
-      <input
-        type="radio"
-        name={name}
-        checked={checked}
-        onChange={onSelect}
-        disabled={disabled}
-        className="sr-only"
-      />
+      <input type="radio" name={name} checked={checked} onChange={onSelect} disabled={disabled} className="sr-only" />
       <span className="checkout-choice-icon" aria-hidden="true">
         {icon}
       </span>
@@ -842,8 +828,7 @@ function SimulatedQr({ seed }: { seed: number }) {
       state = (state * 1103515245 + 12345) % 2147483648
       return state / 2147483648
     }
-    const inFinder = (x: number, y: number) =>
-      (x < 8 && y < 8) || (x >= size - 8 && y < 8) || (x < 8 && y >= size - 8)
+    const inFinder = (x: number, y: number) => (x < 8 && y < 8) || (x >= size - 8 && y < 8) || (x < 8 && y >= size - 8)
     const out: { x: number; y: number }[] = []
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {

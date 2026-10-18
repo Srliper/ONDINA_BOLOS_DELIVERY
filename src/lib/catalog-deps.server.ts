@@ -45,4 +45,3 @@ export const imageApiDeps: ImageApiDeps = {
   write: (id, value) => getImageStorage(id).write(value),
   isAdmin,
 }
-

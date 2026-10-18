@@ -115,7 +115,11 @@ const trackSchema = z.object({
 
 /** Endereço público do site (volta do pagamento e notificações do gateway). */
 const siteOrigin = () =>
-  (process.env['SITE_URL'] || process.env['VITE_SITE_URL'] || getRequestUrl({ xForwardedHost: true, xForwardedProto: true }).origin).replace(/\/+$/, '')
+  (
+    process.env['SITE_URL'] ||
+    process.env['VITE_SITE_URL'] ||
+    getRequestUrl({ xForwardedHost: true, xForwardedProto: true }).origin
+  ).replace(/\/+$/, '')
 
 /** Mesma resposta para pedido inexistente e chave errada: não dá para adivinhar pedidos. */
 const NOT_FOUND = 'Pedido não encontrado. Confira o link que você recebeu.'
@@ -131,7 +135,14 @@ async function trackedOrder(id: string, token: string): Promise<Order> {
  * na API deles antes de responder. Ao abrir, as mensagens da loja contam como lidas.
  */
 export const getTrackedOrder = createServerFn({ method: 'POST' })
-  .validator(trackSchema.extend({ paymentId: z.string().regex(/^\d{1,20}$/).optional() }))
+  .validator(
+    trackSchema.extend({
+      paymentId: z
+        .string()
+        .regex(/^\d{1,20}$/)
+        .optional(),
+    }),
+  )
   .handler(({ data }): Promise<Result<{ order: TrackedOrder }>> =>
     attempt(async () => {
       let order = await trackedOrder(data.id, data.token)
@@ -162,7 +173,8 @@ export const startOrderPayment = createServerFn({ method: 'POST' })
   .handler(({ data }): Promise<Result<{ url: string }>> =>
     attempt(async () => {
       const gateway = configuredGateway()
-      if (!gateway) throw new OrderError(503, 'O pagamento online está indisponível agora. Fale com a Ondina pelo WhatsApp.')
+      if (!gateway)
+        throw new OrderError(503, 'O pagamento online está indisponível agora. Fale com a Ondina pelo WhatsApp.')
       const order = await trackedOrder(data.id, data.token)
       if (!canPayOnline(order, new Date())) {
         throw new OrderError(
@@ -170,10 +182,10 @@ export const startOrderPayment = createServerFn({ method: 'POST' })
           order.status === 'aguardando_pagamento' && order.payment.method === 'online' && !order.paid
             ? 'O prazo para pagar este pedido acabou. Faça um pedido novo ou fale com a Ondina.'
             : order.paid
-            ? 'Este pedido já está pago.'
-            : order.status === 'pendente'
-              ? 'O pedido está aguardando estoque: o pagamento abre quando a Ondina confirmar.'
-              : 'Este pedido não está aguardando pagamento online.',
+              ? 'Este pedido já está pago.'
+              : order.status === 'pendente'
+                ? 'O pedido está aguardando estoque: o pagamento abre quando a Ondina confirmar.'
+                : 'Este pedido não está aguardando pagamento online.',
         )
       }
       const checkout = await gateway.createCheckout(order, siteOrigin())
@@ -190,7 +202,8 @@ export const sendCustomerMessage = createServerFn({ method: 'POST' })
   .validator(trackSchema.extend({ text: messageTextSchema }))
   .handler(({ data }): Promise<Result<{ order: TrackedOrder }>> =>
     attempt(async () => {
-      if (await messageRateLimited(clientIp())) throw new OrderError(429, 'Muitas mensagens seguidas. Espere alguns minutos.')
+      if (await messageRateLimited(clientIp()))
+        throw new OrderError(429, 'Muitas mensagens seguidas. Espere alguns minutos.')
       const order = await exclusive(async () => {
         const doc = await loadOrders()
         const current = doc.orders.find(entry => entry.id === data.id)
@@ -199,7 +212,12 @@ export const sendCustomerMessage = createServerFn({ method: 'POST' })
         await saveOrders(replaceOrder(doc, updated))
         return updated
       })
-      await notifyStore({ event: 'mensagem-cliente', orderId: order.id, customer: order.customer.name, text: data.text })
+      await notifyStore({
+        event: 'mensagem-cliente',
+        orderId: order.id,
+        customer: order.customer.name,
+        text: data.text,
+      })
       return { order: trackedView(order, new Date()) }
     }),
   )
@@ -234,7 +252,11 @@ export const adminPulse = createServerFn({ method: 'GET' }).handler(
       if (getOrdersStorage().kind === 'none') return { pulse: empty, restockWaiting: 0, restockIds: [] }
       const [doc, requests] = await Promise.all([sweepExpired(), loadStockRequests()])
       const waiting = requests.requests.filter(entry => entry.status === 'aguardando')
-      return { pulse: ordersPulse(doc.orders), restockWaiting: waiting.length, restockIds: waiting.map(entry => entry.id) }
+      return {
+        pulse: ordersPulse(doc.orders),
+        restockWaiting: waiting.length,
+        restockIds: waiting.map(entry => entry.id),
+      }
     }),
 )
 

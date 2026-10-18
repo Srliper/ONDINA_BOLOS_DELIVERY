@@ -24,7 +24,8 @@ const newIds = (now: readonly string[], before: readonly string[]) => now.filter
 /** Toque curto gerado no navegador (sem arquivo de áudio). */
 function chime() {
   try {
-    const AudioContextClass = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    const AudioContextClass =
+      window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     if (!AudioContextClass) return
     const context = new AudioContextClass()
     const notes = [880, 1320]
@@ -60,7 +61,10 @@ async function systemNotify(title: string, body: string) {
 }
 
 const pushSupported = () =>
-  typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined'
+  typeof window !== 'undefined' &&
+  'serviceWorker' in navigator &&
+  'PushManager' in window &&
+  typeof Notification !== 'undefined'
 
 /** Chave VAPID (base64url) no formato que o navegador pede. */
 function vapidKey(base64: string): Uint8Array<ArrayBuffer> {
@@ -134,12 +138,19 @@ export function AdminNotifier() {
       if (!before) return
       const alerts: string[] = []
       const created = newIds(next.pulse.openIds, before.pulse.openIds)
-      const paid = newIds(next.pulse.toDeliverIds, before.pulse.toDeliverIds).filter(id => before.pulse.openIds.includes(id))
+      const paid = newIds(next.pulse.toDeliverIds, before.pulse.toDeliverIds).filter(id =>
+        before.pulse.openIds.includes(id),
+      )
       const restock = newIds(next.restockIds, before.restockIds)
-      if (created.length) alerts.push(created.length === 1 ? `Pedido novo: ${created[0]}` : `${created.length} pedidos novos`)
-      if (paid.length) alerts.push(paid.length === 1 ? `Para entregar: ${paid[0]}` : `${paid.length} pedidos para entregar`)
+      if (created.length)
+        alerts.push(created.length === 1 ? `Pedido novo: ${created[0]}` : `${created.length} pedidos novos`)
+      if (paid.length)
+        alerts.push(paid.length === 1 ? `Para entregar: ${paid[0]}` : `${paid.length} pedidos para entregar`)
       if (next.pulse.unread > before.pulse.unread) alerts.push('Mensagem nova de cliente')
-      if (restock.length) alerts.push(restock.length === 1 ? 'Cliente quer um bolo esgotado' : `${restock.length} clientes querem bolos esgotados`)
+      if (restock.length)
+        alerts.push(
+          restock.length === 1 ? 'Cliente quer um bolo esgotado' : `${restock.length} clientes querem bolos esgotados`,
+        )
       if (!alerts.length) return
 
       chime()
@@ -224,7 +235,12 @@ export function AdminNotifier() {
           <BellRing aria-hidden="true" /> Avisos
         </h2>
         {push === 'on' ? (
-          <button type="button" className="admin-refresh" onClick={() => void disable()} title="Desligar neste aparelho">
+          <button
+            type="button"
+            className="admin-refresh"
+            onClick={() => void disable()}
+            title="Desligar neste aparelho"
+          >
             <BellRing aria-hidden="true" /> Notificações ligadas (mesmo fechado)
           </button>
         ) : permission === 'granted' && push !== 'off' ? (
@@ -257,7 +273,17 @@ export function AdminNotifier() {
   )
 }
 
-function AlertItem({ icon, count, label, hot }: { icon: ReactNode; count: number | undefined; label: string; hot?: boolean }) {
+function AlertItem({
+  icon,
+  count,
+  label,
+  hot,
+}: {
+  icon: ReactNode
+  count: number | undefined
+  label: string
+  hot?: boolean
+}) {
   return (
     <li className={hot && count ? 'is-hot' : undefined}>
       <span aria-hidden="true">{icon}</span>

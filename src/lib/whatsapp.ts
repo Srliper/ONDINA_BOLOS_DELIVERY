@@ -26,8 +26,7 @@ export const N8N_TIMEOUT_MS = 2500
 /** Tempo para o confete aparecer antes de a conversa abrir. */
 const CONFETTI_LEAD_MS = 450
 
-const whatsappUrl = (text: string) =>
-  `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`
+const whatsappUrl = (text: string) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`
 
 /** Link oficial da API do WhatsApp com a mensagem do pedido. */
 export const orderWhatsAppUrl = (text: string) =>

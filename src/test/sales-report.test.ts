@@ -1,12 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import { seedCatalog } from '@/lib/catalog'
-import { applyGatewayPayment, changeStatus, confirmPayment, createOrder, placeOrderSchema, type PlaceOrderInput } from '@/lib/order-flow'
+import {
+  applyGatewayPayment,
+  changeStatus,
+  confirmPayment,
+  createOrder,
+  placeOrderSchema,
+  type PlaceOrderInput,
+} from '@/lib/order-flow'
 import { salesReport } from '@/lib/sales-report'
 
 const NOW = new Date('2026-10-18T15:00:00Z')
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000)
 
-const order = (id: string, when: Date, method: PlaceOrderInput['payment']['method'], quantity: number, productId = 'prestigio') =>
+const order = (
+  id: string,
+  when: Date,
+  method: PlaceOrderInput['payment']['method'],
+  quantity: number,
+  productId = 'prestigio',
+) =>
   createOrder(
     seedCatalog(),
     placeOrderSchema.parse({
@@ -19,7 +32,12 @@ const order = (id: string, when: Date, method: PlaceOrderInput['payment']['metho
   ).order
 
 describe('relatório de vendas', () => {
-  const site = applyGatewayPayment(order('OB-1', daysAgo(0), 'online', 2), { id: '1', status: 'approved', amount: 120, orderId: 'OB-1' }).order
+  const site = applyGatewayPayment(order('OB-1', daysAgo(0), 'online', 2), {
+    id: '1',
+    status: 'approved',
+    amount: 120,
+    orderId: 'OB-1',
+  }).order
   const whatsapp = confirmPayment(order('OB-2', daysAgo(1), 'pix', 1), 'ondina')
   const unpaid = order('OB-3', daysAgo(2), 'dinheiro', 3)
   const cancelled = changeStatus(order('OB-4', daysAgo(1), 'pix', 5), seedCatalog(), 'cancelado', 'ondina').order
@@ -28,7 +46,14 @@ describe('relatório de vendas', () => {
 
   it('soma só o que foi pago no período, sem cancelados', () => {
     const report = salesReport(all, 7, NOW)
-    expect(report).toMatchObject({ revenue: 180, paidOrders: 2, orders: 3, openValue: 180, cancelled: 1, averageTicket: 90 })
+    expect(report).toMatchObject({
+      revenue: 180,
+      paidOrders: 2,
+      orders: 3,
+      openValue: 180,
+      cancelled: 1,
+      averageTicket: 90,
+    })
     expect(report.byChannel).toEqual({ site: { orders: 1, revenue: 120 }, whatsapp: { orders: 2, revenue: 60 } })
   })
 

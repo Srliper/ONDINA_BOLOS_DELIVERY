@@ -5,11 +5,7 @@ import { DELIVERY_CITY, isDeliveryCity, STORE_ADDRESS } from '@/lib/shipping'
 /* ---------- Entrega ou retirada + endereço ---------- */
 
 const text = (min: number, max: number, label: string) =>
-  z
-    .string()
-    .trim()
-    .min(min, `Informe ${label}.`)
-    .max(max, `Use no máximo ${max} caracteres.`)
+  z.string().trim().min(min, `Informe ${label}.`).max(max, `Use no máximo ${max} caracteres.`)
 
 const optionalText = (max: number) =>
   z
@@ -164,7 +160,9 @@ const STORE_TZ = 'America/Sao_Paulo'
 
 /** "AAAA-MM-DD" de hoje no horário da loja. */
 export const storeToday = (now = new Date()): string =>
-  new Intl.DateTimeFormat('en-CA', { timeZone: STORE_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+  new Intl.DateTimeFormat('en-CA', { timeZone: STORE_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(
+    now,
+  )
 
 /** Hora cheia de agora no horário da loja (0–23). */
 const storeHour = (now: Date): number =>

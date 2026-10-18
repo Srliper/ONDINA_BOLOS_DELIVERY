@@ -35,13 +35,25 @@ describe('catálogo padrão', () => {
 describe('CRUD puro', () => {
   it('cria com id a partir do nome, exige imagem para item novo e recusa id repetido', () => {
     const seed = seedCatalog()
-    expect(() => createItem(seed, 'fillings', { name: 'Doce de Leite com Nozes', price: 19, description: '', badge: null, image_url: '' })).toThrow(
-      CatalogError,
-    )
+    expect(() =>
+      createItem(seed, 'fillings', {
+        name: 'Doce de Leite com Nozes',
+        price: 19,
+        description: '',
+        badge: null,
+        image_url: '',
+      }),
+    ).toThrow(CatalogError)
     const { catalog, item } = createItem(
       seed,
       'fillings',
-      { name: 'Doce de Leite com Nozes', price: 19, description: 'Cremoso', badge: null, image_url: 'https://exemplo.com/nozes.png' },
+      {
+        name: 'Doce de Leite com Nozes',
+        price: 19,
+        description: 'Cremoso',
+        badge: null,
+        image_url: 'https://exemplo.com/nozes.png',
+      },
       NOW,
     )
     expect(item.id).toBe('doce-de-leite-com-nozes')
@@ -52,11 +64,22 @@ describe('CRUD puro', () => {
 
   it('valida preço, nome e endereço da imagem', () => {
     try {
-      createItem(seedCatalog(), 'products', { name: 'X', price: -1, description: '', image_url: 'ftp://x', category: 'festas', price_unit: 'o quilo', unit: 'kg', featured: false })
+      createItem(seedCatalog(), 'products', {
+        name: 'X',
+        price: -1,
+        description: '',
+        image_url: 'ftp://x',
+        category: 'festas',
+        price_unit: 'o quilo',
+        unit: 'kg',
+        featured: false,
+      })
       expect.unreachable()
     } catch (error) {
       expect(error).toBeInstanceOf(CatalogError)
-      expect(Object.keys((error as CatalogError).issues ?? {})).toEqual(expect.arrayContaining(['name', 'price', 'image_url']))
+      expect(Object.keys((error as CatalogError).issues ?? {})).toEqual(
+        expect.arrayContaining(['name', 'price', 'image_url']),
+      )
     }
   })
 
@@ -90,8 +113,15 @@ describe('applyCatalog', () => {
     applyCatalog(withFilling)
     expect(getProductById('prestigio')?.price).toBe(70)
     expect(products).toHaveLength(DEFAULT_PRODUCTS.length)
-    expect(getLayerById('pistache')).toMatchObject({ category: 'recheio', price: 22, badge: 'premium', image: '/layers/pistache.png' })
-    expect(BOLO_LAYERS.map(l => l.category).indexOf('recheio')).toBeGreaterThan(BOLO_LAYERS.map(l => l.category).indexOf('base'))
+    expect(getLayerById('pistache')).toMatchObject({
+      category: 'recheio',
+      price: 22,
+      badge: 'premium',
+      image: '/layers/pistache.png',
+    })
+    expect(BOLO_LAYERS.map(l => l.category).indexOf('recheio')).toBeGreaterThan(
+      BOLO_LAYERS.map(l => l.category).indexOf('base'),
+    )
   })
 })
 
@@ -109,7 +139,10 @@ describe('API /api/catalog', () => {
       const [, , , entity = '', id] = path.split('/')
       const request = new Request(`https://ondinabolos.com.br${path}`, {
         method,
-        headers: body === undefined ? headers : { 'content-type': 'application/json', origin: 'https://ondinabolos.com.br', ...headers },
+        headers:
+          body === undefined
+            ? headers
+            : { 'content-type': 'application/json', origin: 'https://ondinabolos.com.br', ...headers },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       })
       return handleCatalogRequest(request, { entity, id }, deps)
@@ -119,7 +152,13 @@ describe('API /api/catalog', () => {
 
   it('faz o CRUD completo de recheios', async () => {
     const { call, stored } = setup()
-    const created = await call('POST', '/api/catalog/fillings', { name: 'Pistache', price: 22, description: 'Creme de pistache', badge: null, image_url: 'https://cdn.exemplo.com/pistache.png' })
+    const created = await call('POST', '/api/catalog/fillings', {
+      name: 'Pistache',
+      price: 22,
+      description: 'Creme de pistache',
+      badge: null,
+      image_url: 'https://cdn.exemplo.com/pistache.png',
+    })
     expect(created.status).toBe(201)
     expect((await created.json()).data.id).toBe('pistache')
 
@@ -140,7 +179,10 @@ describe('API /api/catalog', () => {
     expect((await anon.call('POST', '/api/catalog/products', {})).status).toBe(401)
 
     const { call } = setup()
-    expect((await call('DELETE', '/api/catalog/products/prestigio', undefined, { origin: 'https://site-malicioso.com' })).status).toBe(403)
+    expect(
+      (await call('DELETE', '/api/catalog/products/prestigio', undefined, { origin: 'https://site-malicioso.com' }))
+        .status,
+    ).toBe(403)
     const notJson = await handleCatalogRequest(
       new Request('https://ondinabolos.com.br/api/catalog/products', { method: 'POST', body: 'name=x' }),
       { entity: 'products' },
@@ -152,7 +194,14 @@ describe('API /api/catalog', () => {
 
   it('devolve os erros de validação por campo', async () => {
     const { call } = setup()
-    const response = await call('POST', '/api/catalog/layers', { name: 'Base X', price: 'caro', description: '', category: 'teto', badge: null, image_url: '' })
+    const response = await call('POST', '/api/catalog/layers', {
+      name: 'Base X',
+      price: 'caro',
+      description: '',
+      category: 'teto',
+      badge: null,
+      image_url: '',
+    })
     expect(response.status).toBe(400)
     expect(Object.keys((await response.json()).issues)).toEqual(expect.arrayContaining(['price', 'category']))
   })

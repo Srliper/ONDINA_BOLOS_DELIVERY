@@ -17,7 +17,11 @@ export function StackedCake({
 }) {
   const scale = width / LAYER_WIDTH
   return (
-    <span className={cn('stacked-cake', className)} style={{ width, height: ASSEMBLED_HEIGHT * scale }} aria-hidden="true">
+    <span
+      className={cn('stacked-cake', className)}
+      style={{ width, height: ASSEMBLED_HEIGHT * scale }}
+      aria-hidden="true"
+    >
       {layers.map(layer => (
         <StackedLayer key={layer.category} layer={layer} scale={scale} width={width} />
       ))}

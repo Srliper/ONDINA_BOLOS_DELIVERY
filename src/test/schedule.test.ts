@@ -22,17 +22,34 @@ describe('para quando (data e horário)', () => {
   })
 
   it('recusa passado, domingo, noite fora do sábado e longe demais', () => {
-    expect(scheduleError({ date: '2026-10-17', period: 'tarde' }, MONDAY_9H)).toMatchObject({ field: 'date', message: /a partir de hoje/ })
-    expect(scheduleError({ date: '2026-10-25', period: 'tarde' }, MONDAY_9H)).toMatchObject({ field: 'date', message: /domingos/ })
-    expect(scheduleError({ date: '2026-10-20', period: 'noite' }, MONDAY_9H)).toMatchObject({ field: 'period', message: /sábados/ })
-    expect(scheduleError({ date: '2027-01-30', period: 'tarde' }, MONDAY_9H)).toMatchObject({ field: 'date', message: /60 dias/ })
+    expect(scheduleError({ date: '2026-10-17', period: 'tarde' }, MONDAY_9H)).toMatchObject({
+      field: 'date',
+      message: /a partir de hoje/,
+    })
+    expect(scheduleError({ date: '2026-10-25', period: 'tarde' }, MONDAY_9H)).toMatchObject({
+      field: 'date',
+      message: /domingos/,
+    })
+    expect(scheduleError({ date: '2026-10-20', period: 'noite' }, MONDAY_9H)).toMatchObject({
+      field: 'period',
+      message: /sábados/,
+    })
+    expect(scheduleError({ date: '2027-01-30', period: 'tarde' }, MONDAY_9H)).toMatchObject({
+      field: 'date',
+      message: /60 dias/,
+    })
     expect(scheduleError({ date: '2026-02-30', period: 'tarde' }, MONDAY_9H)).toMatchObject({ field: 'date' })
     expect(scheduleError({ date: '2026-10-20', period: '' }, MONDAY_9H)).toMatchObject({ field: 'period' })
   })
 
   it('hoje, só faixas que começam daqui a pelo menos 1 hora', () => {
-    expect(scheduleError({ date: '2026-10-19', period: 'manha' }, MONDAY_9H)).toMatchObject({ field: 'period', message: /já passou/ })
-    expect(scheduleError({ date: '2026-10-19', period: 'tarde' }, new Date('2026-10-19T14:30:00Z'))).toMatchObject({ field: 'period' })
+    expect(scheduleError({ date: '2026-10-19', period: 'manha' }, MONDAY_9H)).toMatchObject({
+      field: 'period',
+      message: /já passou/,
+    })
+    expect(scheduleError({ date: '2026-10-19', period: 'tarde' }, new Date('2026-10-19T14:30:00Z'))).toMatchObject({
+      field: 'period',
+    })
   })
 
   it('texto pronto para a mensagem e o painel', () => {
@@ -44,8 +61,18 @@ describe('para quando (data e horário)', () => {
     const schedule = { date: addDays(storeToday(), 1), period: 'tarde' as const }
     // Amanhã pode cair num domingo: nesse caso, depois de amanhã.
     if (scheduleError(schedule)) schedule.date = addDays(schedule.date, 1)
-    const customer = { fulfillment: 'retirada' as const, name: 'Ana Souza', city: 'São Miguel Arcanjo', phone: '15991234567' }
-    const parsed = placeOrderSchema.parse({ customer, payment: { method: 'pix' }, lines: [{ productId: 'prestigio', quantity: 1 }], schedule })
+    const customer = {
+      fulfillment: 'retirada' as const,
+      name: 'Ana Souza',
+      city: 'São Miguel Arcanjo',
+      phone: '15991234567',
+    }
+    const parsed = placeOrderSchema.parse({
+      customer,
+      payment: { method: 'pix' },
+      lines: [{ productId: 'prestigio', quantity: 1 }],
+      schedule,
+    })
     const { order } = createOrder(seedCatalog(), parsed)
     expect(order.schedule).toEqual({ ...schedule, label: scheduleLabel(schedule) })
     expect(trackedView(order).scheduleLabel).toBe(scheduleLabel(schedule))
@@ -58,7 +85,12 @@ describe('para quando (data e horário)', () => {
   })
 
   it('o servidor recusa data inválida', () => {
-    const customer = { fulfillment: 'retirada' as const, name: 'Ana Souza', city: 'São Miguel Arcanjo', phone: '15991234567' }
+    const customer = {
+      fulfillment: 'retirada' as const,
+      name: 'Ana Souza',
+      city: 'São Miguel Arcanjo',
+      phone: '15991234567',
+    }
     const result = placeOrderSchema.safeParse({
       customer,
       payment: { method: 'pix' },

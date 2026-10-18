@@ -47,7 +47,13 @@ export function nearestLoaded<T>(items: readonly (T | null)[], i: number): T | n
 export type FitMode = 'cover' | 'contain'
 
 /** [x, y, largura, altura] para desenhar a imagem preservando a proporção. */
-export function fitRect(iw: number, ih: number, cw: number, ch: number, mode: FitMode): [number, number, number, number] {
+export function fitRect(
+  iw: number,
+  ih: number,
+  cw: number,
+  ch: number,
+  mode: FitMode,
+): [number, number, number, number] {
   const scale = mode === 'cover' ? Math.max(cw / iw, ch / ih) : Math.min(cw / iw, ch / ih)
   const w = iw * scale
   const h = ih * scale

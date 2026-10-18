@@ -15,7 +15,9 @@ const MAX = 5
 export function recentOrders(): RememberedOrder[] {
   try {
     const list = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? '[]') as RememberedOrder[]
-    return Array.isArray(list) ? list.filter(entry => typeof entry?.url === 'string' && typeof entry.id === 'string').slice(0, MAX) : []
+    return Array.isArray(list)
+      ? list.filter(entry => typeof entry?.url === 'string' && typeof entry.id === 'string').slice(0, MAX)
+      : []
   } catch {
     return []
   }

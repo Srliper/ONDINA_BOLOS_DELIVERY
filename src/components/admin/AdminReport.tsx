@@ -23,7 +23,13 @@ export function AdminReport({ orders }: { orders: readonly Order[] }) {
         </h2>
         <div className="admin-order-filters" role="group" aria-label="Período">
           {PERIODS.map(option => (
-            <button key={option} type="button" className="admin-filter" aria-pressed={days === option} onClick={() => setDays(option)}>
+            <button
+              key={option}
+              type="button"
+              className="admin-filter"
+              aria-pressed={days === option}
+              onClick={() => setDays(option)}
+            >
               {option} dias
             </button>
           ))}
@@ -53,7 +59,11 @@ export function AdminReport({ orders }: { orders: readonly Order[] }) {
 
       <div className="admin-report-chart" role="img" aria-label={`Vendas pagas por dia nos últimos ${days} dias`}>
         {report.daily.map(day => (
-          <div key={day.date} className="admin-report-col" title={`${shortDay(day.date)}: ${formatBRL(day.revenue)} · ${day.orders} pedidos`}>
+          <div
+            key={day.date}
+            className="admin-report-col"
+            title={`${shortDay(day.date)}: ${formatBRL(day.revenue)} · ${day.orders} pedidos`}
+          >
             <span style={{ height: `${(day.revenue / peak) * 100}%` }} />
           </div>
         ))}
@@ -90,7 +100,10 @@ export function AdminReport({ orders }: { orders: readonly Order[] }) {
               {report.topProducts.map(product => (
                 <li key={`${product.name}-${product.unit}`}>
                   <span>
-                    {product.name} <small>({product.quantity} {product.unit === 'kg' ? 'kg' : 'un.'})</small>
+                    {product.name}{' '}
+                    <small>
+                      ({product.quantity} {product.unit === 'kg' ? 'kg' : 'un.'})
+                    </small>
                   </span>
                   <strong>{formatBRL(product.revenue)}</strong>
                   <i style={{ width: `${(product.revenue / topPeak) * 100}%` }} aria-hidden="true" />
@@ -100,7 +113,9 @@ export function AdminReport({ orders }: { orders: readonly Order[] }) {
           )}
         </div>
       </div>
-      {report.cancelled > 0 && <p className="admin-muted">{report.cancelled} cancelados no período (fora das contas).</p>}
+      {report.cancelled > 0 && (
+        <p className="admin-muted">{report.cancelled} cancelados no período (fora das contas).</p>
+      )}
     </section>
   )
 }

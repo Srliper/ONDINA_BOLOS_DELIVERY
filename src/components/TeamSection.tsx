@@ -39,7 +39,14 @@ function TeamCard({ member, index }: { member: TeamMember; index: number }) {
     <li className="team-card" data-reveal style={stagger(index)}>
       <div className="team-avatar">
         {member.photo ? (
-          <img src={member.photo} alt={`Foto de ${member.name}`} width={112} height={112} loading="lazy" decoding="async" />
+          <img
+            src={member.photo}
+            alt={`Foto de ${member.name}`}
+            width={112}
+            height={112}
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <span aria-hidden="true">{initials(member.name)}</span>
         )}

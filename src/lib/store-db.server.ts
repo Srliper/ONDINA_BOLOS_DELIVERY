@@ -1,7 +1,16 @@
 import { CatalogError, type Catalog } from '@/lib/catalog'
 import { notifySoldOut, notifyStore } from '@/lib/catalog-deps.server'
 import { getOrdersStorage, getStockRequestsStorage, loadCatalog, saveCatalog } from '@/lib/catalog-store'
-import { applyGatewayPayment, expireUnpaid, isPaymentExpired, OrderError, ordersDocSchema, replaceOrder, type Order, type OrdersDoc } from '@/lib/order-flow'
+import {
+  applyGatewayPayment,
+  expireUnpaid,
+  isPaymentExpired,
+  OrderError,
+  ordersDocSchema,
+  replaceOrder,
+  type Order,
+  type OrdersDoc,
+} from '@/lib/order-flow'
 import type { PaymentGateway } from '@/lib/payment-gateway'
 import type { SoldOutProduct } from '@/lib/stock-alert'
 import { exclusive } from '@/lib/redis-guard.server'
@@ -35,7 +44,9 @@ export const saveOrders = (doc: OrdersDoc) => getOrdersStorage().write(JSON.stri
 const newlySoldOut = (before: Catalog, after: Catalog): SoldOutProduct[] =>
   after.products.flatMap(product => {
     const was = before.products.find(entry => entry.id === product.id)?.stock
-    return product.stock === 0 && was !== 0 && was !== null && was !== undefined ? [{ id: product.id, name: product.name }] : []
+    return product.stock === 0 && was !== 0 && was !== null && was !== undefined
+      ? [{ id: product.id, name: product.name }]
+      : []
   })
 
 /**
@@ -86,7 +97,12 @@ export async function syncGatewayPayment(
     if (!result.changed) return order
     await saveOrders(replaceOrder(doc, result.order))
     if (result.approved) {
-      await notifyStore({ event: 'pagamento-aprovado', orderId: order.id, customer: order.customer.name, total: order.total })
+      await notifyStore({
+        event: 'pagamento-aprovado',
+        orderId: order.id,
+        customer: order.customer.name,
+        total: order.total,
+      })
     }
     return result.order
   })

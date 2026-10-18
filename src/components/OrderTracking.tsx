@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { BadgeCheck, CreditCard, Hourglass, Loader2, MessageCircle, Palette, Send, ShieldCheck, XCircle } from 'lucide-react'
+import {
+  BadgeCheck,
+  CreditCard,
+  Hourglass,
+  Loader2,
+  MessageCircle,
+  Palette,
+  Send,
+  ShieldCheck,
+  XCircle,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import logo from '@/assets/ondina_logo.png'
 import { formatBRL } from '@/lib/format'
@@ -296,7 +306,13 @@ function StatusBlock({ order, paying, onPay }: { order: TrackedOrder; paying: bo
               sozinha.
             </p>
           )}
-          <button type="button" className="checkout-button is-online" onClick={onPay} disabled={paying} aria-busy={paying}>
+          <button
+            type="button"
+            className="checkout-button is-online"
+            onClick={onPay}
+            disabled={paying}
+            aria-busy={paying}
+          >
             {paying ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <CreditCard aria-hidden="true" />}
             {paying ? 'Abrindo pagamento…' : `Pagar ${formatBRL(order.total)} agora`}
           </button>

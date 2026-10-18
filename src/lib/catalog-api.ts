@@ -79,7 +79,8 @@ export async function handleCatalogRequest(
     }
 
     // Daqui em diante, escrita: só a administração, do próprio site.
-    if (!(await deps.isAdmin())) throw new CatalogError(401, 'Entre na área da equipe (/admin) para alterar o catálogo.')
+    if (!(await deps.isAdmin()))
+      throw new CatalogError(401, 'Entre na área da equipe (/admin) para alterar o catálogo.')
     if (!sameOrigin(request)) throw new CatalogError(403, 'Origem não permitida.')
 
     const hasBody = (method === 'POST' && !id) || ((method === 'PUT' || method === 'PATCH') && Boolean(id))

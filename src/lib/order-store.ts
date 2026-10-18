@@ -48,7 +48,10 @@ async function fromUpstash(url: string, token: string): Promise<LegacyOrder[]> {
 async function fromFile(path: string): Promise<LegacyOrder[]> {
   const { readFile } = await import('node:fs/promises')
   try {
-    const data = JSON.parse(await readFile(path, 'utf8')) as { orders?: unknown[]; confirmed?: Record<string, OrderConfirmation> }
+    const data = JSON.parse(await readFile(path, 'utf8')) as {
+      orders?: unknown[]
+      confirmed?: Record<string, OrderConfirmation>
+    }
     return toOrders(data.orders ?? [], data.confirmed ?? {})
   } catch {
     return []

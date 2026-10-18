@@ -1,11 +1,5 @@
 import { z } from 'zod'
-import {
-  applyLayers,
-  DEFAULT_LAYERS,
-  hasDefaultLayerArt,
-  LAYER_OFFSET_Y,
-  LAYER_ORDER,
-} from '@/data/bolo-layers'
+import { applyLayers, DEFAULT_LAYERS, hasDefaultLayerArt, LAYER_OFFSET_Y, LAYER_ORDER } from '@/data/bolo-layers'
 import { applyProducts, DEFAULT_PRODUCTS, defaultProductGallery, defaultProductImage } from '@/data/products'
 import type { BoloLayer } from '@/types/bolo-layers'
 import type { Product } from '@/types/product'
@@ -37,7 +31,11 @@ const badgeSchema = z.enum(['popular', 'premium']).nullable()
 const common = {
   id: slugSchema,
   name: z.string().trim().min(2, 'Informe o nome.').max(80),
-  price: z.number({ invalid_type_error: 'Informe o preço.' }).finite().min(0, 'O preço não pode ser negativo.').max(10_000),
+  price: z
+    .number({ invalid_type_error: 'Informe o preço.' })
+    .finite()
+    .min(0, 'O preço não pode ser negativo.')
+    .max(10_000),
   description: z.string().trim().max(300, 'Use no máximo 300 caracteres.'),
   image_url: imageUrlSchema,
 }
@@ -287,7 +285,8 @@ export function deleteItem(catalog: Catalog, entity: EntityName, id: string, now
   const rest = (catalog[entity] as { id: string }[]).filter(item => item.id !== id)
 
   // O cardápio e o Monte seu Bolo precisam de pelo menos uma opção em cada lugar.
-  if (rest.length === 0) throw new CatalogError(409, `É preciso manter pelo menos um item em ${ENTITY_LABELS[entity].many}.`)
+  if (rest.length === 0)
+    throw new CatalogError(409, `É preciso manter pelo menos um item em ${ENTITY_LABELS[entity].many}.`)
   if (entity === 'layers') {
     const category = (current as CatalogLayer).category
     if (!(rest as CatalogLayer[]).some(item => item.category === category)) {

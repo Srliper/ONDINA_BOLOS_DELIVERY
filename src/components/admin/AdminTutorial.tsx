@@ -1,5 +1,19 @@
 import type { ReactNode } from 'react'
-import { Bell, BellRing, BookOpen, Boxes, Camera, ClipboardList, CreditCard, Hourglass, KeyRound, Layers, MessageCircle, Tag, Users } from 'lucide-react'
+import {
+  Bell,
+  BellRing,
+  BookOpen,
+  Boxes,
+  Camera,
+  ClipboardList,
+  CreditCard,
+  Hourglass,
+  KeyRound,
+  Layers,
+  MessageCircle,
+  Tag,
+  Users,
+} from 'lucide-react'
 
 interface Lesson {
   id: string
@@ -19,8 +33,12 @@ const LESSONS: Lesson[] = [
         No site, role até o fim da página e toque em <strong>Área da equipe</strong> (ou abra o endereço do site com{' '}
         <code>/admin</code> no final).
       </>,
-      <>Toque no seu nome e digite a senha da equipe. Depois, toque em <strong>Entrar</strong>.</>,
-      <>Você fica conectado por 12 horas neste aparelho. Para sair, use o botão <strong>Sair</strong> lá em cima.</>,
+      <>
+        Toque no seu nome e digite a senha da equipe. Depois, toque em <strong>Entrar</strong>.
+      </>,
+      <>
+        Você fica conectado por 12 horas neste aparelho. Para sair, use o botão <strong>Sair</strong> lá em cima.
+      </>,
     ],
     tip: <>A senha nunca aparece no site. Cinco tentativas erradas seguidas bloqueiam o acesso por 5 minutos.</>,
   },
@@ -34,15 +52,16 @@ const LESSONS: Lesson[] = [
         <strong>+</strong>. Cada toque já salva no site.
       </>,
       <>
-        Bolos de festa contam em <strong>kg</strong>; bolos de café, em <strong>bolos</strong>; doces e sobremesas, em <strong>unidades</strong>.
+        Bolos de festa contam em <strong>kg</strong>; bolos de café, em <strong>bolos</strong>; doces e sobremesas, em{' '}
+        <strong>unidades</strong>.
       </>,
       <>
-        Para digitar um número de uma vez, toque no lápis (<strong>Editar</strong>), preencha <strong>Estoque</strong>{' '}
-        e toque em <strong>Salvar</strong>.
+        Para digitar um número de uma vez, toque no lápis (<strong>Editar</strong>), preencha <strong>Estoque</strong> e
+        toque em <strong>Salvar</strong>.
       </>,
       <>
-        Deixe o estoque <strong>vazio</strong> para um bolo feito sob encomenda: ele fica sempre disponível
-        (“Sem controle”).
+        Deixe o estoque <strong>vazio</strong> para um bolo feito sob encomenda: ele fica sempre disponível (“Sem
+        controle”).
       </>,
     ],
     tip: (
@@ -127,8 +146,8 @@ const LESSONS: Lesson[] = [
         Na aba <strong>Bolos</strong>, toque em <strong>Adicionar bolo</strong>.
       </>,
       <>
-        Preencha <strong>Nome</strong>, <strong>Preço</strong>, <strong>Categoria</strong> (festa, café ou doces e sobremesas),{' '}
-        <strong>Como é cobrado</strong> (ex.: “o quilo”) e, se quiser, o <strong>Estoque</strong>.
+        Preencha <strong>Nome</strong>, <strong>Preço</strong>, <strong>Categoria</strong> (festa, café ou doces e
+        sobremesas), <strong>Como é cobrado</strong> (ex.: “o quilo”) e, se quiser, o <strong>Estoque</strong>.
       </>,
       <>
         Toque em <strong>Enviar foto do celular ou computador</strong> e escolha a foto do bolo. O painel diminui a foto
@@ -140,8 +159,8 @@ const LESSONS: Lesson[] = [
     ],
     tip: (
       <>
-        Para trocar a foto de um bolo que já existe: lápis → Enviar foto → Salvar. Bolos novos do cardápio padrão
-        entram no site sozinhos; se um bolo padrão for excluído e você quiser de volta, toque em{' '}
+        Para trocar a foto de um bolo que já existe: lápis → Enviar foto → Salvar. Bolos novos do cardápio padrão entram
+        no site sozinhos; se um bolo padrão for excluído e você quiser de volta, toque em{' '}
         <strong>Devolver ao cardápio</strong> no aviso da aba Bolos.
       </>
     ),
@@ -170,8 +189,8 @@ const LESSONS: Lesson[] = [
         só aqui.
       </>,
       <>
-        Em <strong>Pedidos do site</strong> ficam todos os pedidos, com cliente, endereço (com CEP), itens e total. Use os
-        filtros (Em aberto, Pendentes, Aguardando pagamento…) e <strong>Atualizar</strong> para ver os novos.
+        Em <strong>Pedidos do site</strong> ficam todos os pedidos, com cliente, endereço (com CEP), itens e total. Use
+        os filtros (Em aberto, Pendentes, Aguardando pagamento…) e <strong>Atualizar</strong> para ver os novos.
       </>,
       <>
         Quando o pagamento cair (ex.: Pix), toque em <strong>Confirmar pagamento</strong>: o pedido vai para{' '}
@@ -196,15 +215,14 @@ const LESSONS: Lesson[] = [
       </>,
       <>
         Pedido do site aparece com a etiqueta <strong>Pelo site</strong>. Quando o pagamento é aprovado, ele vai{' '}
-        <strong>sozinho</strong> para <strong>Pago / Em preparo</strong> — não precisa confirmar. O dinheiro cai na conta
-        do Mercado Pago da loja.
+        <strong>sozinho</strong> para <strong>Pago / Em preparo</strong> — não precisa confirmar. O dinheiro cai na
+        conta do Mercado Pago da loja.
       </>,
+      <>Depois é igual: prepare e mude o status para Saiu para entrega (ou Pronto para retirada) e Entregue.</>,
       <>
-        Depois é igual: prepare e mude o status para Saiu para entrega (ou Pronto para retirada) e Entregue.
-      </>,
-      <>
-        Pedido do site <strong>pendente</strong> (sem estoque) não é cobrado. Ao tocar em <strong>Verificar estoque</strong>{' '}
-        e liberar, o botão <strong>Pagar agora</strong> aparece na página do pedido do cliente — avise-o pela conversa.
+        Pedido do site <strong>pendente</strong> (sem estoque) não é cobrado. Ao tocar em{' '}
+        <strong>Verificar estoque</strong> e liberar, o botão <strong>Pagar agora</strong> aparece na página do pedido
+        do cliente — avise-o pela conversa.
       </>,
     ],
     tip: (

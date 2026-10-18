@@ -23,20 +23,35 @@ export function Header() {
           </div>
         </a>
         <div className="nav-actions">
-          <a className="nav-catalog" href="#bolos">Cardápio</a>
-          <a className="nav-catalog" href="#monte">Monte seu bolo</a>
+          <a className="nav-catalog" href="#bolos">
+            Cardápio
+          </a>
+          <a className="nav-catalog" href="#monte">
+            Monte seu bolo
+          </a>
           <a className="nav-location" href={MAPS_URL} target="_blank" rel="noreferrer">
             <MapPin size={14} aria-hidden="true" />
             Localização
           </a>
           <Button asChild variant="cocoa" className="nav-whatsapp">
-            <a href={generateContactLink()} target="_blank" rel="noreferrer" aria-label="Falar com a Ondina no WhatsApp">
+            <a
+              href={generateContactLink()}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Falar com a Ondina no WhatsApp"
+            >
               <MessageCircle aria-hidden="true" />
               <span>Pedir agora</span>
             </a>
           </Button>
           <MyOrders />
-          <button id={CART_TARGET_ID} type="button" className="cart-button" onClick={() => setOpen(true)} aria-label={label}>
+          <button
+            id={CART_TARGET_ID}
+            type="button"
+            className="cart-button"
+            onClick={() => setOpen(true)}
+            aria-label={label}
+          >
             <ShoppingBag aria-hidden="true" />
             {count > 0 && (
               // A key muda com a contagem: o selo remonta e repete a animação a cada alteração.

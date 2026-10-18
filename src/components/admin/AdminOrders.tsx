@@ -18,7 +18,12 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AdminReport } from '@/components/admin/AdminReport'
-import { ADMIN_ACTED_EVENT, announceSoldOut, CATALOG_CHANGED_EVENT, ORDERS_CHANGED_EVENT } from '@/components/admin/sold-out'
+import {
+  ADMIN_ACTED_EVENT,
+  announceSoldOut,
+  CATALOG_CHANGED_EVENT,
+  ORDERS_CHANGED_EVENT,
+} from '@/components/admin/sold-out'
 import { formatBRL } from '@/lib/format'
 import {
   MAX_MESSAGE_LENGTH,
@@ -168,7 +173,10 @@ export function AdminOrders() {
   }
 
   const changeStatus = (order: Order, status: OrderStatus) => {
-    if (status === 'cancelado' && !window.confirm(`Cancelar o pedido ${order.id}? O estoque reservado volta para o cardápio.`)) {
+    if (
+      status === 'cancelado' &&
+      !window.confirm(`Cancelar o pedido ${order.id}? O estoque reservado volta para o cardápio.`)
+    ) {
       return
     }
     void run(
@@ -214,80 +222,82 @@ export function AdminOrders() {
 
   return (
     <>
-    <section className="admin-card admin-orders" aria-labelledby="admin-orders-list-title" aria-busy={loading}>
-      <div className="admin-orders-head">
-        <h2 id="admin-orders-list-title">Pedidos do site</h2>
-        <button type="button" className="admin-refresh" onClick={() => void load()} disabled={loading}>
-          {loading ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <RefreshCw aria-hidden="true" />}
-          Atualizar
-        </button>
-      </div>
+      <section className="admin-card admin-orders" aria-labelledby="admin-orders-list-title" aria-busy={loading}>
+        <div className="admin-orders-head">
+          <h2 id="admin-orders-list-title">Pedidos do site</h2>
+          <button type="button" className="admin-refresh" onClick={() => void load()} disabled={loading}>
+            {loading ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <RefreshCw aria-hidden="true" />}
+            Atualizar
+          </button>
+        </div>
 
-      {!orders && loading && <p className="admin-muted">Carregando pedidos…</p>}
-      {error && (
-        <p className="admin-error" role="alert">
-          {error}
-        </p>
-      )}
-      {storage === 'none' && (
-        <p className="admin-muted">
-          O banco de dados ainda não foi configurado no servidor, então os pedidos não ficam guardados aqui (eles
-          continuam chegando pelo WhatsApp e pelo n8n). Conecte o Upstash Redis na Vercel — veja o README.
-        </p>
-      )}
+        {!orders && loading && <p className="admin-muted">Carregando pedidos…</p>}
+        {error && (
+          <p className="admin-error" role="alert">
+            {error}
+          </p>
+        )}
+        {storage === 'none' && (
+          <p className="admin-muted">
+            O banco de dados ainda não foi configurado no servidor, então os pedidos não ficam guardados aqui (eles
+            continuam chegando pelo WhatsApp e pelo n8n). Conecte o Upstash Redis na Vercel — veja o README.
+          </p>
+        )}
 
-      {orders && storage !== 'none' && (
-        <>
-          <div className="admin-order-filters" role="group" aria-label="Filtrar pedidos">
-            {FILTERS.map(option => (
-              <button
-                key={option.id}
-                type="button"
-                className="admin-filter"
-                aria-pressed={filter === option.id}
-                onClick={() => setFilter(option.id)}
-              >
-                {option.label}
-                <span className={ALERT_FILTERS.includes(option.id) && counts.get(option.id) ? 'is-alert' : undefined}>
-                  {counts.get(option.id) ?? 0}
-                </span>
-              </button>
-            ))}
-          </div>
+        {orders && storage !== 'none' && (
+          <>
+            <div className="admin-order-filters" role="group" aria-label="Filtrar pedidos">
+              {FILTERS.map(option => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className="admin-filter"
+                  aria-pressed={filter === option.id}
+                  onClick={() => setFilter(option.id)}
+                >
+                  {option.label}
+                  <span className={ALERT_FILTERS.includes(option.id) && counts.get(option.id) ? 'is-alert' : undefined}>
+                    {counts.get(option.id) ?? 0}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-          {visible.length === 0 ? (
-            <p className="admin-muted">{orders.length === 0 ? 'Nenhum pedido registrado ainda.' : 'Nenhum pedido neste filtro.'}</p>
-          ) : (
+            {visible.length === 0 ? (
+              <p className="admin-muted">
+                {orders.length === 0 ? 'Nenhum pedido registrado ainda.' : 'Nenhum pedido neste filtro.'}
+              </p>
+            ) : (
+              <ul className="admin-order-list">
+                {visible.map(order => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    busy={busyId === order.id}
+                    onStatus={status => changeStatus(order, status)}
+                    onConfirmPayment={() => confirmPayment(order)}
+                    onRecheck={() => recheck(order)}
+                    onReply={text => reply(order, text)}
+                    onOpenChat={() => openChat(order)}
+                  />
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+
+        {legacy.length > 0 && (
+          <details className="admin-legacy">
+            <summary>Pedidos antigos ({legacy.length}) — antes do controle de status, só para consulta</summary>
             <ul className="admin-order-list">
-              {visible.map(order => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  busy={busyId === order.id}
-                  onStatus={status => changeStatus(order, status)}
-                  onConfirmPayment={() => confirmPayment(order)}
-                  onRecheck={() => recheck(order)}
-                  onReply={text => reply(order, text)}
-                  onOpenChat={() => openChat(order)}
-                />
+              {legacy.map(order => (
+                <LegacyCard key={order.orderId} order={order} />
               ))}
             </ul>
-          )}
-        </>
-      )}
-
-      {legacy.length > 0 && (
-        <details className="admin-legacy">
-          <summary>Pedidos antigos ({legacy.length}) — antes do controle de status, só para consulta</summary>
-          <ul className="admin-order-list">
-            {legacy.map(order => (
-              <LegacyCard key={order.orderId} order={order} />
-            ))}
-          </ul>
-        </details>
-      )}
-    </section>
-    {orders && storage !== 'none' && <AdminReport orders={orders} />}
+          </details>
+        )}
+      </section>
+      {orders && storage !== 'none' && <AdminReport orders={orders} />}
     </>
   )
 }
@@ -363,7 +373,8 @@ function OrderCard({
   useEffect(() => {
     if (unread > 0) setChatOpen(true)
   }, [unread])
-  const trackingUrl = order.accessToken && typeof window !== 'undefined' ? `${window.location.origin}${trackingPath(order)}` : undefined
+  const trackingUrl =
+    order.accessToken && typeof window !== 'undefined' ? `${window.location.origin}${trackingPath(order)}` : undefined
   const firstName = order.customer.name.split(' ')[0]
   const whatsappText = `Oi, ${firstName}! Aqui é da Ondina Bolos 🍰 Sobre o seu pedido ${order.id}: ${
     trackingUrl ? `acompanhe e fale com a gente por aqui: ${trackingUrl}` : ''

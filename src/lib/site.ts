@@ -21,8 +21,7 @@ export const BUSINESS = {
   instagram: 'https://www.instagram.com/ondinabolos/',
   instagramHandle: '@ondinabolos',
   /** Mapa incorporado (não precisa de chave de API). */
-  mapsEmbedUrl:
-    'https://www.google.com/maps?q=' + encodeURIComponent(STORE_MAPS_QUERY) + '&output=embed',
+  mapsEmbedUrl: 'https://www.google.com/maps?q=' + encodeURIComponent(STORE_MAPS_QUERY) + '&output=embed',
   hours: [
     { label: 'Segunda a sexta', value: '07:00 às 18:00' },
     { label: 'Sábado', value: '07:00 às 20:00' },
@@ -52,7 +51,12 @@ export function bakeryJsonLd(image: string) {
       addressCountry: 'BR',
     },
     openingHoursSpecification: [
-      { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '07:00', closes: '18:00' },
+      {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        opens: '07:00',
+        closes: '18:00',
+      },
       { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Saturday', opens: '07:00', closes: '20:00' },
     ],
   }

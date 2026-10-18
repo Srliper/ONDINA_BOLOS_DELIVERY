@@ -64,7 +64,10 @@ const paysOnHandover = (order: Order) => order.payment.method === 'dinheiro' || 
 
 /* ---------- O que o site manda ao finalizar ---------- */
 
-const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(60)
+const slug = z
+  .string()
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  .max(60)
 
 export const orderLineSchema = z.union([
   z.object({ productId: slug, quantity: z.number().int().min(1).max(50) }),
@@ -95,7 +98,9 @@ const orderItemSchema = z.object({
   /** Id do bolo pronto; ausente no bolo montado. */
   productId: z.string().optional(),
   /** Ids das camadas do bolo montado. */
-  layerIds: z.object({ base: z.string(), recheio: z.string(), cobertura: z.string(), decoracao: z.string() }).optional(),
+  layerIds: z
+    .object({ base: z.string(), recheio: z.string(), cobertura: z.string(), decoracao: z.string() })
+    .optional(),
   name: z.string(),
   /** "Base Red Velvet · Morango com Ninho · …" no bolo montado. */
   detail: z.string().optional(),
@@ -210,7 +215,8 @@ export function resolveItems(catalog: Catalog, lines: readonly OrderLine[]): Ord
   return lines.map(line => {
     if ('productId' in line) {
       const product = products.get(line.productId)
-      if (!product) throw new OrderError(409, 'Um dos bolos do carrinho saiu do cardápio. Atualize a página e confira o pedido.')
+      if (!product)
+        throw new OrderError(409, 'Um dos bolos do carrinho saiu do cardápio. Atualize a página e confira o pedido.')
       return {
         productId: product.id,
         name: product.name,
@@ -273,9 +279,7 @@ function moveStock(catalog: Catalog, items: readonly OrderItem[], sign: 1 | -1, 
     changed = true
     return { ...product, stock: Math.max(0, product.stock + sign * quantity) }
   })
-  return changed
-    ? { ...catalog, products, version: catalog.version + 1, updated_at: now.toISOString() }
-    : catalog
+  return changed ? { ...catalog, products, version: catalog.version + 1, updated_at: now.toISOString() } : catalog
 }
 
 const amount = (unit: OrderItem['unit'], quantity: number) => (unit === 'kg' ? `${quantity} kg` : `${quantity} un.`)
@@ -353,7 +357,9 @@ export function createOrder(
         at,
         status: pending ? 'pendente' : 'aguardando_pagamento',
         by: 'site',
-        ...(pending ? { note: `Falta de estoque: ${shortages.map(s => shortageText(s, unitOf(items, s))).join('; ')}` } : {}),
+        ...(pending
+          ? { note: `Falta de estoque: ${shortages.map(s => shortageText(s, unitOf(items, s))).join('; ')}` }
+          : {}),
       },
     ],
     messages: [],
@@ -413,7 +419,13 @@ export function changeStatus(
   if (to === 'cancelado') {
     const restored = order.stockReserved ? moveStock(catalog, order.items, 1, now) : catalog
     return {
-      order: withHistory(order, { status: 'cancelado', stockReserved: false }, by, now, order.stockReserved ? 'Estoque devolvido.' : undefined),
+      order: withHistory(
+        order,
+        { status: 'cancelado', stockReserved: false },
+        by,
+        now,
+        order.stockReserved ? 'Estoque devolvido.' : undefined,
+      ),
       catalog: restored,
     }
   }
@@ -473,7 +485,8 @@ export function addOrder(doc: OrdersDoc, order: Order): OrdersDoc {
   const orders = [order, ...doc.orders]
   while (orders.length > MAX_STORED_ORDERS) {
     let oldestDone = orders.length - 1
-    while (oldestDone > 0 && orders[oldestDone]!.status !== 'entregue' && orders[oldestDone]!.status !== 'cancelado') oldestDone--
+    while (oldestDone > 0 && orders[oldestDone]!.status !== 'entregue' && orders[oldestDone]!.status !== 'cancelado')
+      oldestDone--
     // Nenhum finalizado: sai o mais antigo de todos.
     orders.splice(oldestDone > 0 ? oldestDone : orders.length - 1, 1)
   }
@@ -501,7 +514,8 @@ export const PAYMENT_GRACE_MS = 15 * 60_000
 /** Até quando o pedido online espera o pagamento (conta de quando foi liberado para pagar). */
 export function paymentDeadline(order: Order): Date | undefined {
   if (order.payment.method !== 'online' || order.status !== 'aguardando_pagamento' || order.paid) return undefined
-  const since = [...order.history].reverse().find(entry => entry.status === 'aguardando_pagamento')?.at ?? order.createdAt
+  const since =
+    [...order.history].reverse().find(entry => entry.status === 'aguardando_pagamento')?.at ?? order.createdAt
   return new Date(Date.parse(since) + PAYMENT_WINDOW_MS)
 }
 
@@ -579,7 +593,13 @@ export function applyGatewayPayment(
   const recorded: Order = {
     ...order,
     updatedAt: at,
-    gateway: { ...order.gateway, provider: 'mercadopago', paymentId: payment.id, status: payment.status, updatedAt: at },
+    gateway: {
+      ...order.gateway,
+      provider: 'mercadopago',
+      paymentId: payment.id,
+      status: payment.status,
+      updatedAt: at,
+    },
   }
   if (payment.status !== 'approved' || order.paid) return { order: recorded, changed: true, approved: false }
 

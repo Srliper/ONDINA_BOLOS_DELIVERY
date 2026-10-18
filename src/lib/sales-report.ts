@@ -5,7 +5,12 @@ import type { Order } from '@/lib/order-flow'
  * "Vendido" = pedidos pagos (online ou confirmados pela equipe), sem os cancelados.
  */
 
-const dayFormat = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' })
+const dayFormat = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Sao_Paulo',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
 /** "AAAA-MM-DD" no horário da loja. */
 const dayOf = (iso: string | Date) => dayFormat.format(typeof iso === 'string' ? new Date(iso) : iso)
 

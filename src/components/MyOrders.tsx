@@ -3,7 +3,13 @@ import { ChevronRight, ReceiptText } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { recentOrders, type RememberedOrder } from '@/lib/my-orders'
 
-const dateFormat = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+const dateFormat = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'America/Sao_Paulo',
+})
 
 /**
  * "Meus pedidos" no topo: os últimos pedidos feitos neste aparelho, com o link para a página de
@@ -21,7 +27,12 @@ export function MyOrders() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button type="button" className="cart-button" aria-label={`Meus pedidos (${orders.length})`} title="Meus pedidos">
+        <button
+          type="button"
+          className="cart-button"
+          aria-label={`Meus pedidos (${orders.length})`}
+          title="Meus pedidos"
+        >
           <ReceiptText aria-hidden="true" />
         </button>
       </PopoverTrigger>

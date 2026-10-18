@@ -25,7 +25,12 @@ export type PushDoc = z.infer<typeof pushDocSchema>
 export const MAX_SUBSCRIPTIONS = 30
 
 /** Guarda (ou atualiza) a inscrição de um aparelho. */
-export function addSubscription(doc: PushDoc, subscription: PushSubscriptionInput, memberId: string, now = new Date()): PushDoc {
+export function addSubscription(
+  doc: PushDoc,
+  subscription: PushSubscriptionInput,
+  memberId: string,
+  now = new Date(),
+): PushDoc {
   const others = doc.subscriptions.filter(entry => entry.endpoint !== subscription.endpoint)
   return {
     subscriptions: [{ ...subscription, memberId, createdAt: now.toISOString() }, ...others].slice(0, MAX_SUBSCRIPTIONS),

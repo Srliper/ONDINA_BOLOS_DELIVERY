@@ -75,21 +75,24 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
   party({
     id: 'naked-cake',
     name: 'Naked cake com frutas',
-    description: 'Camadas de massa e recheio aparentes, finalizado com frutas frescas. Decoração combinada pelo WhatsApp.',
+    description:
+      'Camadas de massa e recheio aparentes, finalizado com frutas frescas. Decoração combinada pelo WhatsApp.',
     image: nakedHero,
     isFeatured: true,
   }),
   party({
     id: 'ninho-nutella',
     name: 'Ninho com Nutella',
-    description: 'Recheio de leite Ninho com Nutella, cobertura com raspas de chocolate branco, fios de Nutella e morangos.',
+    description:
+      'Recheio de leite Ninho com Nutella, cobertura com raspas de chocolate branco, fios de Nutella e morangos.',
     image: ninhoNutella,
     isFeatured: true,
   }),
   party({
     id: 'prestigio',
     name: 'Prestígio',
-    description: 'Massa de chocolate, recheio de prestígio e cobertura de brigadeiro com raspas de chocolate preto e morangos.',
+    description:
+      'Massa de chocolate, recheio de prestígio e cobertura de brigadeiro com raspas de chocolate preto e morangos.',
     image: prestigio,
     gallery: [prestigioRedondo, prestigio1kg],
     isFeatured: true,
@@ -119,14 +122,16 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
   party({
     id: 'oreo',
     name: 'Oreo',
-    description: 'Massa de chocolate, brigadeiro branco com pedaços de Oreo e cobertura com raspas de chocolate ao leite e branco, Oreo e morangos.',
+    description:
+      'Massa de chocolate, brigadeiro branco com pedaços de Oreo e cobertura com raspas de chocolate ao leite e branco, Oreo e morangos.',
     image: oreo,
     isFeatured: true,
   }),
   party({
     id: 'doce-de-leite-nozes',
     name: 'Doce de leite com nozes',
-    description: 'Massa branca, doce de leite com pedaços de nozes e cobertura de chantilly com raspas de chocolate branco, nozes e morangos.',
+    description:
+      'Massa branca, doce de leite com pedaços de nozes e cobertura de chantilly com raspas de chocolate branco, nozes e morangos.',
     image: doceLeiteNozes,
     gallery: [doceLeiteNozes1kg],
     isFeatured: false,
@@ -141,14 +146,16 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
   party({
     id: 'doce-de-leite',
     name: 'Doce de leite',
-    description: 'Massa branca, recheio de doce de leite e cobertura de chantilly com raspas de chocolate branco, fios de doce de leite e morangos.',
+    description:
+      'Massa branca, recheio de doce de leite e cobertura de chantilly com raspas de chocolate branco, fios de doce de leite e morangos.',
     image: doceDeLeite,
     isFeatured: false,
   }),
   party({
     id: 'choconinho',
     name: 'Choconinho',
-    description: 'Massa de chocolate, recheio de ninho e cobertura de brigadeiro com raspas de chocolate ao leite, chocolate branco e morangos.',
+    description:
+      'Massa de chocolate, recheio de ninho e cobertura de brigadeiro com raspas de chocolate ao leite, chocolate branco e morangos.',
     image: choconinho,
     isFeatured: false,
   }),
@@ -162,35 +169,40 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
   party({
     id: 'ninho-morango',
     name: 'Ninho com morango',
-    description: 'Massa branca, mousse de ninho com morango e cobertura de mousse de ninho com raspas de chocolate branco e morangos.',
+    description:
+      'Massa branca, mousse de ninho com morango e cobertura de mousse de ninho com raspas de chocolate branco e morangos.',
     image: ninhoMorango,
     isFeatured: false,
   }),
   party({
     id: 'sonho-de-valsa',
     name: 'Sonho de valsa',
-    description: 'Massa de chocolate, mousse de chocolate com Sonho de Valsa e cobertura de ganache com raspas de chocolate e morangos.',
+    description:
+      'Massa de chocolate, mousse de chocolate com Sonho de Valsa e cobertura de ganache com raspas de chocolate e morangos.',
     image: sonhoValsa,
     isFeatured: false,
   }),
   party({
     id: 'beijinho-abacaxi',
     name: 'Beijinho com abacaxi',
-    description: 'Massa branca, recheio de beijinho e pedaços de abacaxi, cobertura de chantilly com raspas de chocolate branco e morangos.',
+    description:
+      'Massa branca, recheio de beijinho e pedaços de abacaxi, cobertura de chantilly com raspas de chocolate branco e morangos.',
     image: beijinhoAbacaxi,
     isFeatured: false,
   }),
   party({
     id: 'beijinho-doce-de-leite',
     name: 'Beijinho com doce de leite',
-    description: 'Massa branca, recheio duplo de beijinho e doce de leite, cobertura de chantilly com raspas de chocolate branco, fios de doce de leite e morangos.',
+    description:
+      'Massa branca, recheio duplo de beijinho e doce de leite, cobertura de chantilly com raspas de chocolate branco, fios de doce de leite e morangos.',
     image: beijinhoDoceLeite,
     isFeatured: false,
   }),
   party({
     id: 'abacaxi',
     name: 'Abacaxi',
-    description: 'Massa branca, creme belga com pedaços de abacaxi e cobertura de chantilly com raspas de chocolate branco e morangos.',
+    description:
+      'Massa branca, creme belga com pedaços de abacaxi e cobertura de chantilly com raspas de chocolate branco e morangos.',
     image: abacaxi,
     isFeatured: false,
   }),
@@ -204,21 +216,24 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
   party({
     id: 'mousse-de-limao',
     name: 'Mousse de limão',
-    description: 'Massa branca, mousse de limão e cobertura de mousse de limão com raspas de chocolate branco e rodelas de limão.',
+    description:
+      'Massa branca, mousse de limão e cobertura de mousse de limão com raspas de chocolate branco e rodelas de limão.',
     image: mousseLimao,
     isFeatured: false,
   }),
   party({
     id: 'maracuja',
     name: 'Maracujá',
-    description: 'Massa branca, brigadeiro branco com calda de maracujá e cobertura de chantilly com raspas de chocolate branco e geleia de maracujá.',
+    description:
+      'Massa branca, brigadeiro branco com calda de maracujá e cobertura de chantilly com raspas de chocolate branco e geleia de maracujá.',
     image: maracuja,
     isFeatured: false,
   }),
   party({
     id: 'chocolate-morangos',
     name: 'Chocolate com morangos',
-    description: 'Massa de chocolate com cobertura de raspas de chocolate ao leite, granulado e morangos frescos. Recheio combinado pelo WhatsApp.',
+    description:
+      'Massa de chocolate com cobertura de raspas de chocolate ao leite, granulado e morangos frescos. Recheio combinado pelo WhatsApp.',
     image: chocolateMorangos,
     isFeatured: false,
   }),
@@ -289,7 +304,8 @@ export const DEFAULT_PRODUCTS: readonly Product[] = [
   {
     id: 'pave-kinder-bueno',
     name: 'Pavê de Kinder Bueno',
-    description: 'Camadas de creme e chocolate, cobertura com raspas de chocolate branco, fios de chocolate e Kinder Bueno.',
+    description:
+      'Camadas de creme e chocolate, cobertura com raspas de chocolate branco, fios de chocolate e Kinder Bueno.',
     price: 40,
     priceUnit: 'pote de 500 g',
     unit: 'un',
@@ -305,7 +321,9 @@ const defaultImages = new Map(DEFAULT_PRODUCTS.map(product => [product.id, produ
 /** Foto padrão (src/assets) de um bolo do cardápio original, se houver. */
 export const defaultProductImage = (id: string): string | undefined => defaultImages.get(id)
 
-const defaultGalleries = new Map(DEFAULT_PRODUCTS.flatMap(product => (product.gallery ? [[product.id, product.gallery]] : [])))
+const defaultGalleries = new Map(
+  DEFAULT_PRODUCTS.flatMap(product => (product.gallery ? [[product.id, product.gallery]] : [])),
+)
 
 /** Fotos extras (src/assets) de um bolo do cardápio original. */
 export const defaultProductGallery = (id: string): readonly string[] | undefined => defaultGalleries.get(id)

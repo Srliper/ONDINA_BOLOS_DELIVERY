@@ -22,7 +22,8 @@ const NOW = new Date('2026-10-18T12:00:00Z')
 
 function catalogWithStock(stock: Record<string, number | null>): Catalog {
   let catalog = seedCatalog()
-  for (const [id, value] of Object.entries(stock)) catalog = updateItem(catalog, 'products', id, { stock: value }, NOW).catalog
+  for (const [id, value] of Object.entries(stock))
+    catalog = updateItem(catalog, 'products', id, { stock: value }, NOW).catalog
   return catalog
 }
 
@@ -41,7 +42,11 @@ describe('avise-me quando chegar', () => {
     expect(() => addStockRequest(empty, catalogWithStock({ prestigio: 2 }), request(), NOW)).toThrow(/disponível/)
     expect(() => addStockRequest(empty, seedCatalog(), request(), NOW)).toThrow(StockRequestError)
     expect(() =>
-      addStockRequest(empty, seedCatalog(), restockInputSchema.parse({ productId: 'nao-existe', name: 'Ana', phone: '15991234567' })),
+      addStockRequest(
+        empty,
+        seedCatalog(),
+        restockInputSchema.parse({ productId: 'nao-existe', name: 'Ana', phone: '15991234567' }),
+      ),
     ).toThrow(/saiu do cardápio/)
   })
 
@@ -82,10 +87,16 @@ describe('avise-me quando chegar', () => {
     const demand = demandByProduct(catalog, doc.requests, [pending])
     expect(demand.map(entry => entry.productId)).toEqual(['prestigio', 'fuba-goiabada'])
     expect(demand[0]).toMatchObject({ stock: 0, requested: 5, waiting: [{ name: 'Ana Souza' }] })
-    expect(demand[0]!.pendingOrders).toEqual([{ id: 'OB-PEND', name: 'Bia Lima', phone: '5515977776666', requested: 3 }])
+    expect(demand[0]!.pendingOrders).toEqual([
+      { id: 'OB-PEND', name: 'Bia Lima', phone: '5515977776666', requested: 3 },
+    ])
 
     // Avisados não contam mais na demanda.
-    const notified = markNotified(doc, doc.requests.map(entry => entry.id), 'ondina')
+    const notified = markNotified(
+      doc,
+      doc.requests.map(entry => entry.id),
+      'ondina',
+    )
     expect(demandByProduct(catalog, notified.requests, [])).toEqual([])
   })
 
@@ -102,15 +113,29 @@ describe('avisos para a equipe (n8n)', () => {
     const notify = createStoreNotifier({ url: 'https://n8n/aviso', key: 'k' }, fetchMock as unknown as typeof fetch)
     await notify({ event: 'pagamento-aprovado', orderId: 'OB-1', customer: 'Ana', total: 120 })
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
-    expect(JSON.parse(String(init.body))).toMatchObject({ event: 'pagamento-aprovado', orderId: 'OB-1', message: expect.stringContaining('OB-1') })
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      event: 'pagamento-aprovado',
+      orderId: 'OB-1',
+      message: expect.stringContaining('OB-1'),
+    })
 
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const failing = createStoreNotifier({ url: 'https://n8n/aviso' }, (async () => {
       throw new Error('fora do ar')
     }) as unknown as typeof fetch)
-    await expect(failing({ event: 'mensagem-cliente', orderId: 'OB-1', customer: 'Ana', text: 'oi' })).resolves.toBeUndefined()
+    await expect(
+      failing({ event: 'mensagem-cliente', orderId: 'OB-1', customer: 'Ana', text: 'oi' }),
+    ).resolves.toBeUndefined()
     error.mockRestore()
-    expect(storeEventMessage({ event: 'aviso-estoque', productId: 'p', productName: 'Prestígio', customer: 'Ana', waiting: 3 })).toMatch(/3/)
+    expect(
+      storeEventMessage({
+        event: 'aviso-estoque',
+        productId: 'p',
+        productName: 'Prestígio',
+        customer: 'Ana',
+        waiting: 3,
+      }),
+    ).toMatch(/3/)
   })
 })
 
@@ -132,8 +157,12 @@ describe('notificação do Mercado Pago', () => {
 
   it('ignora o que não é pagamento e ids estranhos', async () => {
     const sync = vi.fn()
-    expect((await handlePaymentWebhook(post({ type: 'merchant_order', data: { id: '1' } }), { gateway, sync })).status).toBe(200)
-    expect((await handlePaymentWebhook(post({ type: 'payment', data: { id: '../x' } }), { gateway, sync })).status).toBe(200)
+    expect(
+      (await handlePaymentWebhook(post({ type: 'merchant_order', data: { id: '1' } }), { gateway, sync })).status,
+    ).toBe(200)
+    expect(
+      (await handlePaymentWebhook(post({ type: 'payment', data: { id: '../x' } }), { gateway, sync })).status,
+    ).toBe(200)
     expect(sync).not.toHaveBeenCalled()
   })
 
@@ -152,7 +181,9 @@ describe('notificação do Mercado Pago', () => {
     const sync = vi.fn(async () => {
       throw new Error('banco fora do ar')
     })
-    expect((await handlePaymentWebhook(post({ type: 'payment', data: { id: '555' } }), { gateway, sync })).status).toBe(500)
+    expect((await handlePaymentWebhook(post({ type: 'payment', data: { id: '555' } }), { gateway, sync })).status).toBe(
+      500,
+    )
     error.mockRestore()
   })
 })

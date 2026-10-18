@@ -68,7 +68,10 @@ export function createMercadoPago(token: string, fetchImpl: typeof fetch = fetch
         signal: controller.signal,
       })
       if (!response.ok) {
-        console.error(`[pagamento] Mercado Pago respondeu ${response.status} em ${path}`, await response.text().catch(() => ''))
+        console.error(
+          `[pagamento] Mercado Pago respondeu ${response.status} em ${path}`,
+          await response.text().catch(() => ''),
+        )
         throw new GatewayError('O pagamento online não respondeu agora. Tente de novo em instantes.')
       }
       return (await response.json()) as Record<string, unknown>
@@ -132,7 +135,13 @@ export async function validWebhookSignature(
   const v1 = parts['v1']
   if (!ts || !v1) return false
   const manifest = `id:${dataId.toLowerCase()};${requestId ? `request-id:${requestId};` : ''}ts:${ts};`
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
   const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(manifest)))
   const expected = Array.from(mac, byte => byte.toString(16).padStart(2, '0')).join('')
   if (expected.length !== v1.length) return false
