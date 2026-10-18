@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { useRouter } from '@tanstack/react-router'
-import { AlertTriangle, ImageUp, Loader2, Minus, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { AlertTriangle, BellRing, ImageUp, Loader2, Minus, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { hasDefaultLayerArt, LAYER_LABELS } from '@/data/bolo-layers'
 import { CATEGORY_LABEL, defaultProductImage } from '@/data/products'
@@ -17,6 +17,8 @@ import {
 import { getCatalogStorageKind } from '@/lib/catalog-server'
 import { formatBRL } from '@/lib/format'
 import { prepareImage } from '@/lib/image-resize'
+import { storeAlertUrl } from '@/lib/stock-alert'
+import { announceSoldOut, CATALOG_CHANGED_EVENT } from '@/components/admin/sold-out'
 
 type AnyItem = CatalogProduct | CatalogFilling | CatalogLayer
 type Lists = { [E in EntityName]: EntityItem<E>[] }
@@ -74,6 +76,10 @@ export function CatalogManager() {
   useEffect(() => {
     void load()
     getCatalogStorageKind().then(setStorage, () => setStorage(null))
+    // Confirmar um pedido baixa o estoque: recarrega a lista.
+    const reload = () => void load()
+    window.addEventListener(CATALOG_CHANGED_EVENT, reload)
+    return () => window.removeEventListener(CATALOG_CHANGED_EVENT, reload)
   }, [load])
 
   // Depois de salvar: atualiza a lista e o cardápio do site (loader da rota raiz).
@@ -100,6 +106,7 @@ export function CatalogManager() {
     setStockBusy(product.id)
     try {
       await request(api('products', product.id), { method: 'PUT', body: JSON.stringify({ stock: next }) })
+      if (next === 0 && product.stock !== 0) announceSoldOut([{ id: product.id, name: product.name }])
       await refresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Não foi possível mudar o estoque.')
@@ -109,6 +116,7 @@ export function CatalogManager() {
   }
 
   const items = (lists?.[tab] ?? []) as AnyItem[]
+  const soldOut = (lists?.products ?? []).filter(product => product.stock === 0)
 
   // Bolos do cardápio padrão que não estão na lista: os novos entram sozinhos (withNewDefaults),
   // então aqui sobram só os que a equipe excluiu. Voltam pela mesma API do botão "Adicionar".
@@ -164,6 +172,19 @@ export function CatalogManager() {
             {importing ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <Plus aria-hidden="true" />}
             Devolver ao cardápio
           </button>
+        </div>
+      )}
+
+      {soldOut.length > 0 && (
+        <div className="admin-soldout" role="status">
+          <BellRing aria-hidden="true" />
+          <p>
+            <strong>Esgotados agora:</strong> {soldOut.map(product => product.name).join(', ')}. Os pedidos desses bolos
+            chegam como pendentes.
+          </p>
+          <a href={storeAlertUrl(soldOut)} target="_blank" rel="noreferrer" className="admin-refresh">
+            Avisar no WhatsApp da loja
+          </a>
         </div>
       )}
 

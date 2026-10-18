@@ -165,13 +165,31 @@ marcado pela equipe no `/admin` → *Cardápio do site* → *Bolos* (botões **�
 Estoque*). Vazio = sem controle (sempre disponível).
 
 - Estoque **0** (ou pedido acima do estoque): o site mostra **Esgotado**, mas o cliente ainda pode
-  deixar o pedido. O checkout **pula a etapa de pagamento** e a mensagem do WhatsApp chega como
-  **⏳ PEDIDO PENDENTE**, com pagamento “A combinar”. No n8n, o pedido vai com `status: "pendente"`
-  e `payment.method: null`; o painel mostra a etiqueta *Pendente*.
-- O estoque não baixa sozinho: depois de confirmar a venda na conversa, ajuste no painel.
+  deixar o pedido. Ele escolhe a forma de pagamento normalmente, mas o pedido é criado como
+  **PENDENTE (Falta de estoque)** e a mensagem do WhatsApp chega como **⏳ PEDIDO PENDENTE** — nada
+  é cobrado antes da confirmação do estoque. No n8n, o pedido vai com `status: "pendente"`.
+- O estoque baixa sozinho quando um pedido do site é feito com tudo disponível (veja *Pedidos no painel*).
 - Bolos montados no Monte seu Bolo são sempre sob encomenda (sem estoque).
 
 Regras em `src/lib/stock.ts` (testes em `src/test/stock.test.ts`).
+
+### Pedidos antigos
+
+Os pedidos guardados pela versão anterior do painel (Upstash: lista `ondina:orders` e hash
+`ondina:orders:confirmed`; no computador, `.data/orders.json`) continuam aparecendo em
+*Pedidos do site* → **Pedidos antigos**, só para consulta. Os pedidos novos ficam em
+`ondina:orders:v2` (ou `.data/orders-v2.json`), no fluxo com status descrito em *Pedidos no painel*.
+
+### Aviso de bolo esgotado no WhatsApp
+
+Quando um bolo chega a 0 (pelo − no painel ou quando um pedido do site leva o último), o painel mostra **Esgotou** com o botão
+**Avisar no WhatsApp**, que abre a conversa com o número da loja e a mensagem pronta. A faixa
+*Esgotados agora* no cardápio tem o mesmo atalho.
+
+Aviso automático (opcional): crie no n8n um fluxo *Webhook (POST)* → nó do WhatsApp que envia
+`{{ $json.body.message }}` para o número da loja, e configure na Vercel `N8N_STOCK_ALERT_URL` com o
+endereço desse webhook. O site manda `{ event: "estoque-esgotado", products, message, by }` com o
+cabeçalho `x-ondina-key` = `N8N_ORDERS_KEY`. Se o n8n falhar, o estoque é salvo do mesmo jeito.
 
 ## Fotos pelo painel
 

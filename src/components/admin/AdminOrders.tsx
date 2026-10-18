@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BadgeCheck, CircleDollarSign, Hourglass, Loader2, PackageSearch, Palette, RefreshCw, Store, Truck } from 'lucide-react'
 import { toast } from 'sonner'
+import { announceSoldOut, CATALOG_CHANGED_EVENT } from '@/components/admin/sold-out'
 import { formatBRL } from '@/lib/format'
 import {
   ORDER_STATUSES,
@@ -10,7 +11,9 @@ import {
   type Order,
   type OrderStatus,
 } from '@/lib/order-flow'
+import type { LegacyOrder } from '@/lib/orders'
 import { confirmOrderPayment, listOrders, recheckOrderStock, setOrderStatus } from '@/lib/orders-server'
+import type { SoldOutProduct } from '@/lib/stock-alert'
 
 const dateFormat = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
@@ -49,6 +52,7 @@ type Storage = 'upstash' | 'file' | 'none'
 /** Pedidos do site, gravados no banco do próprio site: status da entrega, pagamento e estoque. */
 export function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>()
+  const [legacy, setLegacy] = useState<LegacyOrder[]>([])
   const [storage, setStorage] = useState<Storage>()
   const [error, setError] = useState<string>()
   const [loading, setLoading] = useState(true)
@@ -61,6 +65,7 @@ export function AdminOrders() {
       const result = await listOrders()
       if (result.ok) {
         setOrders(result.orders)
+        setLegacy(result.legacy)
         setStorage(result.storage)
         setError(undefined)
       } else setError(result.error)
@@ -86,7 +91,9 @@ export function AdminOrders() {
   /** Roda uma ação no servidor e troca o pedido na lista pela versão gravada. */
   const run = async (
     order: Order,
-    action: () => Promise<{ ok: true; order: Order; released: boolean } | { ok: false; error: string }>,
+    action: () => Promise<
+      { ok: true; order: Order; released: boolean; soldOut: SoldOutProduct[] } | { ok: false; error: string }
+    >,
     success: (updated: Order, released: boolean) => string | undefined,
   ) => {
     setBusyId(order.id)
@@ -99,6 +106,9 @@ export function AdminOrders() {
       setOrders(list => list?.map(entry => (entry.id === result.order.id ? result.order : entry)))
       const message = success(result.order, result.released)
       if (message) toast.success(message)
+      // O estoque pode ter mudado (reserva ou devolução): o cardápio do painel recarrega e avisa o que esgotou.
+      window.dispatchEvent(new Event(CATALOG_CHANGED_EVENT))
+      announceSoldOut(result.soldOut)
     } catch {
       toast.error('Não foi possível falar com o servidor. Tente de novo.')
     } finally {
@@ -195,7 +205,63 @@ export function AdminOrders() {
           )}
         </>
       )}
+
+      {legacy.length > 0 && (
+        <details className="admin-legacy">
+          <summary>Pedidos antigos ({legacy.length}) — antes do controle de status, só para consulta</summary>
+          <ul className="admin-order-list">
+            {legacy.map(order => (
+              <LegacyCard key={order.orderId} order={order} />
+            ))}
+          </ul>
+        </details>
+      )}
     </section>
+  )
+}
+
+/** Pedido do formato antigo: só os dados, sem ações. */
+function LegacyCard({ order }: { order: LegacyOrder }) {
+  const delivery = order.customer.fulfillment === 'entrega'
+  return (
+    <li className="admin-order is-legacy">
+      <div className="admin-order-top">
+        <span className="admin-order-id">{order.orderId}</span>
+        <time dateTime={order.createdAt}>{formatDate(order.createdAt)}</time>
+      </div>
+      <div className="admin-order-badges">
+        {order.status === 'pendente' && <span className="admin-status is-pendente">Pendente</span>}
+        {order.confirmation && (
+          <span className="admin-order-tag is-paid">
+            <BadgeCheck aria-hidden="true" /> Confirmado ({order.confirmation.by})
+          </span>
+        )}
+      </div>
+      <p className="admin-order-customer">
+        <strong>{order.customer.name}</strong>
+        <span className={`admin-order-tag${delivery ? ' is-delivery' : ''}`}>
+          {delivery ? <Truck aria-hidden="true" /> : <Store aria-hidden="true" />}
+          {delivery ? 'Entrega' : 'Retirada'}
+        </span>
+      </p>
+      <p className="admin-order-address">{order.customer.address}</p>
+      <ul className="admin-order-items">
+        {order.items.map((item, index) => (
+          <li key={`${item.name}-${index}`}>
+            <span>
+              {item.layers && <Palette aria-hidden="true" />}
+              {item.quantity}× {item.name}
+              {item.outOfStock && <em className="admin-order-shortage">sem estoque</em>}
+            </span>
+            <span>{formatBRL(item.subtotal)}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="admin-order-bottom">
+        <span>{order.payment.label}</span>
+        <strong>{formatBRL(order.total)}</strong>
+      </div>
+    </li>
   )
 }
 

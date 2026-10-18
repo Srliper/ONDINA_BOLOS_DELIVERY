@@ -34,3 +34,4 @@ export function shortageText(item: ReadyCartItem): string {
     ? 'Sem estoque: vai como pedido pendente.'
     : `Só ${formatQuantity(item.product, stock)} em estoque: vai como pedido pendente.`
 }
+

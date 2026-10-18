@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { BookOpen, Boxes, Camera, ClipboardList, Hourglass, KeyRound, Layers, Tag } from 'lucide-react'
+import { BellRing, BookOpen, Boxes, Camera, ClipboardList, Hourglass, KeyRound, Layers, Tag } from 'lucide-react'
 
 interface Lesson {
   id: string
@@ -49,6 +49,29 @@ const LESSONS: Lesson[] = [
       <>
         O estoque <strong>baixa sozinho</strong> quando um pedido do site é feito com tudo disponível, e volta se o
         pedido for cancelado. Vendas feitas fora do site (balcão, telefone) você diminui aqui.
+      </>
+    ),
+  },
+  {
+    id: 'esgotou',
+    icon: BellRing,
+    title: 'Aviso de bolo esgotado no WhatsApp',
+    steps: [
+      <>
+        Quando um bolo chega a <strong>0</strong> (pelo − ou quando um pedido do site leva o último), aparece o aviso{' '}
+        <strong>Esgotou</strong> com o botão <strong>Avisar no WhatsApp</strong>.
+      </>,
+      <>
+        O botão abre o WhatsApp com a mensagem pronta para o número da loja: é só tocar em <strong>Enviar</strong>.
+      </>,
+      <>
+        Em <strong>Cardápio do site</strong>, a faixa <strong>Esgotados agora</strong> lista os bolos zerados e tem o
+        mesmo botão.
+      </>,
+    ],
+    tip: (
+      <>
+        Se o n8n estiver configurado para isso, o aviso também vai sozinho, sem precisar tocar em nada (veja o README).
       </>
     ),
   },

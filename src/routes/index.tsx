@@ -7,6 +7,7 @@ import { CartDrawer } from '@/components/CartDrawer'
 import { CustomCakeBanner } from '@/components/CustomCakeBanner'
 import { Header } from '@/components/Header'
 import { ProductCard } from '@/components/ProductCard'
+import { ScrollIntro } from '@/components/ScrollIntro'
 import { TeamSection } from '@/components/TeamSection'
 import { WhatsAppWidget } from '@/components/WhatsAppWidget'
 import aboutPhoto from '@/assets/three_cakes.jpg'
@@ -63,6 +64,8 @@ function Index() {
       <a className="skip-link" href="#bolos">
         Pular para o cardápio
       </a>
+      {/* A intro vem antes do menu: ocupa a tela inteira e o menu só aparece depois dela */}
+      <ScrollIntro />
       <Header />
       <main>
         <Hero />

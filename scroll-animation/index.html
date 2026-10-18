@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ondina Bolos — Do nosso forno pra sua mesa</title>
+  <meta name="description" content="Veja como nasce o naked cake da Ondina, feito à mão desde 2003 em São Miguel Arcanjo." />
+  <meta name="theme-color" content="#fbf6f1" />
+  <!-- Primeiro frame já sai baixando junto com a página -->
+  <link rel="preload" as="image" href="../public/intro/frames/frame-0001.jpg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#depois">Pular animação</a>
+
+  <header class="topbar">
+    <span class="brand">Ondina</span>
+    <span class="brand-since">desde 2003</span>
+  </header>
+
+  <main>
+    <!-- A seção é alta (define quanto se rola); o palco fica preso na tela enquanto isso -->
+    <section class="scrolly" id="scrolly" aria-label="Animação: como nasce o naked cake da Ondina">
+      <div class="stage">
+        <canvas class="stage-backdrop" id="backdrop" aria-hidden="true"></canvas>
+        <canvas class="stage-canvas" id="canvas" role="img"
+          aria-label="Mãos colocam morangos num naked cake, o bolo é cortado e uma fatia é servida com café."></canvas>
+
+        <noscript>
+          <img class="stage-fallback" src="../public/intro/frames/frame-0096.jpg" alt="Naked cake da Ondina com morangos" />
+        </noscript>
+
+        <div class="captions">
+          <p class="caption" data-from="0" data-to="0.24">
+            <small>Feito à mão</small>
+            Do nosso forno<br /><em>pra sua mesa.</em>
+          </p>
+          <p class="caption" data-from="0.30" data-to="0.55">
+            <small>Naked cake com frutas</small>
+            Camadas de massa,<br /><em>chantilly e morango.</em>
+          </p>
+          <p class="caption" data-from="0.62" data-to="0.84">
+            <small>Na hora do corte</small>
+            Recheio generoso<br /><em>em cada fatia.</em>
+          </p>
+          <p class="caption" data-from="0.88" data-to="1.01">
+            <small>Pronto pro café</small>
+            Agora é só<br /><em>pedir o seu.</em>
+          </p>
+        </div>
+
+        <div class="loader" id="loader" role="status" aria-live="polite">
+          <span class="loader-bar"><span class="loader-fill" id="loader-fill"></span></span>
+          <span class="loader-text" id="loader-text">Carregando 0%</span>
+        </div>
+
+        <div class="scroll-hint" id="scroll-hint" aria-hidden="true">
+          <span>Role para ver</span>
+          <span class="scroll-hint-arrow">↓</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="after" id="depois" tabindex="-1">
+      <h2>Feito à mão desde 2003</h2>
+      <p>
+        Há mais de vinte anos a Ondina faz bolos para os cafés e as festas de São Miguel Arcanjo.
+        Escolha no cardápio, monte o pedido e envie pelo WhatsApp.
+      </p>
+      <a class="cta" href="/#bolos">Ver cardápio</a>
+      <p class="note">Imagens ilustrativas.</p>
+    </section>
+  </main>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

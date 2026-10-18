@@ -3,7 +3,11 @@ import { getRequestIP } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { currentAdminSession } from '@/lib/admin-auth'
 import { CatalogError, type Catalog } from '@/lib/catalog'
+import { notifySoldOut } from '@/lib/catalog-deps.server'
 import { getOrdersStorage, loadCatalog, saveCatalog } from '@/lib/catalog-store'
+import { listLegacyOrders } from '@/lib/order-store'
+import type { LegacyOrder } from '@/lib/orders'
+import type { SoldOutProduct } from '@/lib/stock-alert'
 import {
   addOrder,
   changeStatus,
@@ -40,10 +44,24 @@ async function loadOrders(): Promise<OrdersDoc> {
 
 const saveOrders = (doc: OrdersDoc) => getOrdersStorage().write(JSON.stringify(doc))
 
-/** Grava o pedido primeiro: se o estoque falhar depois, o pedido não se perde. */
-async function persist(doc: OrdersDoc, before: Catalog, after: Catalog) {
+/** Bolos que tinham estoque e ficaram em 0 com esta mudança. */
+const newlySoldOut = (before: Catalog, after: Catalog): SoldOutProduct[] =>
+  after.products.flatMap(product => {
+    const was = before.products.find(entry => entry.id === product.id)?.stock
+    return product.stock === 0 && was !== 0 && was !== null && was !== undefined ? [{ id: product.id, name: product.name }] : []
+  })
+
+/**
+ * Grava o pedido primeiro: se o estoque falhar depois, o pedido não se perde.
+ * Se algum bolo esgotou, avisa o n8n (opcional; nunca impede salvar) e devolve quais foram.
+ */
+async function persist(doc: OrdersDoc, before: Catalog, after: Catalog, by?: string): Promise<SoldOutProduct[]> {
   await saveOrders(doc)
-  if (after !== before) await saveCatalog(after)
+  if (after === before) return []
+  await saveCatalog(after)
+  const soldOut = newlySoldOut(before, after)
+  if (soldOut.length) await notifySoldOut(soldOut, by)
+  return soldOut
 }
 
 /** Uma escrita de cada vez nesta instância (ler → mudar → gravar sem atropelar outra). */
@@ -110,11 +128,15 @@ async function requireMember(): Promise<string> {
 }
 
 export const listOrders = createServerFn({ method: 'GET' }).handler(
-  (): Promise<Result<{ orders: Order[]; storage: 'upstash' | 'file' | 'none' }>> =>
+  (): Promise<Result<{ orders: Order[]; legacy: LegacyOrder[]; storage: 'upstash' | 'file' | 'none' }>> =>
     attempt(async () => {
       await requireMember()
       const storage = getOrdersStorage().kind
-      return { orders: storage === 'none' ? [] : (await loadOrders()).orders, storage }
+      const [orders, legacy] = await Promise.all([
+        storage === 'none' ? [] : loadOrders().then(doc => doc.orders),
+        listLegacyOrders(),
+      ])
+      return { orders, legacy, storage }
     }),
 )
 
@@ -128,8 +150,8 @@ const updateOrder = (
     return exclusive(async () => {
       const [catalog, doc] = await Promise.all([loadCatalog(), loadOrders()])
       const result = action(findOrder(doc, id), catalog, by)
-      await persist(replaceOrder(doc, result.order), catalog, result.catalog)
-      return { order: result.order, released: result.released ?? false }
+      const soldOut = await persist(replaceOrder(doc, result.order), catalog, result.catalog, by)
+      return { order: result.order, released: result.released ?? false, soldOut }
     })
   })
 

@@ -758,7 +758,7 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .admin-muted code { font-size:12px; padding:1px 5px; border-radius:6px; background:var(--secondary); }
 .admin-order-list { list-style:none; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px; }
 .admin-order { display:flex; flex-direction:column; gap:6px; padding:14px; border:1px solid var(--border); border-radius:16px; background:var(--background); }
-.admin-order-top { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted-foreground); }
+.admin-order-top { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 8px; font-size:12px; color:var(--muted-foreground); }
 .admin-order-id { font-weight:700; color:var(--rose-ink); letter-spacing:.02em; }
 .admin-order-customer { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14.5px; }
 .admin-order-tag { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; background:var(--secondary); font-size:11px; font-weight:600; color:var(--foreground); }
@@ -898,3 +898,49 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .cake-photo-dots button[aria-pressed=true] { background:#fff; width:18px; }
 @media(max-width:560px) { .cake-photo-nav { width:28px; height:28px; } .cake-photo-nav.is-prev { left:6px; } .cake-photo-nav.is-next { right:6px; } }
 @media(prefers-reduced-motion:reduce) { .cake-photo-nav { transition:none; } }
+/* ---------- Confirmar pedido e aviso de esgotado ---------- */
+.admin-order.is-confirmed { border-color:oklch(0.8 0.08 150); }
+.admin-order-tag.is-confirmed { background:oklch(0.95 0.05 150); color:#0b4f2c; margin-right:auto; }
+.admin-soldout { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0; padding:10px 12px; border-radius:12px; background:oklch(0.96 0.03 18); border:1px solid oklch(0.85 0.06 18); font-size:12.5px; line-height:1.5; }
+.admin-soldout>svg { flex:none; width:17px; height:17px; color:var(--rose-ink); }
+.admin-soldout p { flex:1; min-width:200px; }
+
+/* Intro do topo: sequência de frames presa na tela durante a rolagem (src/components/ScrollIntro.tsx).
+   "Pular" fica à esquerda porque o WhatsApp flutuante ocupa o canto direito. */
+/* Tela cheia: a intro vem antes do menu na página, então o menu só aparece quando ela termina */
+.intro { position:relative; height:400vh; }
+.intro-stage { position:sticky; top:0; height:100vh; height:100svh; overflow:hidden; background:var(--background); }
+.intro-backdrop, .intro-canvas, .intro-fallback { position:absolute; inset:0; width:100%; height:100%; display:block; }
+.intro-backdrop { filter:blur(28px) saturate(1.1); transform:scale(1.15); opacity:.85; }
+.intro-fallback { object-fit:cover; }
+.intro-stage::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(to top, oklch(0.301 0.064 43 / 40%) 0%, transparent 38%), linear-gradient(to bottom, oklch(0.987 0.008 55 / 70%) 0%, transparent 22%); }
+.intro-brand { position:absolute; left:20px; top:max(18px, env(safe-area-inset-top)); z-index:3; display:flex; align-items:center; gap:10px; color:var(--foreground); }
+.intro-brand img { width:44px; height:44px; object-fit:cover; border-radius:50%; }
+.intro-brand strong { display:block; font-family:var(--font-serif); font-size:22px; font-style:italic; font-weight:600; line-height:1.1; }
+.intro-brand small { display:block; font-size:10px; color:var(--muted-foreground); }
+@media (max-width:600px) { .intro-brand img { width:36px; height:36px; } .intro-brand strong { font-size:19px; } }
+.intro-captions { position:absolute; inset:auto 0 0 0; z-index:2; display:grid; padding:0 20px max(64px, calc(env(safe-area-inset-bottom) + 48px)); }
+.intro-caption { grid-area:1 / 1; max-width:520px; font-family:var(--font-serif); font-size:clamp(26px, min(6.5vw, 7.5vh), 56px); line-height:1.1; color:#fff; text-shadow:0 2px 18px oklch(0.301 0.064 43 / 45%); opacity:0; translate:0 16px; transition:opacity .5s ease, translate .5s ease; }
+.intro-caption small { display:block; margin-bottom:10px; font-family:var(--font-sans); font-size:12px; text-transform:uppercase; }
+.intro-caption em { color:oklch(0.93 0.04 20); }
+.intro-caption.is-visible { opacity:1; translate:0 0; }
+.intro-loader { position:absolute; left:50%; bottom:24px; z-index:3; width:140px; height:3px; translate:-50% 0; border-radius:3px; background:oklch(1 0 0 / 35%); overflow:hidden; transition:opacity .4s ease; }
+.intro-loader span { display:block; height:100%; background:var(--rose-ink); transform-origin:0 50%; scale:var(--loaded, 0) 1; transition:scale .2s linear; }
+.intro[data-loaded=true] .intro-loader { opacity:0; }
+.intro-skip { position:absolute; left:20px; bottom:max(20px, env(safe-area-inset-bottom)); z-index:3; display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:999px; background:oklch(0.987 0.008 55 / 85%); color:var(--foreground); font-size:11px; text-decoration:none; backdrop-filter:blur(8px); }
+.intro-skip:hover { background:var(--background); }
+.intro-skip:focus-visible { outline:2px solid var(--rose-ink); outline-offset:2px; }
+.intro-note { position:absolute; right:20px; top:max(30px, calc(env(safe-area-inset-top) + 12px)); z-index:3; font-size:10px; color:oklch(0.301 0.064 43 / 70%); }
+@media (min-width:900px) { .intro-captions { padding-left:8vw; padding-bottom:14vh; } }
+/* Celular deitado: pouca altura, o texto desce e não esconde o bolo */
+@media (max-height:500px) { .intro-captions { padding-bottom:56px; } .intro-caption small { margin-bottom:4px; } }
+@media (prefers-reduced-motion: reduce) { .intro { height:auto; } .intro-stage { position:relative; height:min(100svh, 760px); } }
+
+/* Enquanto a intro ocupa a tela, o WhatsApp flutuante espera (ScrollIntro marca data-intro no <html>) */
+.wa-widget { transition:opacity .3s ease, visibility .3s; }
+[data-intro=on] .wa-widget { opacity:0; visibility:hidden; }
+
+/* Pedidos do formato antigo: só consulta */
+.admin-legacy { margin-top:16px; }
+.admin-legacy summary { cursor:pointer; font-size:13px; font-weight:600; color:var(--muted-foreground); margin-bottom:10px; }
+.admin-order.is-legacy { opacity:.85; }

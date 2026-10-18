@@ -138,6 +138,8 @@ export interface OrderPayload {
   shipping: { method: CheckoutData['customer']['fulfillment']; fee: number; city: string }
   items: {
     type: CartItem['type']
+    /** Só nos bolos prontos: id do bolo, para o n8n cruzar com o cardápio. */
+    productId?: string
     name: string
     quantity: number
     /** Só quando o bolo estava sem estoque suficiente. */
@@ -174,6 +176,7 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
     },
     items: order.items.map(item => ({
       type: item.type,
+      ...(item.type === 'ready' ? { productId: item.product.id } : {}),
       name: item.name,
       quantity: item.quantity,
       unitPrice: item.price,
