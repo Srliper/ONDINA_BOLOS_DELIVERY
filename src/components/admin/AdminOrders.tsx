@@ -17,6 +17,7 @@ import {
   Truck,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { AdminReport } from '@/components/admin/AdminReport'
 import { ADMIN_ACTED_EVENT, announceSoldOut, CATALOG_CHANGED_EVENT, ORDERS_CHANGED_EVENT } from '@/components/admin/sold-out'
 import { formatBRL } from '@/lib/format'
 import {
@@ -212,6 +213,7 @@ export function AdminOrders() {
   }
 
   return (
+    <>
     <section className="admin-card admin-orders" aria-labelledby="admin-orders-list-title" aria-busy={loading}>
       <div className="admin-orders-head">
         <h2 id="admin-orders-list-title">Pedidos do site</h2>
@@ -285,6 +287,8 @@ export function AdminOrders() {
         </details>
       )}
     </section>
+    {orders && storage !== 'none' && <AdminReport orders={orders} />}
+    </>
   )
 }
 
