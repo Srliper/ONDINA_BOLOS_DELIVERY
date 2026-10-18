@@ -1,5 +1,5 @@
 /*
- * Animação de rolagem com sequência de imagens (frame-0001.jpg … frame-0240.jpg).
+ * Animação de rolagem com sequência de imagens (frame-0001.webp … frame-0240.webp).
  * O palco fica preso na tela (position: sticky) e o frame acompanha a rolagem da seção.
  */
 (() => {
@@ -7,7 +7,7 @@
 
   const CONFIG = {
     frameCount: 240,
-    framePath: (n) => `../public/intro/frames/frame-${String(n).padStart(4, '0')}.jpg`,
+    framePath: (n) => `../public/intro/frames/frame-${String(n).padStart(4, '0')}.webp`,
     /** Frame mostrado parado quando o usuário pede movimento reduzido (bolo inteiro). */
     staticFrame: 96,
     /** 0–1: quanto o frame exibido anda em direção ao alvo a cada quadro (menor = mais suave). */

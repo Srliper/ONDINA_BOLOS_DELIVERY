@@ -7,7 +7,7 @@ export const INTRO_FRAME_COUNT = 240
 /** Frame mostrado parado com "reduzir movimento" (o bolo inteiro). */
 export const INTRO_STATIC_FRAME = 96
 
-export const introFramePath = (n: number) => `/intro/frames/frame-${String(n).padStart(4, '0')}.jpg`
+export const introFramePath = (n: number) => `/intro/frames/frame-${String(n).padStart(4, '0')}.webp`
 
 /** Números dos frames em uso, de `step` em `step`; o último sempre entra. */
 export function frameNumbers(count: number, step: number): number[] {

@@ -68,7 +68,8 @@ export function ScrollIntro() {
       (deviceMemory !== undefined && deviceMemory <= 4) ||
       connection?.saveData === true ||
       window.matchMedia('(max-width: 700px)').matches
-    const numbers = frameNumbers(INTRO_FRAME_COUNT, lowMemory ? 2 : 1)
+    // Economia de dados ligada: 1 a cada 4 (a animação continua, com 60 frames).
+    const numbers = frameNumbers(INTRO_FRAME_COUNT, connection?.saveData ? 4 : lowMemory ? 2 : 1)
     const images: (HTMLImageElement | null)[] = numbers.map(() => null)
 
     let current = 0
