@@ -131,7 +131,8 @@ export function AdminStockDemand() {
                   </span>
                 </div>
                 <p className="admin-demand-count">
-                  <strong>{product.waiting.length}</strong> {product.waiting.length === 1 ? 'pessoa esperando' : 'pessoas esperando'}
+                  <strong>{product.waiting.length}</strong>{' '}
+                  {product.waiting.length === 1 ? 'pessoa esperando' : 'pessoas esperando'}
                   {product.pendingOrders.length > 0 && (
                     <>
                       {' · '}
@@ -201,7 +202,10 @@ export function AdminStockDemand() {
                         {order.phone && (
                           <a
                             className="admin-demand-phone"
-                            href={customerWhatsAppUrl(order.phone, `Oi, ${order.name.split(' ')[0]}! Aqui é da Ondina Bolos 🍰 Sobre o seu pedido ${order.id}: `)}
+                            href={customerWhatsAppUrl(
+                              order.phone,
+                              `Oi, ${order.name.split(' ')[0]}! Aqui é da Ondina Bolos 🍰 Sobre o seu pedido ${order.id}: `,
+                            )}
                             target="_blank"
                             rel="noreferrer"
                           >
@@ -220,7 +224,11 @@ export function AdminStockDemand() {
                     onClick={() => void markNotified(product.productId, waitingIds)}
                     disabled={busy !== undefined}
                   >
-                    {busy === product.productId ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <Check aria-hidden="true" />}
+                    {busy === product.productId ? (
+                      <Loader2 aria-hidden="true" className="checkout-spin" />
+                    ) : (
+                      <Check aria-hidden="true" />
+                    )}
                     Marcar todos como avisados
                   </button>
                 )}

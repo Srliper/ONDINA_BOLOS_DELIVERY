@@ -1,6 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ArrowDown, ArrowUpRight, CakeSlice, Clock, Instagram, MapPin, MessageCircle, Package, Quote, Truck } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUpRight,
+  CakeSlice,
+  Clock,
+  Instagram,
+  MapPin,
+  MessageCircle,
+  Package,
+  Quote,
+  Truck,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CakeBuilder } from '@/components/CakeBuilder'
 import { CartDrawer } from '@/components/CartDrawer'
@@ -95,9 +106,15 @@ function Hero() {
           Bolos para delivery
         </div>
         <h1>
-          <span className="hero-line"><span>O sabor que</span></span>
-          <span className="hero-line"><span>conquista</span></span>
-          <span className="hero-line hero-accent"><span>São Miguel Arcanjo.</span></span>
+          <span className="hero-line">
+            <span>O sabor que</span>
+          </span>
+          <span className="hero-line">
+            <span>conquista</span>
+          </span>
+          <span className="hero-line hero-accent">
+            <span>São Miguel Arcanjo.</span>
+          </span>
         </h1>
         <p className="hero-description">
           Bolos para o café da tarde e para as suas festas. Escolha no cardápio, monte o pedido e envie pelo WhatsApp.
@@ -179,7 +196,12 @@ function Catalog() {
         </div>
         <div className="catalog-filters" role="group" aria-label="Filtrar por categoria">
           {filters.map(filter => (
-            <Button key={filter.id} variant="filter" aria-pressed={category === filter.id} onClick={() => setCategory(filter.id)}>
+            <Button
+              key={filter.id}
+              variant="filter"
+              aria-pressed={category === filter.id}
+              onClick={() => setCategory(filter.id)}
+            >
               {filter.label}
             </Button>
           ))}
@@ -197,11 +219,31 @@ function Catalog() {
       </p>
 
       <div className="full-menu">
-        {showParty && <MenuGroup title="Bolos para festas" price={formatBRL(60)} unit="o quilo" flavors={partyFlavors} category="festas" />}
+        {showParty && (
+          <MenuGroup
+            title="Bolos para festas"
+            price={formatBRL(60)}
+            unit="o quilo"
+            flavors={partyFlavors}
+            category="festas"
+          />
+        )}
         {showCoffee && (
           <>
-            <MenuGroup title="Bolos para café" price={formatBRL(25)} unit="até 13 fatias" flavors={coffeeFlavors} category="café" />
-            <MenuGroup title="Bolos para café simples" price={formatBRL(20)} unit="até 13 fatias" flavors={simpleFlavors} category="café simples" />
+            <MenuGroup
+              title="Bolos para café"
+              price={formatBRL(25)}
+              unit="até 13 fatias"
+              flavors={coffeeFlavors}
+              category="café"
+            />
+            <MenuGroup
+              title="Bolos para café simples"
+              price={formatBRL(20)}
+              unit="até 13 fatias"
+              flavors={simpleFlavors}
+              category="café simples"
+            />
           </>
         )}
       </div>
@@ -227,7 +269,19 @@ interface Flavor {
   description: string
 }
 
-function MenuGroup({ title, price, unit, flavors, category }: { title: string; price: string; unit: string; flavors: readonly Flavor[]; category: string }) {
+function MenuGroup({
+  title,
+  price,
+  unit,
+  flavors,
+  category,
+}: {
+  title: string
+  price: string
+  unit: string
+  flavors: readonly Flavor[]
+  category: string
+}) {
   return (
     <section className="menu-group" aria-label={title}>
       <div className="menu-group-heading">
@@ -245,7 +299,12 @@ function MenuGroup({ title, price, unit, flavors, category }: { title: string; p
               {flavor.description && <p>{flavor.description}</p>}
             </div>
             <Button asChild variant="order">
-              <a href={whatsapp(`${flavor.name} (${category})`)} target="_blank" rel="noreferrer" aria-label={`Pedir ${flavor.name}, bolo para ${category}, pelo WhatsApp`}>
+              <a
+                href={whatsapp(`${flavor.name} (${category})`)}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Pedir ${flavor.name}, bolo para ${category}, pelo WhatsApp`}
+              >
                 <span>Pedir</span>
                 <ArrowUpRight size={17} aria-hidden="true" />
               </a>
@@ -266,13 +325,22 @@ function About() {
         <div className="about-copy" data-reveal>
           <h2 id="about-title">Feito à mão desde 2003</h2>
           <p>
-            Há mais de vinte anos a Ondina faz bolos para os cafés e as festas de São Miguel Arcanjo. Cada pedido é preparado
-            na nossa cozinha, com os recheios do cardápio e a decoração que você combinar com a gente.
+            Há mais de vinte anos a Ondina faz bolos para os cafés e as festas de São Miguel Arcanjo. Cada pedido é
+            preparado na nossa cozinha, com os recheios do cardápio e a decoração que você combinar com a gente.
           </p>
           <p>
-            Entregamos sem taxa no perímetro urbano. Se preferir, retire seu bolo na {BUSINESS.street}, {BUSINESS.district}.
+            Entregamos sem taxa no perímetro urbano. Se preferir, retire seu bolo na {BUSINESS.street},{' '}
+            {BUSINESS.district}.
           </p>
-          <img className="about-photo" src={aboutPhoto} alt="Três bolos da Ondina decorados" loading="lazy" decoding="async" width={1584} height={672} />
+          <img
+            className="about-photo"
+            src={aboutPhoto}
+            alt="Três bolos da Ondina decorados"
+            loading="lazy"
+            decoding="async"
+            width={1584}
+            height={672}
+          />
         </div>
         <div className="about-map" data-reveal>
           <div className="map-frame">
@@ -354,7 +422,8 @@ function ServiceInfo() {
             </h3>
             <p>Entregamos sem taxa no perímetro urbano de São Miguel Arcanjo.</p>
             <p>
-              Para outras localidades, retire seu bolo na {BUSINESS.street} — {BUSINESS.district}, durante o horário de funcionamento.
+              Para outras localidades, retire seu bolo na {BUSINESS.street} — {BUSINESS.district}, durante o horário de
+              funcionamento.
             </p>
           </div>
           <div>

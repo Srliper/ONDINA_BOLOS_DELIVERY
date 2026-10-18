@@ -1,4 +1,4 @@
-import { trackingPath, type GatewayPayment, type Order } from '@/lib/order-flow'
+import { paymentDeadline, trackingPath, type GatewayPayment, type Order } from '@/lib/order-flow'
 
 /**
  * Gateway de pagamento do site: Mercado Pago (Checkout Pro — Pix e cartão, na página segura deles).
@@ -29,6 +29,8 @@ export function buildPreference(order: Order, baseUrl: string) {
   const back = `${base}${trackingPath(order)}`
   // O Mercado Pago só aceita voltar sozinho e notificar em endereço público com https.
   const isPublic = base.startsWith('https://')
+  // O link de pagamento vence junto com o prazo do pedido (depois disso o estoque volta).
+  const deadline = paymentDeadline(order)?.toISOString()
   return {
     external_reference: order.id,
     items: [
@@ -50,6 +52,7 @@ export function buildPreference(order: Order, baseUrl: string) {
     statement_descriptor: 'ONDINA BOLOS',
     // Boleto demora dias para compensar: no bolo, só Pix e cartão.
     payment_methods: { excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }], installments: 3 },
+    ...(deadline ? { expires: true, expiration_date_to: deadline, date_of_expiration: deadline } : {}),
     metadata: { order_id: order.id },
   }
 }
@@ -65,7 +68,10 @@ export function createMercadoPago(token: string, fetchImpl: typeof fetch = fetch
         signal: controller.signal,
       })
       if (!response.ok) {
-        console.error(`[pagamento] Mercado Pago respondeu ${response.status} em ${path}`, await response.text().catch(() => ''))
+        console.error(
+          `[pagamento] Mercado Pago respondeu ${response.status} em ${path}`,
+          await response.text().catch(() => ''),
+        )
         throw new GatewayError('O pagamento online não respondeu agora. Tente de novo em instantes.')
       }
       return (await response.json()) as Record<string, unknown>
@@ -129,7 +135,13 @@ export async function validWebhookSignature(
   const v1 = parts['v1']
   if (!ts || !v1) return false
   const manifest = `id:${dataId.toLowerCase()};${requestId ? `request-id:${requestId};` : ''}ts:${ts};`
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
   const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(manifest)))
   const expected = Array.from(mac, byte => byte.toString(16).padStart(2, '0')).join('')
   if (expected.length !== v1.length) return false

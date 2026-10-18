@@ -39,7 +39,9 @@ describe('BoloBuilder', () => {
       fireEvent.click(next())
     }
 
-    fireEvent.click(await screen.findByRole('button', { name: /Adicionar bolo personalizado ao carrinho por R\$\s64,00/ }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Adicionar bolo personalizado ao carrinho por R\$\s64,00/ }),
+    )
 
     expect(onAddToCart).toHaveBeenCalledTimes(1)
     const [selection, total] = onAddToCart.mock.calls[0] ?? []

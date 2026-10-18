@@ -28,14 +28,14 @@ import {
  * procura no painel, pega o contato e marca quem já foi avisado.
  */
 
-const rateLimited = createRateLimit(8, 10 * 60_000)
+const rateLimited = createRateLimit(8, 10 * 60_000, 'aviso')
 
 /** Público: o cliente pede para ser avisado quando o bolo esgotado voltar. */
 export const requestRestock = createServerFn({ method: 'POST' })
   .validator(restockInputSchema)
   .handler(({ data }): Promise<Result<{ waiting: number }>> =>
     attempt(async () => {
-      if (rateLimited(getRequestIP({ xForwardedFor: true }) ?? 'desconhecido')) {
+      if (await rateLimited(getRequestIP({ xForwardedFor: true }) ?? 'desconhecido')) {
         throw new StockRequestError(429, 'Muitos pedidos seguidos. Tente de novo em alguns minutos.')
       }
       if (getStockRequestsStorage().kind === 'none') {

@@ -27,5 +27,7 @@ export const Route = createFileRoute('/pedido/$id')({
 function OrderPage() {
   const { id } = Route.useParams()
   const { t, payment_id: paymentId } = Route.useSearch()
-  return <OrderTracking id={id} token={t} paymentId={paymentId && /^\d{1,20}$/.test(paymentId) ? paymentId : undefined} />
+  return (
+    <OrderTracking id={id} token={t} paymentId={paymentId && /^\d{1,20}$/.test(paymentId) ? paymentId : undefined} />
+  )
 }

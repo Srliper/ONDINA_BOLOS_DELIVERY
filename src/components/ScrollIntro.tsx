@@ -30,7 +30,11 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
     const img = new Image()
     img.decoding = 'async'
     // decode() evita travadas na primeira vez que o frame é desenhado
-    img.onload = () => img.decode().then(() => resolve(img), () => resolve(img))
+    img.onload = () =>
+      img.decode().then(
+        () => resolve(img),
+        () => resolve(img),
+      )
     img.onerror = () => resolve(null) // frame com problema é pulado, nunca imagem quebrada
     img.src = src
   })
@@ -68,7 +72,8 @@ export function ScrollIntro() {
       (deviceMemory !== undefined && deviceMemory <= 4) ||
       connection?.saveData === true ||
       window.matchMedia('(max-width: 700px)').matches
-    const numbers = frameNumbers(INTRO_FRAME_COUNT, lowMemory ? 2 : 1)
+    // Economia de dados ligada: 1 a cada 4 (a animação continua, com 60 frames).
+    const numbers = frameNumbers(INTRO_FRAME_COUNT, connection?.saveData ? 4 : lowMemory ? 2 : 1)
     const images: (HTMLImageElement | null)[] = numbers.map(() => null)
 
     let current = 0
@@ -103,7 +108,13 @@ export function ScrollIntro() {
     }
 
     const drawImage = (context: CanvasRenderingContext2D, img: HTMLImageElement, mode: FitMode, alpha: number) => {
-      const [x, y, w, h] = fitRect(img.naturalWidth, img.naturalHeight, context.canvas.width, context.canvas.height, mode)
+      const [x, y, w, h] = fitRect(
+        img.naturalWidth,
+        img.naturalHeight,
+        context.canvas.width,
+        context.canvas.height,
+        mode,
+      )
       context.globalAlpha = alpha
       context.drawImage(img, x, y, w, h)
       context.globalAlpha = 1
@@ -157,7 +168,8 @@ export function ScrollIntro() {
 
     const onScroll = () => {
       // Enquanto a intro cobre a maior parte da tela, o WhatsApp flutuante fica escondido (ver styles.css)
-      document.documentElement.dataset['intro'] = section.getBoundingClientRect().bottom > window.innerHeight * 0.5 ? 'on' : 'off'
+      document.documentElement.dataset['intro'] =
+        section.getBoundingClientRect().bottom > window.innerHeight * 0.5 ? 'on' : 'off'
       if (reducedMotion.matches) return
       const p = progress()
       target = p * (numbers.length - 1)
@@ -212,7 +224,11 @@ export function ScrollIntro() {
           aria-label="Mãos colocam morangos num naked cake, o bolo é cortado e uma fatia é servida com café."
         />
         <noscript>
-          <img className="intro-fallback" src={introFramePath(INTRO_STATIC_FRAME)} alt="Naked cake da Ondina com morangos" />
+          <img
+            className="intro-fallback"
+            src={introFramePath(INTRO_STATIC_FRAME)}
+            alt="Naked cake da Ondina com morangos"
+          />
         </noscript>
 
         <div className="intro-captions">

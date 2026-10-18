@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { BadgeCheck, CreditCard, Hourglass, Loader2, MessageCircle, Palette, Send, ShieldCheck, XCircle } from 'lucide-react'
+import {
+  BadgeCheck,
+  CreditCard,
+  Hourglass,
+  Loader2,
+  MessageCircle,
+  Palette,
+  Send,
+  ShieldCheck,
+  XCircle,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import logo from '@/assets/ondina_logo.png'
 import { formatBRL } from '@/lib/format'
@@ -136,7 +146,17 @@ export function OrderTracking({ id, token, paymentId }: { id: string; token: str
             <section className="track-card" aria-labelledby="track-title">
               <p className="track-id">Pedido {order.id}</p>
               <h1 id="track-title">Olá, {order.firstName}!</h1>
-              <p className="admin-muted">Feito em {formatDate(order.createdAt)}</p>
+              <p className="admin-muted">
+                Feito em {formatDate(order.createdAt)}
+                {order.scheduleLabel && (
+                  <>
+                    {' · '}
+                    <strong>
+                      {order.fulfillment === 'entrega' ? 'Entrega' : 'Retirada'}: {order.scheduleLabel}
+                    </strong>
+                  </>
+                )}
+              </p>
               <StatusBlock order={order} paying={paying} onPay={pay} />
             </section>
 
@@ -286,17 +306,30 @@ function StatusBlock({ order, paying, onPay }: { order: TrackedOrder; paying: bo
               sozinha.
             </p>
           )}
-          <button type="button" className="checkout-button is-online" onClick={onPay} disabled={paying} aria-busy={paying}>
+          <button
+            type="button"
+            className="checkout-button is-online"
+            onClick={onPay}
+            disabled={paying}
+            aria-busy={paying}
+          >
             {paying ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <CreditCard aria-hidden="true" />}
             {paying ? 'Abrindo pagamento…' : `Pagar ${formatBRL(order.total)} agora`}
           </button>
           <p className="track-help">
             <ShieldCheck aria-hidden="true" /> Pix ou cartão, na página segura do Mercado Pago.
+            {order.payBy && <> Pague até {formatDate(order.payBy)}; depois disso o pedido é cancelado.</>}
           </p>
         </div>
       )}
 
-      {!order.paid && !order.canPay && order.status === 'aguardando_pagamento' && (
+      {!order.paid && !order.canPay && order.payBy && (
+        <p className="checkout-notice" role="status">
+          O prazo para pagar acabou e o pedido será cancelado. Faça um pedido novo ou escreva para a Ondina abaixo.
+        </p>
+      )}
+
+      {!order.paid && !order.canPay && !order.payBy && order.status === 'aguardando_pagamento' && (
         <p className="admin-muted">A Ondina confirma o pagamento pela conversa do WhatsApp ({order.paymentLabel}).</p>
       )}
     </>

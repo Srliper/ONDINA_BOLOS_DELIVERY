@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { clearFailures, lockedFor, passwordMatches, readSession, registerFailure, signSession } from '@/lib/admin-session'
+import {
+  clearFailures,
+  lockedFor,
+  passwordMatches,
+  readSession,
+  registerFailure,
+  signSession,
+} from '@/lib/admin-session'
 
 const SECRET = 'segredo-de-teste'
 
@@ -15,7 +22,9 @@ describe('sessão da administração', () => {
     expect(await readSession(token.replace('edgard', 'ondina'), SECRET, 1_000)).toBeUndefined()
     expect(await readSession(token.replace('.2000.', '.9999999.'), SECRET, 1_000)).toBeUndefined()
     expect(await readSession(token, 'outro-segredo', 1_000)).toBeUndefined()
-    expect(await readSession(await signSession({ memberId: 'intruso', expiresAt: 2_000 }, SECRET), SECRET, 1_000)).toBeUndefined()
+    expect(
+      await readSession(await signSession({ memberId: 'intruso', expiresAt: 2_000 }, SECRET), SECRET, 1_000),
+    ).toBeUndefined()
     expect(await readSession(undefined, SECRET)).toBeUndefined()
     expect(await readSession('lixo', SECRET)).toBeUndefined()
   })

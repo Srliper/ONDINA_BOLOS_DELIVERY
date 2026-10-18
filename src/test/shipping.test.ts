@@ -4,7 +4,12 @@ import { getShippingOptions, isDeliveryCity, normalizeCity, shippingFee, STORE_A
 describe('frete', () => {
   it('reconhece São Miguel Arcanjo escrito de vários jeitos', () => {
     expect(normalizeCity('  SÃO  Miguel Arcanjo - SP ')).toBe('sao miguel arcanjo')
-    for (const city of ['São Miguel Arcanjo', 'sao miguel arcanjo', 'São Miguel Arcanjo/SP', 'SAO MIGUEL ARCANJO, SP']) {
+    for (const city of [
+      'São Miguel Arcanjo',
+      'sao miguel arcanjo',
+      'São Miguel Arcanjo/SP',
+      'SAO MIGUEL ARCANJO, SP',
+    ]) {
       expect(isDeliveryCity(city)).toBe(true)
     }
     for (const city of ['Pilar do Sul', 'São Miguel', 'Itapetininga', '']) expect(isDeliveryCity(city)).toBe(false)

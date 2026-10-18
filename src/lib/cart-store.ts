@@ -32,15 +32,13 @@ export type CartLine = ReadyLine | CustomLine
 const isCustomLine = (line: CartLine): line is CustomLine => 'custom' in line
 
 /** Id estável da linha: o mesmo bolo montado duas vezes soma quantidade em vez de duplicar. */
-export const lineIdOf = (line: CartLine): string =>
-  isCustomLine(line) ? customLineId(line.custom) : line.productId
+export const lineIdOf = (line: CartLine): string => (isCustomLine(line) ? customLineId(line.custom) : line.productId)
 
 const CUSTOM_PREFIX = 'custom:'
 const customLineId = (ids: CustomLayerIds) => CUSTOM_PREFIX + LAYER_ORDER.map(key => ids[key]).join('+')
 
 /** Cada id precisa existir no cardápio de camadas e pertencer à etapa certa. */
-const isValidCustom = (ids: CustomLayerIds) =>
-  LAYER_ORDER.every(key => getLayerById(ids[key])?.category === key)
+const isValidCustom = (ids: CustomLayerIds) => LAYER_ORDER.every(key => getLayerById(ids[key])?.category === key)
 
 const isValidLine = (line: CartLine) =>
   isCustomLine(line) ? isValidCustom(line.custom) : getProductById(line.productId) !== undefined
@@ -113,8 +111,7 @@ const clamp = (quantity: number) => Math.min(MAX_QUANTITY, Math.max(0, Math.trun
 
 /* ---------- Ações (funções puras sobre o store, utilizáveis fora de React) ---------- */
 
-const quantityOf = (lineId: string) =>
-  current().find(line => lineIdOf(line) === lineId)?.quantity ?? 0
+const quantityOf = (lineId: string) => current().find(line => lineIdOf(line) === lineId)?.quantity ?? 0
 
 function remove(lineId: string): void {
   setLines(current().filter(line => lineIdOf(line) !== lineId))
@@ -222,8 +219,7 @@ export function toCartItems(source: readonly CartLine[]): CartItem[] {
 export const getCartTotal = (items: readonly CartItem[]) =>
   items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-export const getCartCount = (items: readonly CartItem[]) =>
-  items.reduce((sum, item) => sum + item.quantity, 0)
+export const getCartCount = (items: readonly CartItem[]) => items.reduce((sum, item) => sum + item.quantity, 0)
 
 /* ---------- Hook ---------- */
 
@@ -260,6 +256,10 @@ const subscribeDrawer = (listener: () => void) => {
 }
 
 export function useCartOpen(): [boolean, (open: boolean) => void] {
-  const open = useSyncExternalStore(subscribeDrawer, () => drawerOpen, () => false)
+  const open = useSyncExternalStore(
+    subscribeDrawer,
+    () => drawerOpen,
+    () => false,
+  )
   return [open, setCartOpen]
 }

@@ -1045,3 +1045,47 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
   .track-card h1 { font-size:26px; }
   .chat-form { flex-direction:column; align-items:stretch; }
 }
+
+/* ---------- Para quando (checkout) ---------- */
+.checkout-schedule { display:grid; gap:10px; margin:6px 0 4px; padding:12px; border:1px solid var(--border); border-radius:16px; background:var(--card); }
+.checkout-schedule legend { padding:0 4px; font-size:13px; font-weight:700; }
+.checkout-periods { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.checkout-periods .checkout-choice { padding:10px 8px; flex-direction:column; align-items:flex-start; gap:4px; }
+.checkout-periods .checkout-choice-check { display:none; }
+.checkout-periods .checkout-choice-text small { font-size:11px; }
+.checkout-hint { font-size:11.5px; color:var(--muted-foreground); }
+.admin-order-schedule { display:flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; color:var(--gold-ink); }
+.admin-order-schedule svg { width:13px; height:13px; }
+
+/* ---------- Meus pedidos (topo) ---------- */
+.my-orders { width:min(300px, calc(100vw - 32px)); padding:12px; border-radius:16px; }
+.my-orders-title { font-size:13px; font-weight:700; margin-bottom:6px; }
+.my-orders ul { list-style:none; padding:0; margin:0; display:grid; gap:4px; }
+.my-orders a { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:12px; background:var(--secondary); }
+.my-orders a:hover { background:oklch(0.94 0.03 27); }
+.my-orders a span { display:grid; }
+.my-orders a strong { font-size:13px; color:var(--rose-ink); }
+.my-orders a small { font-size:11px; color:var(--muted-foreground); }
+.my-orders a svg { width:16px; height:16px; color:var(--muted-foreground); }
+.my-orders-note { margin-top:8px; font-size:11px; line-height:1.45; color:var(--muted-foreground); }
+
+/* ---------- Painel: vendas ---------- */
+.admin-report { display:grid; gap:12px; }
+.admin-report h2 { margin-bottom:0; }
+.admin-report .admin-order-filters { margin:0; }
+.admin-report h3 { font-size:13px; font-weight:700; margin-bottom:6px; }
+.admin-report-kpis { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }
+.admin-report-kpis div { padding:10px 12px; border-radius:14px; background:var(--background); border:1px solid var(--border); }
+.admin-report-kpis dt { font-size:11.5px; color:var(--muted-foreground); }
+.admin-report-kpis dd { font-family:var(--font-serif); font-size:22px; color:var(--foreground); }
+.admin-report-kpis small { font-family:var(--font-sans); font-size:11px; color:var(--muted-foreground); }
+.admin-report-chart { display:flex; align-items:flex-end; gap:2px; height:120px; padding:8px; border-radius:14px; background:var(--background); border:1px solid var(--border); }
+.admin-report-col { flex:1; height:100%; display:flex; align-items:flex-end; }
+.admin-report-col span { width:100%; min-height:2px; border-radius:4px 4px 0 0; background:var(--rose-ink); opacity:.85; }
+.admin-report-axis { display:flex; justify-content:space-between; margin-top:-8px; font-size:11px; color:var(--muted-foreground); }
+.admin-report-split { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; }
+.admin-report-bars { list-style:none; padding:0; margin:0; display:grid; gap:6px; }
+.admin-report-bars li { position:relative; display:flex; justify-content:space-between; gap:8px; padding:7px 10px; border-radius:10px; background:var(--background); border:1px solid var(--border); font-size:12.5px; overflow:hidden; }
+.admin-report-bars li span, .admin-report-bars li strong { position:relative; z-index:1; }
+.admin-report-bars li small { color:var(--muted-foreground); }
+.admin-report-bars li i { position:absolute; inset:0 auto 0 0; background:oklch(0.86 0.11 82 / 35%); }

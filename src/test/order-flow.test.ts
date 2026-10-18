@@ -18,7 +18,8 @@ const NOW = new Date('2026-10-14T12:00:00Z')
 
 function catalogWithStock(stock: Record<string, number | null>): Catalog {
   let catalog = seedCatalog()
-  for (const [id, value] of Object.entries(stock)) catalog = updateItem(catalog, 'products', id, { stock: value }, NOW).catalog
+  for (const [id, value] of Object.entries(stock))
+    catalog = updateItem(catalog, 'products', id, { stock: value }, NOW).catalog
   return catalog
 }
 
@@ -76,7 +77,12 @@ describe('finalizar pedido', () => {
     const { order } = place(seedCatalog(), [
       { productId: 'prestigio', quantity: 40 },
       {
-        custom: { base: 'base-red-velvet', recheio: 'recheio-morango-ninho', cobertura: 'cobertura-brigadeiro', decoracao: 'decoracao-morangos' },
+        custom: {
+          base: 'base-red-velvet',
+          recheio: 'recheio-morango-ninho',
+          cobertura: 'cobertura-brigadeiro',
+          decoracao: 'decoracao-morangos',
+        },
         quantity: 1,
       },
     ])
@@ -88,7 +94,12 @@ describe('finalizar pedido', () => {
     const { order } = place(catalog, [
       { productId: 'prestigio', quantity: 2 },
       {
-        custom: { base: 'base-red-velvet', recheio: 'recheio-morango-ninho', cobertura: 'cobertura-brigadeiro', decoracao: 'decoracao-morangos' },
+        custom: {
+          base: 'base-red-velvet',
+          recheio: 'recheio-morango-ninho',
+          cobertura: 'cobertura-brigadeiro',
+          decoracao: 'decoracao-morangos',
+        },
         quantity: 1,
       },
     ])
@@ -101,16 +112,28 @@ describe('finalizar pedido', () => {
     expect(() => place(seedCatalog(), [{ productId: 'nao-existe', quantity: 1 }])).toThrow(OrderError)
     expect(() =>
       place(seedCatalog(), [
-        { custom: { base: 'recheio-prestigio', recheio: 'recheio-morango-ninho', cobertura: 'cobertura-brigadeiro', decoracao: 'decoracao-morangos' }, quantity: 1 },
+        {
+          custom: {
+            base: 'recheio-prestigio',
+            recheio: 'recheio-morango-ninho',
+            cobertura: 'cobertura-brigadeiro',
+            decoracao: 'decoracao-morangos',
+          },
+          quantity: 1,
+        },
       ]),
     ).toThrow(/camadas/)
   })
 
   it('valida a entrada: carrinho vazio e quantidades absurdas', () => {
-    expect(placeOrderSchema.safeParse({ ...input([{ productId: 'prestigio', quantity: 1 }]), lines: [] }).success).toBe(false)
+    expect(placeOrderSchema.safeParse({ ...input([{ productId: 'prestigio', quantity: 1 }]), lines: [] }).success).toBe(
+      false,
+    )
     expect(
-      placeOrderSchema.safeParse({ ...input([{ productId: 'prestigio', quantity: 1 }]), lines: [{ productId: 'prestigio', quantity: 999 }] })
-        .success,
+      placeOrderSchema.safeParse({
+        ...input([{ productId: 'prestigio', quantity: 1 }]),
+        lines: [{ productId: 'prestigio', quantity: 999 }],
+      }).success,
     ).toBe(false)
   })
 })
@@ -197,7 +220,11 @@ describe('fluxo de entrega', () => {
 
 describe('banco de pedidos', () => {
   it('guarda o mais novo primeiro e, cheio, tira o finalizado mais antigo', () => {
-    const make = (id: string, status: Order['status']): Order => ({ ...place(seedCatalog(), [{ productId: 'prestigio', quantity: 1 }]).order, id, status })
+    const make = (id: string, status: Order['status']): Order => ({
+      ...place(seedCatalog(), [{ productId: 'prestigio', quantity: 1 }]).order,
+      id,
+      status,
+    })
     let doc = { orders: [make('antigo-entregue', 'entregue')] as Order[] }
     for (let i = 1; i < MAX_STORED_ORDERS; i++) doc = addOrder(doc, make(`aberto-${i}`, 'aguardando_pagamento'))
     expect(doc.orders).toHaveLength(MAX_STORED_ORDERS)

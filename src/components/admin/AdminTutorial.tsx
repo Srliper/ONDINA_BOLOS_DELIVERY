@@ -1,5 +1,21 @@
 import type { ReactNode } from 'react'
-import { Bell, BellRing, BookOpen, Boxes, Camera, ClipboardList, CreditCard, Hourglass, KeyRound, Layers, MessageCircle, Tag, Users } from 'lucide-react'
+import {
+  BarChart3,
+  Bell,
+  BellRing,
+  BookOpen,
+  Boxes,
+  Camera,
+  ClipboardList,
+  Clock,
+  CreditCard,
+  Hourglass,
+  KeyRound,
+  Layers,
+  MessageCircle,
+  Tag,
+  Users,
+} from 'lucide-react'
 
 interface Lesson {
   id: string
@@ -19,8 +35,12 @@ const LESSONS: Lesson[] = [
         No site, role até o fim da página e toque em <strong>Área da equipe</strong> (ou abra o endereço do site com{' '}
         <code>/admin</code> no final).
       </>,
-      <>Toque no seu nome e digite a senha da equipe. Depois, toque em <strong>Entrar</strong>.</>,
-      <>Você fica conectado por 12 horas neste aparelho. Para sair, use o botão <strong>Sair</strong> lá em cima.</>,
+      <>
+        Toque no seu nome e digite a senha da equipe. Depois, toque em <strong>Entrar</strong>.
+      </>,
+      <>
+        Você fica conectado por 12 horas neste aparelho. Para sair, use o botão <strong>Sair</strong> lá em cima.
+      </>,
     ],
     tip: <>A senha nunca aparece no site. Cinco tentativas erradas seguidas bloqueiam o acesso por 5 minutos.</>,
   },
@@ -34,15 +54,16 @@ const LESSONS: Lesson[] = [
         <strong>+</strong>. Cada toque já salva no site.
       </>,
       <>
-        Bolos de festa contam em <strong>kg</strong>; bolos de café, em <strong>bolos</strong>; doces e sobremesas, em <strong>unidades</strong>.
+        Bolos de festa contam em <strong>kg</strong>; bolos de café, em <strong>bolos</strong>; doces e sobremesas, em{' '}
+        <strong>unidades</strong>.
       </>,
       <>
-        Para digitar um número de uma vez, toque no lápis (<strong>Editar</strong>), preencha <strong>Estoque</strong>{' '}
-        e toque em <strong>Salvar</strong>.
+        Para digitar um número de uma vez, toque no lápis (<strong>Editar</strong>), preencha <strong>Estoque</strong> e
+        toque em <strong>Salvar</strong>.
       </>,
       <>
-        Deixe o estoque <strong>vazio</strong> para um bolo feito sob encomenda: ele fica sempre disponível
-        (“Sem controle”).
+        Deixe o estoque <strong>vazio</strong> para um bolo feito sob encomenda: ele fica sempre disponível (“Sem
+        controle”).
       </>,
     ],
     tip: (
@@ -127,8 +148,8 @@ const LESSONS: Lesson[] = [
         Na aba <strong>Bolos</strong>, toque em <strong>Adicionar bolo</strong>.
       </>,
       <>
-        Preencha <strong>Nome</strong>, <strong>Preço</strong>, <strong>Categoria</strong> (festa, café ou doces e sobremesas),{' '}
-        <strong>Como é cobrado</strong> (ex.: “o quilo”) e, se quiser, o <strong>Estoque</strong>.
+        Preencha <strong>Nome</strong>, <strong>Preço</strong>, <strong>Categoria</strong> (festa, café ou doces e
+        sobremesas), <strong>Como é cobrado</strong> (ex.: “o quilo”) e, se quiser, o <strong>Estoque</strong>.
       </>,
       <>
         Toque em <strong>Enviar foto do celular ou computador</strong> e escolha a foto do bolo. O painel diminui a foto
@@ -140,8 +161,8 @@ const LESSONS: Lesson[] = [
     ],
     tip: (
       <>
-        Para trocar a foto de um bolo que já existe: lápis → Enviar foto → Salvar. Bolos novos do cardápio padrão
-        entram no site sozinhos; se um bolo padrão for excluído e você quiser de volta, toque em{' '}
+        Para trocar a foto de um bolo que já existe: lápis → Enviar foto → Salvar. Bolos novos do cardápio padrão entram
+        no site sozinhos; se um bolo padrão for excluído e você quiser de volta, toque em{' '}
         <strong>Devolver ao cardápio</strong> no aviso da aba Bolos.
       </>
     ),
@@ -170,8 +191,8 @@ const LESSONS: Lesson[] = [
         só aqui.
       </>,
       <>
-        Em <strong>Pedidos do site</strong> ficam todos os pedidos, com cliente, endereço (com CEP), itens e total. Use os
-        filtros (Em aberto, Pendentes, Aguardando pagamento…) e <strong>Atualizar</strong> para ver os novos.
+        Em <strong>Pedidos do site</strong> ficam todos os pedidos, com cliente, endereço (com CEP), itens e total. Use
+        os filtros (Em aberto, Pendentes, Aguardando pagamento…) e <strong>Atualizar</strong> para ver os novos.
       </>,
       <>
         Quando o pagamento cair (ex.: Pix), toque em <strong>Confirmar pagamento</strong>: o pedido vai para{' '}
@@ -196,15 +217,14 @@ const LESSONS: Lesson[] = [
       </>,
       <>
         Pedido do site aparece com a etiqueta <strong>Pelo site</strong>. Quando o pagamento é aprovado, ele vai{' '}
-        <strong>sozinho</strong> para <strong>Pago / Em preparo</strong> — não precisa confirmar. O dinheiro cai na conta
-        do Mercado Pago da loja.
+        <strong>sozinho</strong> para <strong>Pago / Em preparo</strong> — não precisa confirmar. O dinheiro cai na
+        conta do Mercado Pago da loja.
       </>,
+      <>Depois é igual: prepare e mude o status para Saiu para entrega (ou Pronto para retirada) e Entregue.</>,
       <>
-        Depois é igual: prepare e mude o status para Saiu para entrega (ou Pronto para retirada) e Entregue.
-      </>,
-      <>
-        Pedido do site <strong>pendente</strong> (sem estoque) não é cobrado. Ao tocar em <strong>Verificar estoque</strong>{' '}
-        e liberar, o botão <strong>Pagar agora</strong> aparece na página do pedido do cliente — avise-o pela conversa.
+        Pedido do site <strong>pendente</strong> (sem estoque) não é cobrado. Ao tocar em{' '}
+        <strong>Verificar estoque</strong> e liberar, o botão <strong>Pagar agora</strong> aparece na página do pedido
+        do cliente — avise-o pela conversa.
       </>,
     ],
     tip: (
@@ -263,10 +283,15 @@ const LESSONS: Lesson[] = [
         <strong>para entregar</strong>), mensagem ou cliente esperando bolo? Toca um aviso e aparece na tela.
       </>,
       <>
-        Toque em <strong>Ligar notificações</strong> no quadro <strong>Avisos</strong> para receber a notificação do
-        aparelho mesmo com outra aba na frente. O número entre parênteses no título da aba mostra o que precisa de
-        atenção.
+        No seu celular, toque em <strong>Ligar notificações</strong> no quadro <strong>Avisos</strong> e permita. A
+        partir daí, o celular avisa de pedido novo, pagamento, mensagem e bolo esgotado{' '}
+        <strong>mesmo com o painel fechado</strong>. Cada pessoa liga no próprio aparelho.
       </>,
+      <>
+        No <strong>iPhone</strong>: abra o painel no Safari, toque em <strong>Compartilhar</strong> →{' '}
+        <strong>Adicionar à Tela de Início</strong>, abra pelo ícone novo e só então ligue as notificações.
+      </>,
+      <>O número entre parênteses no título da aba mostra o que precisa de atenção.</>,
       <>
         O filtro <strong>A entregar</strong> em Pedidos do site mostra só o que já está pago (ou é pago na entrega) e
         falta entregar.
@@ -274,10 +299,43 @@ const LESSONS: Lesson[] = [
     ],
     tip: (
       <>
-        Para receber no WhatsApp da loja mesmo com o painel fechado, quem cuida do site liga o aviso do n8n (variável{' '}
-        <code>N8N_STORE_ALERT_URL</code>, no README).
+        Se o botão não aparecer para o celular, quem cuida do site precisa configurar as chaves das notificações (VAPID,
+        no README). Também dá para receber no WhatsApp da loja pelo n8n.
       </>
     ),
+  },
+  {
+    id: 'vendas',
+    icon: BarChart3,
+    title: 'Ver as vendas',
+    steps: [
+      <>
+        Em <strong>Vendas</strong> (logo abaixo dos pedidos), escolha <strong>7</strong>, <strong>30</strong> ou{' '}
+        <strong>90 dias</strong>.
+      </>,
+      <>
+        <strong>Vendido</strong> soma só o que foi pago; <strong>A receber</strong> é o que ainda falta pagar (inclui
+        dinheiro e cartão na entrega). Cancelados ficam fora das contas.
+      </>,
+      <>
+        As barras mostram as vendas de cada dia; embaixo, quanto veio do site e do WhatsApp e os bolos mais vendidos.
+      </>,
+    ],
+  },
+  {
+    id: 'prazo',
+    icon: Clock,
+    title: 'Data de entrega e prazo de pagamento',
+    steps: [
+      <>
+        Todo pedido novo vem com <strong>Para quando</strong>: o dia e a faixa (manhã, tarde ou noite de sábado) que o
+        cliente escolheu. Aparece no cartão do pedido.
+      </>,
+      <>
+        Pedido pago no site tem <strong>2 horas</strong> para ser pago. O cartão mostra até quando. Sem pagamento, ele é{' '}
+        <strong>cancelado sozinho</strong> e o estoque volta para o cardápio.
+      </>,
+    ],
   },
 ]
 

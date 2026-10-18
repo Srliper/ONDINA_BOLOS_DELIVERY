@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   Outlet,
   Link,
@@ -7,14 +7,14 @@ import {
   HeadContent,
   Scripts,
   type ErrorComponentProps,
-} from "@tanstack/react-router";
-import type { ReactNode } from "react";
+} from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 
-import appCss from "../styles.css?url";
-import { MotionRoot } from "../components/MotionRoot";
-import { Toaster } from "../components/ui/sonner";
-import { applyCatalog } from "../lib/catalog";
-import { getPublicCatalog } from "../lib/catalog-server";
+import appCss from '../styles.css?url'
+import { MotionRoot } from '../components/MotionRoot'
+import { Toaster } from '../components/ui/sonner'
+import { applyCatalog } from '../lib/catalog'
+import { getPublicCatalog } from '../lib/catalog-server'
 
 function StatusPage({ title, message, children }: { title: string; message: string; children: ReactNode }) {
   return (
@@ -25,30 +25,36 @@ function StatusPage({ title, message, children }: { title: string; message: stri
         <div className="status-actions">{children}</div>
       </div>
     </div>
-  );
+  )
 }
 
 function NotFoundComponent() {
   return (
-    <StatusPage title="Página não encontrada" message="O endereço pode ter mudado. O cardápio continua na página inicial.">
+    <StatusPage
+      title="Página não encontrada"
+      message="O endereço pode ter mudado. O cardápio continua na página inicial."
+    >
       <Link to="/" className="bakery-button bakery-button-cocoa">
         Ver o cardápio
       </Link>
     </StatusPage>
-  );
+  )
 }
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
-  console.error(error);
-  const router = useRouter();
+  console.error(error)
+  const router = useRouter()
   return (
-    <StatusPage title="A página não carregou" message="Tente de novo. Se continuar, faça seu pedido direto pelo WhatsApp: (15) 99711-5450.">
+    <StatusPage
+      title="A página não carregou"
+      message="Tente de novo. Se continuar, faça seu pedido direto pelo WhatsApp: (15) 99711-5450."
+    >
       <button
         type="button"
         className="bakery-button bakery-button-cocoa"
         onClick={() => {
-          router.invalidate();
-          reset();
+          router.invalidate()
+          reset()
         }}
       >
         Tentar de novo
@@ -57,28 +63,28 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
         Ir para o início
       </a>
     </StatusPage>
-  );
+  )
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#fdf8f5" },
-      { name: "author", content: "Ondina Bolos" },
-      { property: "og:locale", content: "pt_BR" },
-      { property: "og:site_name", content: "Ondina Bolos" },
+      { charSet: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+      { name: 'theme-color', content: '#fdf8f5' },
+      { name: 'author', content: 'Ondina Bolos' },
+      { property: 'og:locale', content: 'pt_BR' },
+      { property: 'og:site_name', content: 'Ondina Bolos' },
     ],
     links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
-      { rel: "apple-touch-icon", href: "/favicon.png" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'icon', href: '/favicon.png', type: 'image/png' },
+      { rel: 'apple-touch-icon', href: '/favicon.png' },
+      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+      { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
       {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@400;500;600&display=swap",
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@400;500;600&display=swap',
       },
     ],
   }),
@@ -88,7 +94,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
-});
+})
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
@@ -101,13 +107,13 @@ function RootShell({ children }: { children: ReactNode }) {
         <Scripts />
       </body>
     </html>
-  );
+  )
 }
 
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
+  const { queryClient } = Route.useRouteContext()
   // Antes de qualquer página desenhar: cardápio, carrinho e Monte seu Bolo leem daqui.
-  applyCatalog(Route.useLoaderData());
+  applyCatalog(Route.useLoaderData())
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -116,5 +122,5 @@ function RootComponent() {
       <MotionRoot />
       <Toaster position="bottom-center" />
     </QueryClientProvider>
-  );
+  )
 }

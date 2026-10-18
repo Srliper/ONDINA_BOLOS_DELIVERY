@@ -32,7 +32,8 @@ const TOKEN = 'a'.repeat(32)
 
 function catalogWithStock(stock: Record<string, number | null>): Catalog {
   let catalog = seedCatalog()
-  for (const [id, value] of Object.entries(stock)) catalog = updateItem(catalog, 'products', id, { stock: value }, NOW).catalog
+  for (const [id, value] of Object.entries(stock))
+    catalog = updateItem(catalog, 'products', id, { stock: value }, NOW).catalog
   return catalog
 }
 
@@ -44,7 +45,13 @@ const input = (lines: PlaceOrderInput['lines'], method: PlaceOrderInput['payment
   } satisfies PlaceOrderInput)
 
 const onlineOrder = (stock = 5, quantity = 2): Order =>
-  createOrder(catalogWithStock({ prestigio: stock }), input([{ productId: 'prestigio', quantity }]), NOW, 'OB-SITE', TOKEN).order
+  createOrder(
+    catalogWithStock({ prestigio: stock }),
+    input([{ productId: 'prestigio', quantity }]),
+    NOW,
+    'OB-SITE',
+    TOKEN,
+  ).order
 
 describe('pedido pelo site', () => {
   it('guarda canal, WhatsApp do cliente e a chave da página do pedido', () => {
@@ -74,7 +81,11 @@ describe('pedido pelo site', () => {
 
   it('pedidos guardados antes desta versão continuam válidos', () => {
     const { channel: _channel, accessToken: _token, messages: _messages, ...old } = onlineOrder()
-    const parsed = orderSchema.parse({ ...old, customer: { ...old.customer, phone: undefined }, payment: { ...old.payment, method: 'pix' } })
+    const parsed = orderSchema.parse({
+      ...old,
+      customer: { ...old.customer, phone: undefined },
+      payment: { ...old.payment, method: 'pix' },
+    })
     expect(parsed).toMatchObject({ channel: 'whatsapp', messages: [] })
     expect(parsed.accessToken).toBeUndefined()
   })
@@ -88,7 +99,11 @@ describe('pagamento confirmado pelo gateway', () => {
     expect(order.total).toBe(120)
     const result = applyGatewayPayment(order, approved, LATER)
     expect(result).toMatchObject({ changed: true, approved: true })
-    expect(result.order).toMatchObject({ paid: true, status: 'em_preparo', gateway: { paymentId: '123', status: 'approved' } })
+    expect(result.order).toMatchObject({
+      paid: true,
+      status: 'em_preparo',
+      gateway: { paymentId: '123', status: 'approved' },
+    })
     expect(result.order.history.at(-1)).toMatchObject({ by: 'mercadopago', status: 'em_preparo' })
     expect(canPayOnline(result.order)).toBe(false)
   })
@@ -140,7 +155,14 @@ describe('conversa pela página do pedido', () => {
 
   it('recusa mensagem vazia e respeita o limite da conversa', () => {
     expect(() => addMessage(onlineOrder(), 'cliente', '   ')).toThrow(/Escreva/)
-    const full = { ...onlineOrder(), messages: Array.from({ length: MAX_MESSAGES }, () => ({ at: NOW.toISOString(), from: 'cliente' as const, text: 'oi' })) }
+    const full = {
+      ...onlineOrder(),
+      messages: Array.from({ length: MAX_MESSAGES }, () => ({
+        at: NOW.toISOString(),
+        from: 'cliente' as const,
+        text: 'oi',
+      })),
+    }
     expect(() => addMessage(full, 'cliente', 'mais uma')).toThrow(/limite/)
   })
 
@@ -150,7 +172,11 @@ describe('conversa pela página do pedido', () => {
     expect(view).not.toContain('5515991234567')
     expect(view).not.toContain(TOKEN)
     expect(view).not.toContain('kaique')
-    expect(trackedView(order)).toMatchObject({ firstName: 'Ana', canPay: true, messages: [{ from: 'loja', text: 'Oi!' }] })
+    expect(trackedView(order)).toMatchObject({
+      firstName: 'Ana',
+      canPay: true,
+      messages: [{ from: 'loja', text: 'Oi!' }],
+    })
   })
 
   it('confere a chave do pedido', () => {
@@ -163,7 +189,12 @@ describe('conversa pela página do pedido', () => {
 
 describe('avisos do painel', () => {
   it('resume o que precisa de atenção', () => {
-    const toDeliver = applyGatewayPayment(onlineOrder(), { id: '1', status: 'approved', amount: 120, orderId: 'OB-SITE' }).order
+    const toDeliver = applyGatewayPayment(onlineOrder(), {
+      id: '1',
+      status: 'approved',
+      amount: 120,
+      orderId: 'OB-SITE',
+    }).order
     const waiting = addMessage({ ...onlineOrder(), id: 'OB-2' }, 'cliente', 'Oi')
     const done = { ...onlineOrder(), id: 'OB-3', status: 'entregue' as const }
     const pulse = ordersPulse([toDeliver, waiting, done])
@@ -182,7 +213,10 @@ describe('Mercado Pago', () => {
       { id: 'prestigio', title: 'Prestígio (kg)', quantity: 2, unit_price: 60, currency_id: 'BRL' },
     ])
     expect(preference.back_urls.success).toBe(`https://ondinabolos.com.br/pedido/OB-SITE?t=${TOKEN}`)
-    expect(preference).toMatchObject({ auto_return: 'approved', notification_url: 'https://ondinabolos.com.br/api/payments/webhook' })
+    expect(preference).toMatchObject({
+      auto_return: 'approved',
+      notification_url: 'https://ondinabolos.com.br/api/payments/webhook',
+    })
   })
 
   it('no computador (http) não pede volta automática nem notificação', () => {
@@ -198,7 +232,10 @@ describe('Mercado Pago', () => {
         : Response.json({ id: 987, status: 'approved', transaction_amount: 120, external_reference: 'OB-SITE' }),
     )
     const gateway = createMercadoPago('APP_USR-123', fetchMock as unknown as typeof fetch)
-    expect(await gateway.createCheckout(onlineOrder(), 'https://ondinabolos.com.br')).toEqual({ preferenceId: 'pref-1', url: 'https://mp/checkout' })
+    expect(await gateway.createCheckout(onlineOrder(), 'https://ondinabolos.com.br')).toEqual({
+      preferenceId: 'pref-1',
+      url: 'https://mp/checkout',
+    })
     expect(await gateway.getPayment('987')).toEqual({ id: '987', status: 'approved', amount: 120, orderId: 'OB-SITE' })
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer APP_USR-123')
@@ -210,7 +247,10 @@ describe('Mercado Pago', () => {
 
   it('erro do Mercado Pago vira uma mensagem amigável', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    const gateway = createMercadoPago('APP_USR-1', (async () => new Response('falhou', { status: 500 })) as unknown as typeof fetch)
+    const gateway = createMercadoPago(
+      'APP_USR-1',
+      (async () => new Response('falhou', { status: 500 })) as unknown as typeof fetch,
+    )
     await expect(gateway.createCheckout(onlineOrder(), 'https://x')).rejects.toThrow(/Tente de novo/)
     error.mockRestore()
   })
@@ -218,7 +258,13 @@ describe('Mercado Pago', () => {
   it('confere a assinatura da notificação', async () => {
     const secret = 'segredo'
     const manifest = 'id:123;request-id:req-1;ts:1700000000;'
-    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    )
     const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(manifest)))
     const v1 = Array.from(mac, byte => byte.toString(16).padStart(2, '0')).join('')
     expect(await validWebhookSignature(secret, `ts=1700000000,v1=${v1}`, 'req-1', '123')).toBe(true)
@@ -229,7 +275,12 @@ describe('Mercado Pago', () => {
 
 describe('processOrderOnSite', () => {
   const checkout = {
-    customer: fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul', phone: '15991234567' }),
+    customer: fulfillmentSchema.parse({
+      fulfillment: 'retirada',
+      name: 'Ana Souza',
+      city: 'Pilar do Sul',
+      phone: '15991234567',
+    }),
     payment: { method: 'online' as const },
   }
   const items = toCartItems([{ productId: 'prestigio', quantity: 1 }])
