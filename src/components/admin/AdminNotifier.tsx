@@ -47,19 +47,39 @@ function chime() {
   }
 }
 
-function systemNotify(title: string, body: string) {
+async function systemNotify(title: string, body: string) {
   try {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
-    new Notification(title, { body, icon: '/favicon.png', tag: 'ondina-admin' })
+    // No celular, só o service worker consegue mostrar a notificação.
+    const registration = await navigator.serviceWorker?.getRegistration('/')
+    if (registration) await registration.showNotification(title, { body, icon: '/icon-192.png', tag: 'ondina-admin' })
+    else new Notification(title, { body, icon: '/icon-192.png', tag: 'ondina-admin' })
   } catch {
-    // Alguns celulares só notificam por service worker: fica o aviso na tela.
+    // Sem notificação do aparelho: fica o aviso na tela.
   }
 }
+
+const pushSupported = () =>
+  typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined'
+
+/** Chave VAPID (base64url) no formato que o navegador pede. */
+function vapidKey(base64: string): Uint8Array<ArrayBuffer> {
+  const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/')
+  const raw = atob(padded)
+  const bytes = new Uint8Array(new ArrayBuffer(raw.length))
+  for (let index = 0; index < raw.length; index++) bytes[index] = raw.charCodeAt(index)
+  return bytes
+}
+
+type PushState = 'checking' | 'unavailable' | 'off' | 'on'
 
 export function AdminNotifier() {
   const [snapshot, setSnapshot] = useState<Snapshot>()
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default')
+  const [push, setPush] = useState<PushState>('checking')
+  const [publicKey, setPublicKey] = useState<string>()
   const previous = useRef<Snapshot | undefined>(undefined)
+  const pushOn = useRef(false)
   const baseTitle = useRef('')
 
   useEffect(() => {
@@ -69,6 +89,33 @@ export function AdminNotifier() {
       document.title = baseTitle.current
     }
   }, [])
+
+  // Push configurado no servidor (chaves VAPID) e este aparelho já inscrito?
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      try {
+        if (!pushSupported()) return active && setPush('unavailable')
+        const { getPushConfig } = await import('@/lib/push-server')
+        const config = await getPushConfig()
+        if (!active) return
+        if (!config.ok || !config.publicKey) return setPush('unavailable')
+        setPublicKey(config.publicKey)
+        const registration = await navigator.serviceWorker.getRegistration('/')
+        const subscription = await registration?.pushManager.getSubscription()
+        if (active) setPush(subscription && Notification.permission === 'granted' ? 'on' : 'off')
+      } catch {
+        if (active) setPush('unavailable')
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    pushOn.current = push === 'on'
+  }, [push])
 
   const check = useCallback(async () => {
     try {
@@ -97,7 +144,8 @@ export function AdminNotifier() {
 
       chime()
       toast.info(alerts.join(' · '), { duration: 15_000 })
-      systemNotify('Ondina Bolos — painel', alerts.join('\n'))
+      // Com o push ligado, a notificação do aparelho já vem do servidor (sem repetir).
+      if (!pushOn.current) void systemNotify('Ondina Bolos — painel', alerts.join('\n'))
       window.dispatchEvent(new Event(ORDERS_CHANGED_EVENT))
     } catch {
       // Sem conexão agora: tenta de novo no próximo ciclo.
@@ -126,10 +174,46 @@ export function AdminNotifier() {
     if (typeof Notification === 'undefined') return
     const result = await Notification.requestPermission()
     setPermission(result)
-    if (result === 'granted') {
-      chime()
+    if (result !== 'granted') {
+      toast.warning('O navegador bloqueou as notificações. Os avisos continuam aparecendo na tela.')
+      return
+    }
+    chime()
+    if (!publicKey || !pushSupported()) {
       toast.success('Notificações ligadas neste aparelho. Deixe o painel aberto para receber.')
-    } else toast.warning('O navegador bloqueou as notificações. Os avisos continuam aparecendo na tela.')
+      return
+    }
+    try {
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      const registration = await navigator.serviceWorker.ready
+      const subscription =
+        (await registration.pushManager.getSubscription()) ??
+        (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidKey(publicKey) }))
+      const { savePushSubscription } = await import('@/lib/push-server')
+      const saved = await savePushSubscription({ data: subscription.toJSON() as never })
+      if (!saved.ok) throw new Error(saved.error)
+      setPush('on')
+      toast.success('Notificações ligadas neste aparelho, mesmo com o painel fechado.')
+    } catch (error) {
+      console.error('[push] não deu para inscrever o aparelho', error)
+      toast.warning('Não deu para ligar as notificações com o painel fechado. Com ele aberto, os avisos continuam.')
+    }
+  }
+
+  const disable = async () => {
+    try {
+      const registration = await navigator.serviceWorker.getRegistration('/')
+      const subscription = await registration?.pushManager.getSubscription()
+      if (subscription) {
+        const { removePushSubscription } = await import('@/lib/push-server')
+        await removePushSubscription({ data: { endpoint: subscription.endpoint } })
+        await subscription.unsubscribe()
+      }
+      setPush('off')
+      toast.success('Notificações desligadas neste aparelho.')
+    } catch {
+      toast.error('Não deu para desligar agora. Tente de novo.')
+    }
   }
 
   const pulse = snapshot?.pulse
@@ -139,7 +223,11 @@ export function AdminNotifier() {
         <h2 id="admin-alerts-title">
           <BellRing aria-hidden="true" /> Avisos
         </h2>
-        {permission === 'granted' ? (
+        {push === 'on' ? (
+          <button type="button" className="admin-refresh" onClick={() => void disable()} title="Desligar neste aparelho">
+            <BellRing aria-hidden="true" /> Notificações ligadas (mesmo fechado)
+          </button>
+        ) : permission === 'granted' && push !== 'off' ? (
           <span className="admin-order-tag is-paid">
             <BellRing aria-hidden="true" /> Notificações ligadas
           </span>
@@ -158,8 +246,12 @@ export function AdminNotifier() {
         <AlertItem icon={<PackageCheck />} count={snapshot?.restockIds.length} label="esperando bolo esgotado" hot />
       </ul>
       <p className="admin-muted">
-        O painel confere sozinho a cada 30 segundos e toca um aviso quando chega novidade. Para receber com o painel
-        fechado, ligue o aviso pelo n8n (veja o tutorial).
+        O painel confere sozinho a cada 30 segundos e toca um aviso quando chega novidade.{' '}
+        {push === 'on'
+          ? 'Este aparelho também recebe as notificações com o painel fechado.'
+          : push === 'off'
+            ? 'Toque em “Ligar notificações” para receber no celular mesmo com o painel fechado (no iPhone, adicione o painel à Tela de Início antes).'
+            : 'Para receber com o painel fechado, quem cuida do site configura as chaves das notificações (veja o tutorial).'}
       </p>
     </section>
   )

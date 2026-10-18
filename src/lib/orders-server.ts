@@ -88,16 +88,14 @@ export const placeOrder = createServerFn({ method: 'POST' })
         await persist(addOrder(swept.doc, result.order), catalog, result.catalog)
         return result.order
       })
-      if (created.channel === 'site') {
-        await notifyStore({
-          event: 'pedido-novo',
-          orderId: created.id,
-          customer: created.customer.name,
-          total: created.total,
-          status: created.status,
-          channel: created.channel,
-        })
-      }
+      await notifyStore({
+        event: 'pedido-novo',
+        orderId: created.id,
+        customer: created.customer.name,
+        total: created.total,
+        status: created.status,
+        channel: created.channel,
+      })
       const { id, status, shortages, total, accessToken = '' } = created
       return { orderId: id, status, shortages, total, accessToken }
     }),

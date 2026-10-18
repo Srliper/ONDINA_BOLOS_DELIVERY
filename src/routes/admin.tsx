@@ -10,6 +10,11 @@ export const Route = createFileRoute('/admin')({
       // Área interna: fora do Google.
       { name: 'robots', content: 'noindex, nofollow' },
     ],
+    // Instalável na tela de início (no iPhone, as notificações push só funcionam assim).
+    links: [
+      { rel: 'manifest', href: '/admin.webmanifest' },
+      { rel: 'apple-touch-icon', href: '/icon-192.png' },
+    ],
   }),
   // A sessão é conferida no servidor a cada visita (cookie httpOnly assinado).
   loader: () => getAdminSession(),
