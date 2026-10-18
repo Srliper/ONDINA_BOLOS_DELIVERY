@@ -1,4 +1,4 @@
-import { MAPS_URL, WHATSAPP_NUMBER } from '@/lib/contact'
+import { MAPS_URL, STORE_MAPS_QUERY, WHATSAPP_NUMBER } from '@/lib/contact'
 
 /**
  * Dados institucionais num só lugar (SEO, rodapé, seção de localização).
@@ -22,9 +22,7 @@ export const BUSINESS = {
   instagramHandle: '@ondinabolos',
   /** Mapa incorporado (não precisa de chave de API). */
   mapsEmbedUrl:
-    'https://www.google.com/maps?q=' +
-    encodeURIComponent('Rua Tapixi, 412 - Vila Tomaz, São Miguel Arcanjo - SP') +
-    '&output=embed',
+    'https://www.google.com/maps?q=' + encodeURIComponent(STORE_MAPS_QUERY) + '&output=embed',
   hours: [
     { label: 'Segunda a sexta', value: '07:00 às 18:00' },
     { label: 'Sábado', value: '07:00 às 20:00' },
