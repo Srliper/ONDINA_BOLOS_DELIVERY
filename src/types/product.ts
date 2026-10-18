@@ -14,6 +14,8 @@ export interface Product {
   /** Unidade da quantidade no carrinho: bolos de festa são pedidos por quilo. */
   unit: 'kg' | 'un'
   image: string
+  /** Outras fotos reais do mesmo bolo (ex.: outro tamanho), mostradas no cartão. */
+  gallery?: readonly string[]
   category: ProductCategory
   isFeatured: boolean
   /**
@@ -51,6 +53,8 @@ export interface ReadyCartItem extends CartItemBase {
 export interface CustomCartItem extends CartItemBase {
   type: 'custom'
   customConfig: CustomCakeConfig
+  /** Ids das camadas (o servidor recalcula o preço por eles). */
+  layerIds: Record<keyof CustomCakeConfig, string>
   /** Camadas de baixo para cima (foto, ilustração provisória e encaixe) — para a miniatura. */
   layers: LayerVisual[]
 }

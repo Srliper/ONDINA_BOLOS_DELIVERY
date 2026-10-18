@@ -7,6 +7,7 @@ import { CATEGORY_LABEL, defaultProductImage } from '@/data/products'
 import {
   ENTITY_LABELS,
   ENTITY_NAMES,
+  seedCatalog,
   type CatalogFilling,
   type CatalogLayer,
   type CatalogProduct,
@@ -117,6 +118,29 @@ export function CatalogManager() {
   const items = (lists?.[tab] ?? []) as AnyItem[]
   const soldOut = (lists?.products ?? []).filter(product => product.stock === 0)
 
+  // Bolos do cardápio padrão que não estão na lista: os novos entram sozinhos (withNewDefaults),
+  // então aqui sobram só os que a equipe excluiu. Voltam pela mesma API do botão "Adicionar".
+  const missingDefaults = lists
+    ? seedCatalog().products.filter(product => !lists.products.some(saved => saved.id === product.id))
+    : []
+  const [importing, setImporting] = useState(false)
+  const importDefaults = async () => {
+    setImporting(true)
+    let added = 0
+    try {
+      for (const product of missingDefaults) {
+        await request(api('products'), { method: 'POST', body: JSON.stringify(product) })
+        added++
+      }
+      toast.success(`${added} bolo(s) de volta ao cardápio`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível adicionar os bolos.')
+    } finally {
+      setImporting(false)
+      await refresh()
+    }
+  }
+
   return (
     <section className="admin-card admin-catalog" aria-labelledby="admin-catalog-title">
       <div className="admin-orders-head">
@@ -136,6 +160,19 @@ export function CatalogManager() {
           O banco de dados ainda não está ligado no servidor: dá para ver o cardápio, mas não salvar. Conecte o Upstash
           Redis na Vercel (passo a passo no README).
         </p>
+      )}
+
+      {tab === 'products' && missingDefaults.length > 0 && storage !== 'none' && (
+        <div className="admin-defaults" role="status">
+          <span>
+            <strong>{missingDefaults.length} bolo(s) do cardápio padrão</strong> foram excluídos e não aparecem no site:{' '}
+            {missingDefaults.map(product => product.name).join(', ')}.
+          </span>
+          <button type="button" className="admin-refresh" onClick={() => void importDefaults()} disabled={importing}>
+            {importing ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <Plus aria-hidden="true" />}
+            Devolver ao cardápio
+          </button>
+        </div>
       )}
 
       {soldOut.length > 0 && (

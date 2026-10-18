@@ -1,16 +1,13 @@
-import { getRequestIP } from '@tanstack/react-start/server'
 import { currentAdminSession } from '@/lib/admin-auth'
 import type { CatalogApiDeps } from '@/lib/catalog-api'
 import { getImageStorage, loadCatalog, saveCatalog } from '@/lib/catalog-store'
 import type { ImageApiDeps } from '@/lib/image-api'
-import type { OrderApiDeps } from '@/lib/order-api'
-import { getOrderStore } from '@/lib/order-store'
 import { createSoldOutNotifier } from '@/lib/stock-alert'
 
 const isAdmin = async () => Boolean(await currentAdminSession())
 
 /** Aviso automático de esgotado (opcional): webhook do n8n que manda a mensagem no WhatsApp. */
-const notifySoldOut = createSoldOutNotifier({
+export const notifySoldOut = createSoldOutNotifier({
   url: process.env['N8N_STOCK_ALERT_URL'],
   key: process.env['N8N_ORDERS_KEY'],
 })
@@ -30,12 +27,3 @@ export const imageApiDeps: ImageApiDeps = {
   isAdmin,
 }
 
-/** Dependências reais das rotas de pedidos (/api/orders). Só no servidor. */
-export const orderApiDeps = (): OrderApiDeps => ({
-  store: getOrderStore(),
-  loadCatalog: () => loadCatalog(),
-  saveCatalog: catalog => saveCatalog(catalog),
-  adminId: async () => (await currentAdminSession())?.memberId,
-  clientIp: () => getRequestIP({ xForwardedFor: true }) ?? 'desconhecido',
-  notifySoldOut,
-})

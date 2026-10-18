@@ -4,6 +4,7 @@ import { DEFAULT_PRODUCTS, getProductById, products } from '@/data/products'
 import {
   applyCatalog,
   CatalogError,
+  catalogSchema,
   createItem,
   deleteItem,
   seedCatalog,
@@ -11,6 +12,7 @@ import {
   toBoloLayers,
   toProducts,
   updateItem,
+  withNewDefaults,
   type Catalog,
 } from '@/lib/catalog'
 import { handleCatalogRequest, type CatalogApiDeps } from '@/lib/catalog-api'
@@ -176,5 +178,46 @@ describe('armazenamento', () => {
     expect(await loadCatalog(storage)).toEqual(seedCatalog())
     console.error = error
     expect(calls).toEqual(['GET', 'SET', 'GET', 'GET'])
+  })
+})
+
+describe('bolos novos do cardápio padrão', () => {
+  const ids = (catalog: Catalog) => catalog.products.map(product => product.id)
+
+  it('entram sozinhos no catálogo salvo, no lugar certo e sem duplicar', () => {
+    // Catálogo salvo antes de existirem Kinder Bueno e Oreo (e sem a lista de excluídos, como os antigos).
+    const old = seedCatalog()
+    const saved = catalogSchema.parse({
+      ...old,
+      removed_defaults: undefined,
+      products: old.products.filter(product => !['kinder-bueno', 'oreo'].includes(product.id)),
+    })
+    const merged = withNewDefaults(saved)
+    expect(ids(merged)).toEqual(ids(seedCatalog()))
+    expect(withNewDefaults(merged)).toBe(merged)
+    expect(new Set(ids(merged)).size).toBe(merged.products.length)
+  })
+
+  it('mantém edições do catálogo salvo (preço, estoque, ordem)', () => {
+    const edited = updateItem(seedCatalog(), 'products', 'prestigio', { price: 70, stock: 3 }, NOW).catalog
+    const saved = { ...edited, products: edited.products.filter(product => product.id !== 'oreo') }
+    const merged = withNewDefaults(saved)
+    expect(merged.products.find(product => product.id === 'prestigio')).toMatchObject({ price: 70, stock: 3 })
+    expect(ids(merged)).toContain('oreo')
+  })
+
+  it('bolo excluído pela equipe não volta, e volta se for adicionado de novo', () => {
+    const deleted = deleteItem(seedCatalog(), 'products', 'oreo', NOW)
+    expect(deleted.removed_defaults).toEqual(['oreo'])
+    expect(ids(withNewDefaults(deleted))).not.toContain('oreo')
+
+    const oreo = seedCatalog().products.find(product => product.id === 'oreo')!
+    const restored = createItem(deleted, 'products', oreo, NOW).catalog
+    expect(restored.removed_defaults).toEqual([])
+  })
+
+  it('bolos com mais fotos levam a galeria para o site', () => {
+    const prestigio = toProducts(seedCatalog()).find(product => product.id === 'prestigio')
+    expect(prestigio?.gallery).toHaveLength(2)
   })
 })

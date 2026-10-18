@@ -24,7 +24,7 @@ const checkout: CheckoutData = {
     fulfillment: 'entrega',
     name: 'Ana Souza',
     city: 'São Miguel Arcanjo',
-    address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', complement: '', reference: '' },
+    address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', cep: '18230-000', complement: '', reference: '' },
   }),
   payment: { method: 'dinheiro', changeFor: 200 },
 }
@@ -48,7 +48,7 @@ describe('buildOrderMessage', () => {
         '💰 *Total Geral:* R$ 198,00',
         '',
         '👤 *Nome:* Ana Souza',
-        '📍 *Endereço:* Rua Tapixi, 412 — Vila Tomaz, São Miguel Arcanjo',
+        '📍 *Endereço:* Rua Tapixi, 412 — Vila Tomaz, São Miguel Arcanjo — CEP 18230-000',
         '💳 *Forma de Pagamento:* Dinheiro (troco para R$ 200,00)',
         `🗺️ *Referência do mapa:* ${MAPS_URL}`,
       ].join('\n'),
@@ -59,7 +59,7 @@ describe('buildOrderMessage', () => {
     const message = buildOrderMessage({
       items: [item('prestigio', 1)],
       total: 60,
-      checkout: { customer: { fulfillment: 'retirada', name: 'Ana', city: 'Pilar do Sul' }, payment: { method: 'cartao' } },
+      checkout: { customer: { fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul' }, payment: { method: 'cartao' } },
     })
     expect(message).toContain('📍 *Endereço:* Retirada na loja (Rua Tapixi, 412')
     expect(message).toContain('💳 *Forma de Pagamento:* Cartão na retirada')
@@ -90,9 +90,14 @@ describe('buildOrderPayload', () => {
 })
 
 describe('processOrderAndSend', () => {
-  const setup = (fetchImpl: SendDeps['fetch'], opened: Window | null = {} as Window) => {
+  const setup = (
+    fetchImpl: SendDeps['fetch'],
+    opened: Window | null = {} as Window,
+    register: SendDeps['register'] = () => Promise.reject(new Error('servidor fora do ar')),
+  ) => {
     const calls: string[] = []
     const deps: SendDeps = {
+      register: vi.fn(register),
       fetch: vi.fn(fetchImpl),
       open: vi.fn(() => {
         calls.push('open')
@@ -110,9 +115,42 @@ describe('processOrderAndSend', () => {
   }
   const items = [item('prestigio', 1)]
 
+  const silence = () => vi.spyOn(console, 'error').mockImplementation(() => {})
+
+  it('registra no site com ids e quantidades, usa o número do pedido e a decisão de estoque do servidor', async () => {
+    const register = vi.fn<SendDeps['register']>(() =>
+      Promise.resolve({
+        orderId: 'OB-SERVIDOR-01',
+        status: 'pendente',
+        shortages: [{ productId: 'prestigio', name: 'Prestígio', requested: 1, available: 0 }],
+      }),
+    )
+    const { deps } = setup(() => Promise.resolve(new Response('{}')), {} as Window, register)
+    const result = await processOrderAndSend(items, 60, checkout, deps)
+
+    expect(register).toHaveBeenCalledWith([{ productId: 'prestigio', quantity: 1 }], checkout)
+    expect(result).toMatchObject({ orderId: 'OB-SERVIDOR-01', registered: true, pending: true })
+    const body = JSON.parse(vi.mocked(deps.fetch).mock.calls[0]![1]!.body as string)
+    expect(body).toMatchObject({ orderId: 'OB-SERVIDOR-01', status: 'pendente', items: [{ outOfStock: true }] })
+    expect(body.message).toContain('🧾 *Pedido:* OB-SERVIDOR-01')
+    expect(body.message).toContain('⏳ *PEDIDO PENDENTE (falta de estoque):* Prestígio.')
+    expect(body.message).toContain('💳 *Forma de Pagamento:* Dinheiro (troco para R$ 200,00) — depois da confirmação do estoque')
+  })
+
+  it('manda as camadas do bolo montado por id', async () => {
+    const register = vi.fn<SendDeps['register']>(() => Promise.resolve({ orderId: 'OB-1', status: 'aguardando_pagamento', shortages: [] }))
+    const { deps } = setup(() => Promise.resolve(new Response('{}')), {} as Window, register)
+    const result = await processOrderAndSend(toCartItems([{ custom: CUSTOM, quantity: 2 }]), 156, checkout, deps)
+    expect(register).toHaveBeenCalledWith([{ custom: CUSTOM, quantity: 2 }], checkout)
+    expect(result.pending).toBe(false)
+  })
+
   it('avisa o n8n com JSON, solta o confete e só então abre o WhatsApp', async () => {
+    const error = silence()
     const { deps, calls } = setup(() => Promise.resolve(new Response('{}', { status: 200 })))
     const result = await processOrderAndSend(items, 60, checkout, deps)
+    expect(result.registered).toBe(false)
+    error.mockRestore()
 
     expect(deps.fetch).toHaveBeenCalledWith(N8N_WEBHOOK_URL, expect.objectContaining({ method: 'POST' }))
     const body = JSON.parse(vi.mocked(deps.fetch).mock.calls[0]![1]!.body as string)
@@ -134,7 +172,8 @@ describe('processOrderAndSend', () => {
       expect(result.savedToN8n).toBe(false)
       expect(calls).toEqual(['confete', 'open'])
     }
-    expect(error).toHaveBeenCalledTimes(2)
+    // Registro no site (fora do ar no teste) + n8n, nas duas tentativas.
+    expect(error).toHaveBeenCalledTimes(4)
     error.mockRestore()
   })
 
@@ -156,22 +195,12 @@ describe('processOrderAndSend', () => {
     vi.useRealTimers()
   })
 
-  it('guarda o pedido no site com o id do bolo, e falha ao guardar não impede o WhatsApp', async () => {
-    const { deps, calls } = setup(() => Promise.resolve(new Response('{}')))
-    const saved: unknown[] = []
-    deps.record = async payload => {
-      saved.push(payload)
-      throw new Error('banco fora do ar')
-    }
-    const result = await processOrderAndSend(items, 60, checkout, deps)
-    expect(saved).toEqual([expect.objectContaining({ orderId: result.orderId, items: [expect.objectContaining({ productId: 'prestigio' })] })])
-    expect(calls).toEqual(['confete', 'open'])
-  })
-
   it('se o pop-up for bloqueado, abre o WhatsApp na própria aba', async () => {
+    const error = silence()
     const { deps, calls } = setup(() => Promise.resolve(new Response('{}')), null)
     await processOrderAndSend(items, 60, checkout, deps)
     expect(calls).toEqual(['confete', 'open', 'navigate'])
+    error.mockRestore()
   })
 })
 

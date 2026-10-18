@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, Loader2, ShoppingBag } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Loader2, ShoppingBag } from 'lucide-react'
 import { toast } from 'sonner'
 import { CATEGORY_LABEL } from '@/data/products'
 import { cartActions, setCartOpen } from '@/lib/cart-store'
@@ -56,6 +56,12 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
     }, LOADING_MS)
   }
 
+  // Mais de uma foto do mesmo bolo: setas e bolinhas para passar, sem repetir o cartão.
+  const photos = [product.image, ...(product.gallery ?? [])]
+  const [photo, setPhoto] = useState(0)
+  const current = photos[photo] ?? product.image
+  const step = (delta: number) => setPhoto(index => (index + delta + photos.length) % photos.length)
+
   const soldOut = isSoldOut(product)
   const stock = stockLabel(product)
   const Icon = state === 'loading' ? Loader2 : state === 'success' ? Check : ShoppingBag
@@ -67,13 +73,34 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         <img
           ref={imageRef}
           className="cake-image"
-          src={product.image}
-          alt={`Bolo ${product.name} da Ondina Bolos`}
+          src={current}
+          alt={`Bolo ${product.name} da Ondina Bolos${photos.length > 1 ? `, foto ${photo + 1} de ${photos.length}` : ''}`}
           loading="lazy"
           decoding="async"
           width={600}
           height={600}
         />
+        {photos.length > 1 && (
+          <>
+            <button type="button" className="cake-photo-nav is-prev" onClick={() => step(-1)} aria-label={`Foto anterior de ${product.name}`}>
+              <ChevronLeft aria-hidden="true" />
+            </button>
+            <button type="button" className="cake-photo-nav is-next" onClick={() => step(1)} aria-label={`Próxima foto de ${product.name}`}>
+              <ChevronRight aria-hidden="true" />
+            </button>
+            <div className="cake-photo-dots" role="group" aria-label={`Fotos de ${product.name}`}>
+              {photos.map((src, index) => (
+                <button
+                  key={src}
+                  type="button"
+                  aria-label={`Ver foto ${index + 1} de ${photos.length}`}
+                  aria-pressed={index === photo}
+                  onClick={() => setPhoto(index)}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
       <p className="cake-category">{CATEGORY_LABEL[product.category]}</p>
       <h3>{product.name}</h3>

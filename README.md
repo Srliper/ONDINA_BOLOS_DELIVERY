@@ -100,21 +100,28 @@ Cinco senhas erradas seguidas bloqueiam o acesso por 5 minutos.
 
 ## Pedidos no painel
 
-O painel `/admin` mostra os últimos 50 pedidos lendo do n8n **pelo servidor** (só com login).
-No n8n:
+Cada pedido finalizado no site é **registrado no banco do próprio site** (o mesmo do cardápio:
+Upstash Redis na Vercel, ou `.data/orders.json` no computador) antes de abrir o WhatsApp. O servidor
+recalcula os preços pelo catálogo e confere o estoque:
 
-1. **Guardar cada pedido** — no fluxo do webhook `pedido-recebido`, adicione um nó *Google Sheets →
-   Append row* (ou uma *Data Table* do n8n) com, no mínimo, a coluna `payload` =
-   `{{ JSON.stringify($json.body) }}`. Colunas extras (nº, data, nome, total) são opcionais.
-2. **Webhook de leitura** — crie outro fluxo: *Webhook* (método **GET**, caminho `pedidos`,
-   autenticação **Header Auth** com o nome `x-ondina-key` e uma chave longa) → *Google Sheets → Get
-   rows* → *Respond to Webhook* (*All Incoming Items*).
-3. **No servidor do site** (Vercel → *Environment Variables*):
-   - `N8N_ORDERS_URL` = `https://n8n.ondinabolos.com/webhook/pedidos`
-   - `N8N_ORDERS_KEY` = a mesma chave do Header Auth
+| Situação ao finalizar | Status do pedido | Estoque |
+| --- | --- | --- |
+| Tudo em estoque (ou bolo sem controle / montado) | **Aguardando pagamento** | baixa na hora |
+| Faltou algum bolo | **PENDENTE (Falta de estoque)** | não mexe |
 
-O painel aceita uma lista com o JSON do pedido direto ou com a coluna `payload` em texto; linhas em
-outro formato são ignoradas (e o painel avisa quantas).
+No `/admin`, em **Pedidos do site**, a equipe vê cliente, endereço com CEP, itens e total, e muda o
+**status da entrega**: Aguardando pagamento → Pago / Em preparo → Saiu para entrega (ou Pronto para
+retirada) → Entregue, ou Cancelado (devolve o estoque reservado). **Confirmar pagamento** marca como
+pago e manda para o preparo. Pix só vai para o preparo depois de pago; dinheiro e cartão são pagos
+na entrega/retirada.
+
+Pedido **PENDENTE** fica bloqueado: o servidor recusa qualquer avanço (seletor ou pagamento). Ele
+só sai dali com **Verificar estoque**, depois de a equipe dar entrada no estoque — aí o estoque é
+reservado e o pedido vai para Aguardando pagamento.
+
+Se o registro falhar (banco fora do ar), o cliente segue normalmente pelo WhatsApp e pelo n8n — o
+pedido nunca se perde. O webhook do n8n (`VITE_N8N_WEBHOOK_URL`) continua recebendo cada pedido,
+com o mesmo número **OB-…** do painel.
 
 ## Frete
 
@@ -158,26 +165,24 @@ marcado pela equipe no `/admin` → *Cardápio do site* → *Bolos* (botões **�
 Estoque*). Vazio = sem controle (sempre disponível).
 
 - Estoque **0** (ou pedido acima do estoque): o site mostra **Esgotado**, mas o cliente ainda pode
-  deixar o pedido. O checkout **pula a etapa de pagamento** e a mensagem do WhatsApp chega como
-  **⏳ PEDIDO PENDENTE**, com pagamento “A combinar”. No n8n, o pedido vai com `status: "pendente"`
-  e `payment.method: null`; o painel mostra a etiqueta *Pendente*.
-- Para baixar o estoque com um toque, confirme o pedido no painel (abaixo).
+  deixar o pedido. Ele escolhe a forma de pagamento normalmente, mas o pedido é criado como
+  **PENDENTE (Falta de estoque)** e a mensagem do WhatsApp chega como **⏳ PEDIDO PENDENTE** — nada
+  é cobrado antes da confirmação do estoque. No n8n, o pedido vai com `status: "pendente"`.
+- O estoque baixa sozinho quando um pedido do site é feito com tudo disponível (veja *Pedidos no painel*).
 - Bolos montados no Monte seu Bolo são sempre sob encomenda (sem estoque).
 
 Regras em `src/lib/stock.ts` (testes em `src/test/stock.test.ts`).
 
-### Confirmar pedido e baixar o estoque
+### Pedidos antigos
 
-Cada pedido enviado pelo site também fica guardado no banco do site (`POST /api/orders`, além do
-n8n; se falhar, o WhatsApp abre do mesmo jeito). Em `/admin` → *Últimos pedidos do site*, o botão
-**Confirmar e baixar estoque** tira do estoque os bolos prontos do pedido (nunca abaixo de 0) e
-registra quem confirmou; **Desfazer** devolve o estoque. Ficam guardados os últimos 300 pedidos
-(Upstash: lista `ondina:orders` e hash `ondina:orders:confirmed`; no computador, `.data/orders.json`).
-Sem banco configurado, o painel volta a mostrar a lista do n8n, só para consulta.
+Os pedidos guardados pela versão anterior do painel (Upstash: lista `ondina:orders` e hash
+`ondina:orders:confirmed`; no computador, `.data/orders.json`) continuam aparecendo em
+*Pedidos do site* → **Pedidos antigos**, só para consulta. Os pedidos novos ficam em
+`ondina:orders:v2` (ou `.data/orders-v2.json`), no fluxo com status descrito em *Pedidos no painel*.
 
 ### Aviso de bolo esgotado no WhatsApp
 
-Quando um bolo chega a 0 (pelo − ou ao confirmar um pedido), o painel mostra **Esgotou** com o botão
+Quando um bolo chega a 0 (pelo − no painel ou quando um pedido do site leva o último), o painel mostra **Esgotou** com o botão
 **Avisar no WhatsApp**, que abre a conversa com o número da loja e a mensagem pronta. A faixa
 *Esgotados agora* no cardápio tem o mesmo atalho.
 

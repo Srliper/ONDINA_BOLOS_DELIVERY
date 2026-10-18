@@ -1,4 +1,4 @@
-import { CatalogError, catalogSchema, seedCatalog, type Catalog } from '@/lib/catalog'
+import { CatalogError, catalogSchema, seedCatalog, withNewDefaults, type Catalog } from '@/lib/catalog'
 
 /**
  * Onde o catálogo fica guardado (só no servidor):
@@ -106,6 +106,17 @@ export function getImageStorage(id: string): CatalogStorage {
   return fileStorage(`${localDataDir()}images/${id}.json`)
 }
 
+/**
+ * Pedidos do site (fluxo com status): um documento JSON no mesmo banco, ou orders-v2.json ao lado
+ * do catálogo. A chave é nova porque `ondina:orders` guarda a lista do formato antigo (só leitura).
+ */
+export function getOrdersStorage(): CatalogStorage {
+  const upstash = upstashConfig()
+  if (upstash) return upstashStorage(upstash.url, upstash.token, fetch, 'ondina:orders:v2')
+  if (isEphemeralServer()) return noStorage
+  return fileStorage(`${localDataDir()}orders-v2.json`)
+}
+
 /** Sem banco na Vercel (disco temporário): nada pode ser guardado. */
 export const isEphemeralServer = () => Boolean(env('VERCEL'))
 
@@ -120,7 +131,7 @@ export async function loadCatalog(storage = getCatalogStorage()): Promise<Catalo
   if (!raw) return seedCatalog()
   try {
     const parsed = catalogSchema.safeParse(JSON.parse(raw))
-    if (parsed.success) return parsed.data
+    if (parsed.success) return withNewDefaults(parsed.data)
     console.error('[catálogo] dados guardados fora do formato; usando o cardápio padrão', parsed.error.issues[0])
   } catch (error) {
     console.error('[catálogo] JSON inválido no banco; usando o cardápio padrão', error)
