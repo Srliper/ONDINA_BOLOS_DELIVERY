@@ -1,18 +1,44 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { BadgeCheck, CircleDollarSign, Hourglass, Loader2, PackageSearch, Palette, RefreshCw, Store, Truck } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import {
+  BadgeCheck,
+  CircleDollarSign,
+  Globe,
+  Hourglass,
+  Link2,
+  Loader2,
+  MessageCircle,
+  PackageSearch,
+  Palette,
+  Phone,
+  RefreshCw,
+  Send,
+  Store,
+  Truck,
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { announceSoldOut, CATALOG_CHANGED_EVENT } from '@/components/admin/sold-out'
+import { ADMIN_ACTED_EVENT, announceSoldOut, CATALOG_CHANGED_EVENT, ORDERS_CHANGED_EVENT } from '@/components/admin/sold-out'
 import { formatBRL } from '@/lib/format'
 import {
+  MAX_MESSAGE_LENGTH,
   ORDER_STATUSES,
   shortageText,
   statusLabel,
+  trackingPath,
   transitionError,
+  unreadForStore,
   type Order,
   type OrderStatus,
 } from '@/lib/order-flow'
 import type { LegacyOrder } from '@/lib/orders'
-import { confirmOrderPayment, listOrders, recheckOrderStock, setOrderStatus } from '@/lib/orders-server'
+import {
+  confirmOrderPayment,
+  listOrders,
+  markOrderRead,
+  recheckOrderStock,
+  sendStoreMessage,
+  setOrderStatus,
+} from '@/lib/orders-server'
+import { customerWhatsAppUrl, formatPhone } from '@/lib/phone'
 import type { SoldOutProduct } from '@/lib/stock-alert'
 
 const dateFormat = new Intl.DateTimeFormat('pt-BR', {
@@ -28,13 +54,15 @@ const formatDate = (iso: string) => {
   return Number.isNaN(date.getTime()) ? iso : dateFormat.format(date)
 }
 
-type Filter = 'abertos' | OrderStatus | 'todos'
+type Filter = 'abertos' | 'a_entregar' | 'mensagens' | OrderStatus | 'todos'
 
 /** Em aberto = ainda precisa de alguma ação da equipe. */
 const isOpen = (order: Order) => order.status !== 'entregue' && order.status !== 'cancelado'
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'abertos', label: 'Em aberto' },
+  { id: 'a_entregar', label: 'A entregar' },
+  { id: 'mensagens', label: 'Mensagens novas' },
   { id: 'pendente', label: 'Pendentes' },
   { id: 'aguardando_pagamento', label: 'Aguardando pagamento' },
   { id: 'em_preparo', label: 'Em preparo' },
@@ -44,8 +72,21 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'todos', label: 'Todos' },
 ]
 
+/** Pago (ou pago na entrega) e ainda não entregue. */
+const toDeliver = (order: Order) => order.status === 'em_preparo' || order.status === 'saiu_para_entrega'
+
 const matches = (order: Order, filter: Filter) =>
-  filter === 'todos' ? true : filter === 'abertos' ? isOpen(order) : order.status === filter
+  filter === 'todos'
+    ? true
+    : filter === 'abertos'
+      ? isOpen(order)
+      : filter === 'a_entregar'
+        ? toDeliver(order)
+        : filter === 'mensagens'
+          ? unreadForStore(order) > 0
+          : order.status === filter
+
+const ALERT_FILTERS: readonly Filter[] = ['pendente', 'a_entregar', 'mensagens']
 
 type Storage = 'upstash' | 'file' | 'none'
 
@@ -78,6 +119,10 @@ export function AdminOrders() {
 
   useEffect(() => {
     void load()
+    // Os avisos do painel encontraram novidade: recarrega a lista.
+    const reload = () => void load()
+    window.addEventListener(ORDERS_CHANGED_EVENT, reload)
+    return () => window.removeEventListener(ORDERS_CHANGED_EVENT, reload)
   }, [load])
 
   const counts = useMemo(() => {
@@ -95,22 +140,25 @@ export function AdminOrders() {
       { ok: true; order: Order; released: boolean; soldOut: SoldOutProduct[] } | { ok: false; error: string }
     >,
     success: (updated: Order, released: boolean) => string | undefined,
-  ) => {
+  ): Promise<boolean> => {
     setBusyId(order.id)
     try {
       const result = await action()
       if (!result.ok) {
         toast.error(result.error)
-        return
+        return false
       }
       setOrders(list => list?.map(entry => (entry.id === result.order.id ? result.order : entry)))
       const message = success(result.order, result.released)
       if (message) toast.success(message)
       // O estoque pode ter mudado (reserva ou devolução): o cardápio do painel recarrega e avisa o que esgotou.
       window.dispatchEvent(new Event(CATALOG_CHANGED_EVENT))
+      window.dispatchEvent(new Event(ADMIN_ACTED_EVENT))
       announceSoldOut(result.soldOut)
+      return true
     } catch {
       toast.error('Não foi possível falar com o servidor. Tente de novo.')
+      return false
     } finally {
       setBusyId(undefined)
     }
@@ -144,6 +192,22 @@ export function AdminOrders() {
         return undefined
       },
     )
+
+  const reply = (order: Order, text: string) =>
+    run(
+      order,
+      () => sendStoreMessage({ data: { id: order.id, text } }),
+      () => 'Mensagem enviada: o cliente vê na página do pedido.',
+    )
+
+  const openChat = (order: Order) => {
+    if (unreadForStore(order) === 0) return
+    void run(
+      order,
+      () => markOrderRead({ data: { id: order.id } }),
+      () => undefined,
+    )
+  }
 
   return (
     <section className="admin-card admin-orders" aria-labelledby="admin-orders-list-title" aria-busy={loading}>
@@ -180,7 +244,7 @@ export function AdminOrders() {
                 onClick={() => setFilter(option.id)}
               >
                 {option.label}
-                <span className={option.id === 'pendente' && counts.get('pendente') ? 'is-alert' : undefined}>
+                <span className={ALERT_FILTERS.includes(option.id) && counts.get(option.id) ? 'is-alert' : undefined}>
                   {counts.get(option.id) ?? 0}
                 </span>
               </button>
@@ -199,6 +263,8 @@ export function AdminOrders() {
                   onStatus={status => changeStatus(order, status)}
                   onConfirmPayment={() => confirmPayment(order)}
                   onRecheck={() => recheck(order)}
+                  onReply={text => reply(order, text)}
+                  onOpenChat={() => openChat(order)}
                 />
               ))}
             </ul>
@@ -271,14 +337,46 @@ function OrderCard({
   onStatus,
   onConfirmPayment,
   onRecheck,
+  onReply,
+  onOpenChat,
 }: {
   order: Order
   busy: boolean
   onStatus: (status: OrderStatus) => void
   onConfirmPayment: () => void
   onRecheck: () => void
+  onReply: (text: string) => Promise<boolean>
+  onOpenChat: () => void
 }) {
+  const [reply, setReply] = useState('')
   const delivery = order.customer.fulfillment === 'entrega'
+  const unread = unreadForStore(order)
+  // Mensagem nova abre a conversa sozinha; depois, quem manda é a equipe.
+  const [chatOpen, setChatOpen] = useState(unread > 0)
+  useEffect(() => {
+    if (unread > 0) setChatOpen(true)
+  }, [unread])
+  const trackingUrl = order.accessToken && typeof window !== 'undefined' ? `${window.location.origin}${trackingPath(order)}` : undefined
+  const firstName = order.customer.name.split(' ')[0]
+  const whatsappText = `Oi, ${firstName}! Aqui é da Ondina Bolos 🍰 Sobre o seu pedido ${order.id}: ${
+    trackingUrl ? `acompanhe e fale com a gente por aqui: ${trackingUrl}` : ''
+  }`
+
+  const copyLink = async () => {
+    if (!trackingUrl) return
+    try {
+      await navigator.clipboard.writeText(trackingUrl)
+      toast.success('Link do pedido copiado')
+    } catch {
+      toast.error('Não deu para copiar o link.')
+    }
+  }
+
+  const submitReply = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!reply.trim() || busy) return
+    if (await onReply(reply)) setReply('')
+  }
   const pending = order.status === 'pendente'
   const canPay = !pending && !order.paid && order.status !== 'cancelado'
   const selectId = `order-status-${order.id}`
@@ -299,6 +397,15 @@ function OrderCard({
           {order.paid ? <BadgeCheck aria-hidden="true" /> : <CircleDollarSign aria-hidden="true" />}
           {order.paid ? 'Pago' : 'Não pago'}
         </span>
+        <span className={`admin-order-tag${order.channel === 'site' ? ' is-site' : ''}`}>
+          {order.channel === 'site' ? <Globe aria-hidden="true" /> : <MessageCircle aria-hidden="true" />}
+          {order.channel === 'site' ? 'Pelo site' : 'WhatsApp'}
+        </span>
+        {unread > 0 && (
+          <span className="admin-order-tag is-unread">
+            <MessageCircle aria-hidden="true" /> {unread} {unread === 1 ? 'mensagem nova' : 'mensagens novas'}
+          </span>
+        )}
       </div>
 
       <p className="admin-order-customer">
@@ -309,6 +416,18 @@ function OrderCard({
         </span>
       </p>
       <p className="admin-order-address">{order.customer.address}</p>
+      {order.customer.phone && (
+        <p className="admin-order-contact">
+          <a href={customerWhatsAppUrl(order.customer.phone, whatsappText)} target="_blank" rel="noreferrer">
+            <Phone aria-hidden="true" /> {formatPhone(order.customer.phone)}
+          </a>
+          {trackingUrl && (
+            <button type="button" onClick={() => void copyLink()}>
+              <Link2 aria-hidden="true" /> Copiar link do pedido
+            </button>
+          )}
+        </p>
+      )}
 
       <ul className="admin-order-items">
         {order.items.map((item, index) => (
@@ -382,6 +501,54 @@ function OrderCard({
           {order.paid ? 'Pagamento confirmado' : 'Confirmar pagamento'}
         </button>
       </div>
+
+      {order.accessToken && (
+        <details
+          className="admin-order-chat"
+          open={chatOpen}
+          onToggle={event => {
+            const open = event.currentTarget.open
+            setChatOpen(open)
+            if (open) onOpenChat()
+          }}
+        >
+          <summary>
+            Conversa pelo site {order.messages.length > 0 && `(${order.messages.length})`}
+            {unread > 0 && <span className="admin-chat-dot" aria-label={`${unread} não lidas`} />}
+          </summary>
+          <div className="track-chat is-admin" role="log">
+            {order.messages.length === 0 ? (
+              <p className="admin-muted">Nenhuma mensagem. O cliente vê o que você escrever na página do pedido.</p>
+            ) : (
+              order.messages.map((message, index) => (
+                <div key={index} className={`chat-bubble is-${message.from === 'loja' ? 'cliente' : 'loja'}`}>
+                  <span className="chat-author">
+                    {message.from === 'loja' ? `Loja${message.by ? ` (${message.by})` : ''}` : firstName}
+                  </span>
+                  <p>{message.text}</p>
+                  <time dateTime={message.at}>{formatDate(message.at)}</time>
+                </div>
+              ))
+            )}
+          </div>
+          <form className="chat-form" onSubmit={submitReply}>
+            <label htmlFor={`reply-${order.id}`} className="sr-only">
+              Responder {firstName}
+            </label>
+            <textarea
+              id={`reply-${order.id}`}
+              value={reply}
+              onChange={event => setReply(event.target.value)}
+              maxLength={MAX_MESSAGE_LENGTH}
+              rows={2}
+              placeholder={`Responder ${firstName}…`}
+            />
+            <button type="submit" className="admin-order-btn is-primary" disabled={busy || !reply.trim()}>
+              <Send aria-hidden="true" /> Enviar
+            </button>
+          </form>
+        </details>
+      )}
 
       <details className="admin-order-history">
         <summary>Histórico</summary>

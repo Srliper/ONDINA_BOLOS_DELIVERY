@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronLeft, ChevronRight, Loader2, ShoppingBag } from 'lucide-react'
+import { BellRing, Check, ChevronLeft, ChevronRight, Loader2, ShoppingBag } from 'lucide-react'
 import { toast } from 'sonner'
+import { RestockDialog } from '@/components/RestockDialog'
 import { CATEGORY_LABEL } from '@/data/products'
 import { cartActions, setCartOpen } from '@/lib/cart-store'
 import { flyToCart } from '@/lib/fly-to-cart'
@@ -62,6 +63,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const current = photos[photo] ?? product.image
   const step = (delta: number) => setPhoto(index => (index + delta + photos.length) % photos.length)
 
+  const [restockOpen, setRestockOpen] = useState(false)
   const soldOut = isSoldOut(product)
   const stock = stockLabel(product)
   const Icon = state === 'loading' ? Loader2 : state === 'success' ? Check : ShoppingBag
@@ -132,6 +134,15 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         />
         <span aria-live="polite">{state === 'idle' && soldOut ? 'Pedir pendente' : LABEL[state]}</span>
       </button>
+      {soldOut && (
+        <>
+          <button type="button" className="restock-button" onClick={() => setRestockOpen(true)}>
+            <BellRing aria-hidden="true" />
+            Avise-me quando chegar
+          </button>
+          <RestockDialog product={product} open={restockOpen} onOpenChange={setRestockOpen} />
+        </>
+      )}
     </article>
   )
 }

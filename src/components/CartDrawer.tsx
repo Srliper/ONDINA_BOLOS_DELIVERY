@@ -9,6 +9,7 @@ import { MAX_QUANTITY, useCart, useCartOpen } from '@/lib/cart-store'
 import type { CheckoutData } from '@/lib/checkout'
 import { formatBRL } from '@/lib/format'
 import { isPendingOrder, lacksStock, shortageText } from '@/lib/stock'
+import { processOrderOnSite } from '@/lib/site-order'
 import { processOrderAndSend, type SendResult } from '@/lib/whatsapp'
 import type { CartItem } from '@/types/product'
 
@@ -36,6 +37,19 @@ export function CartDrawer() {
   }
 
   const sendOrder = async (checkout: CheckoutData) => {
+    if (checkout.payment.method === 'online') {
+      try {
+        // Leva para o Mercado Pago (ou para a página do pedido, se for pendente).
+        await processOrderOnSite(cart.items, checkout)
+        cart.clear()
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Não foi possível registrar o pedido.', {
+          description: 'Tente de novo ou volte e escolha finalizar pelo WhatsApp.',
+          duration: 10_000,
+        })
+      }
+      return
+    }
     const result = await processOrderAndSend(cart.items, cart.total, checkout)
     setSent(result)
     setCheckingOut(false)
@@ -55,8 +69,8 @@ export function CartDrawer() {
               : cart.isEmpty
               ? 'Nenhum bolo escolhido ainda.'
               : showCheckout
-                ? 'Três passos rápidos e o pedido segue pronto para o WhatsApp.'
-                : 'Confira os itens e envie pelo WhatsApp. A confirmação é feita na conversa.'}
+                ? 'Três passos rápidos: pague aqui no site ou envie pelo WhatsApp.'
+                : 'Confira os itens e finalize: pagamento no site ou pedido pelo WhatsApp.'}
           </SheetDescription>
         </SheetHeader>
 

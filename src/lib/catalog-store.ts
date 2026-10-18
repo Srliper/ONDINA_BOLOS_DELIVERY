@@ -117,6 +117,14 @@ export function getOrdersStorage(): CatalogStorage {
   return fileStorage(`${localDataDir()}orders-v2.json`)
 }
 
+/** Pedidos de "avise-me quando chegar" dos bolos esgotados (mesmo banco). */
+export function getStockRequestsStorage(): CatalogStorage {
+  const upstash = upstashConfig()
+  if (upstash) return upstashStorage(upstash.url, upstash.token, fetch, 'ondina:stock-requests')
+  if (isEphemeralServer()) return noStorage
+  return fileStorage(`${localDataDir()}stock-requests.json`)
+}
+
 /** Sem banco na Vercel (disco temporário): nada pode ser guardado. */
 export const isEphemeralServer = () => Boolean(env('VERCEL'))
 

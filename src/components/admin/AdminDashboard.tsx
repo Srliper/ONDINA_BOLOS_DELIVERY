@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { ArrowUpRight, Copy, ExternalLink, Instagram, LogOut, MessageCircle, Store, Workflow } from 'lucide-react'
 import { toast } from 'sonner'
 import logo from '@/assets/ondina_logo.png'
+import { AdminNotifier } from '@/components/admin/AdminNotifier'
 import { AdminOrders } from '@/components/admin/AdminOrders'
+import { AdminStockDemand } from '@/components/admin/AdminStockDemand'
 import { AdminTutorial } from '@/components/admin/AdminTutorial'
 import { CatalogManager } from '@/components/admin/CatalogManager'
 import { initials, instagramHandle, TEAM } from '@/data/team'
@@ -65,6 +67,8 @@ export function AdminDashboard({ memberId, onLogout }: { memberId: string; onLog
           <p>{member ? `${member.role} · ${member.relation}` : 'Bem-vindo à administração.'}</p>
         </section>
 
+        <AdminNotifier />
+
         <AdminTutorial />
 
         <section className="admin-whatsapp" aria-labelledby="admin-whatsapp-title">
@@ -73,7 +77,7 @@ export function AdminDashboard({ memberId, onLogout }: { memberId: string; onLog
             <div>
               <h2 id="admin-whatsapp-title">WhatsApp da empresa</h2>
               <p>
-                Todos os pedidos do site chegam aqui: <strong>{BUSINESS.phoneDisplay}</strong>
+                Os pedidos finalizados pelo WhatsApp chegam aqui: <strong>{BUSINESS.phoneDisplay}</strong>
               </p>
             </div>
           </div>
@@ -98,6 +102,8 @@ export function AdminDashboard({ memberId, onLogout }: { memberId: string; onLog
         </section>
 
         <AdminOrders />
+
+        <AdminStockDemand />
 
         <div className="admin-grid">
           <section className="admin-card" aria-labelledby="admin-orders-title">
