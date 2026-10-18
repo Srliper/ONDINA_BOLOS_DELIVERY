@@ -1,5 +1,6 @@
 import type { CheckoutData } from '@/lib/checkout'
 import { celebrate } from '@/lib/confetti'
+import { rememberOrder, type RememberedOrder } from '@/lib/my-orders'
 import { trackingPath, type OrderStatus } from '@/lib/order-flow'
 import { toOrderLines } from '@/lib/whatsapp'
 import type { CartItem } from '@/types/product'
@@ -21,30 +22,12 @@ export interface SiteOrderDeps {
   celebrate: () => Promise<void> | void
 }
 
-export interface RememberedOrder {
-  id: string
-  url: string
-  createdAt: string
-}
-
 export interface SiteOrderResult {
   orderId: string
   pending: boolean
   trackingUrl: string
   /** Link do pagamento (quando abriu); sem ele, o cliente paga pela página do pedido. */
   paymentUrl?: string
-}
-
-const RECENT_KEY = 'ondina:my-orders'
-
-/** Pedidos feitos neste aparelho (só conveniência; o link do pedido é o que vale). */
-export function recentOrders(): RememberedOrder[] {
-  try {
-    const list = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? '[]') as RememberedOrder[]
-    return Array.isArray(list) ? list.filter(entry => typeof entry?.url === 'string').slice(0, 5) : []
-  } catch {
-    return []
-  }
 }
 
 const browserDeps = (): SiteOrderDeps => ({
@@ -63,14 +46,7 @@ const browserDeps = (): SiteOrderDeps => ({
     return result.url
   },
   navigate: url => window.location.assign(url),
-  remember: order => {
-    try {
-      const list = [order, ...recentOrders().filter(entry => entry.id !== order.id)].slice(0, 5)
-      window.localStorage.setItem(RECENT_KEY, JSON.stringify(list))
-    } catch {
-      // Sem armazenamento (aba anônima): o link do pedido continua valendo.
-    }
-  },
+  remember: rememberOrder,
   celebrate,
 })
 
@@ -98,3 +74,5 @@ export async function processOrderOnSite(
   deps.navigate(paymentUrl ?? trackingUrl)
   return { orderId: registered.orderId, pending, trackingUrl, ...(paymentUrl ? { paymentUrl } : {}) }
 }
+
+export { recentOrders, type RememberedOrder } from '@/lib/my-orders'

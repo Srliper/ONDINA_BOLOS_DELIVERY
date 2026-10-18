@@ -1056,3 +1056,15 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .checkout-hint { font-size:11.5px; color:var(--muted-foreground); }
 .admin-order-schedule { display:flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; color:var(--gold-ink); }
 .admin-order-schedule svg { width:13px; height:13px; }
+
+/* ---------- Meus pedidos (topo) ---------- */
+.my-orders { width:min(300px, calc(100vw - 32px)); padding:12px; border-radius:16px; }
+.my-orders-title { font-size:13px; font-weight:700; margin-bottom:6px; }
+.my-orders ul { list-style:none; padding:0; margin:0; display:grid; gap:4px; }
+.my-orders a { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:12px; background:var(--secondary); }
+.my-orders a:hover { background:oklch(0.94 0.03 27); }
+.my-orders a span { display:grid; }
+.my-orders a strong { font-size:13px; color:var(--rose-ink); }
+.my-orders a small { font-size:11px; color:var(--muted-foreground); }
+.my-orders a svg { width:16px; height:16px; color:var(--muted-foreground); }
+.my-orders-note { margin-top:8px; font-size:11px; line-height:1.45; color:var(--muted-foreground); }

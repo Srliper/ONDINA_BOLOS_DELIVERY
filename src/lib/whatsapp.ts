@@ -11,6 +11,7 @@ import { MAPS_URL, WHATSAPP_NUMBER } from '@/lib/contact'
 import { formatBRLPlain } from '@/lib/format'
 import { DELIVERY_CITY, shippingFee } from '@/lib/shipping'
 import { createOrderId, trackingPath, type OrderLine, type OrderStatus, type Shortage } from '@/lib/order-flow'
+import { rememberOrder, type RememberedOrder } from '@/lib/my-orders'
 import { lacksStock } from '@/lib/stock'
 import type { CartItem } from '@/types/product'
 
@@ -221,6 +222,8 @@ export interface SendDeps {
   navigate: (url: string) => void
   celebrate: () => Promise<void> | void
   wait: (ms: number) => Promise<void>
+  /** Guarda o pedido em "Meus pedidos" (opcional). */
+  remember?: (order: RememberedOrder) => void
 }
 
 const browserDeps = (): SendDeps => ({
@@ -248,6 +251,7 @@ const browserDeps = (): SendDeps => ({
   navigate: url => window.location.assign(url),
   celebrate,
   wait: ms => new Promise(resolve => window.setTimeout(resolve, ms)),
+  remember: rememberOrder,
 })
 
 export interface SendResult {
@@ -294,6 +298,10 @@ export async function processOrderAndSend(
     registered = await withTimeout(deps.register(toOrderLines(items), checkout), REGISTER_TIMEOUT_MS)
   } catch (error) {
     console.error('[pedido] não foi possível registrar no site; segue pelo WhatsApp', error)
+  }
+
+  if (registered?.trackingUrl) {
+    deps.remember?.({ id: registered.orderId, url: registered.trackingUrl, createdAt: new Date().toISOString() })
   }
 
   const order = { items, total, checkout, registered }

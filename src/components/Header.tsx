@@ -1,4 +1,5 @@
 import { MapPin, MessageCircle, ShoppingBag } from 'lucide-react'
+import { MyOrders } from '@/components/MyOrders'
 import { Button } from '@/components/ui/button'
 import logo from '@/assets/ondina_logo.png'
 import { useCart, useCartOpen } from '@/lib/cart-store'
@@ -34,6 +35,7 @@ export function Header() {
               <span>Pedir agora</span>
             </a>
           </Button>
+          <MyOrders />
           <button id={CART_TARGET_ID} type="button" className="cart-button" onClick={() => setOpen(true)} aria-label={label}>
             <ShoppingBag aria-hidden="true" />
             {count > 0 && (
