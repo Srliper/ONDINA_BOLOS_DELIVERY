@@ -101,7 +101,8 @@ Cinco senhas erradas seguidas bloqueiam o acesso por 5 minutos.
 ## Pedidos no painel
 
 Cada pedido finalizado no site é **registrado no banco do próprio site** (o mesmo do cardápio:
-Upstash Redis na Vercel, ou `.data/orders.json` no computador) antes de abrir o WhatsApp. O servidor
+Upstash Redis na Vercel, ou `.data/orders-v2.json` no computador) antes de abrir o WhatsApp ou o
+pagamento online. O servidor
 recalcula os preços pelo catálogo e confere o estoque:
 
 | Situação ao finalizar | Status do pedido | Estoque |
@@ -122,6 +123,63 @@ reservado e o pedido vai para Aguardando pagamento.
 Se o registro falhar (banco fora do ar), o cliente segue normalmente pelo WhatsApp e pelo n8n — o
 pedido nunca se perde. O webhook do n8n (`VITE_N8N_WEBHOOK_URL`) continua recebendo cada pedido,
 com o mesmo número **OB-…** do painel.
+
+## Comprar pelo site ou pelo WhatsApp
+
+Na etapa **Pagamento** do checkout, o cliente escolhe onde finalizar:
+
+- **Pagar aqui no site** — Pix ou cartão na página segura do **Mercado Pago** (Checkout Pro). O
+  pedido é registrado, o cliente paga e volta para a **página do pedido** (`/pedido/<id>?t=<chave>`),
+  onde acompanha o status e **conversa com a loja**. O pagamento aprovado é conferido direto na API
+  do Mercado Pago (nunca pelo navegador) e o pedido vai sozinho para **Pago / Em preparo**. Pedido
+  pendente (sem estoque) não é cobrado: o botão **Pagar agora** aparece na página do pedido quando a
+  equipe libera o estoque.
+- **Finalizar pelo WhatsApp** — como antes: Pix, cartão ou dinheiro combinados na conversa. A
+  mensagem agora leva o link da página do pedido, para o cliente acompanhar e falar pelo site também.
+
+O checkout também pede o **WhatsApp do cliente**, que aparece no painel para a equipe entrar em
+contato.
+
+**Configurar o Mercado Pago** (sem isso, o checkout mostra só o WhatsApp):
+
+1. Em [mercadopago.com.br/developers](https://www.mercadopago.com.br/developers) → *Suas
+   integrações* → crie uma aplicação (Checkout Pro) e copie o **Access Token** de produção
+   (`APP_USR-…`). Para testar sem cobrar, use o de teste (`TEST-…`).
+2. Na Vercel, adicione `MERCADOPAGO_ACCESS_TOKEN` (e `VITE_SITE_URL` com o endereço do site).
+3. Opcional, mas recomendado: em *Webhooks*, cadastre `https://<seu-site>/api/payments/webhook`
+   com o evento **Pagamentos** e copie a **assinatura secreta** para `MERCADOPAGO_WEBHOOK_SECRET`.
+   (O site já informa esse endereço em cada pagamento; a assinatura confere que a notificação veio
+   do Mercado Pago.)
+
+O dinheiro cai na conta do Mercado Pago da loja. Se um pedido pago online for cancelado, devolva o
+valor pelo painel do Mercado Pago (o histórico do pedido avisa). Código: `src/lib/payment-gateway.ts`
+(API do Mercado Pago), `src/lib/payment-webhook.server.ts` (notificações), `src/lib/site-order.ts`
+(navegador) e `src/components/OrderTracking.tsx` (página do pedido).
+
+**Banco de dados:** pedidos, conversas e avisos ficam no mesmo **Upstash Redis** do cardápio — um
+banco online, sem servidor para manter ligado, que cobra por uso (o plano grátis cobre uma
+confeitaria com folga). Nada roda no computador da loja.
+
+## Avisos para a equipe
+
+- **Painel aberto** (celular ou computador): o quadro **Avisos** no `/admin` confere a cada 30 s e
+  toca um aviso quando chega pedido novo, pagamento aprovado (**pedido para entregar**), mensagem de
+  cliente ou pedido de "avise-me". Com **Ligar notificações**, o aparelho mostra a notificação mesmo
+  com outra aba na frente; o título da aba mostra quantas coisas precisam de atenção.
+- **Painel fechado** (opcional): configure `N8N_STORE_ALERT_URL` com um webhook do n8n (*Webhook
+  POST* → nó do WhatsApp enviando `{{ $json.body.message }}` para o número da loja). O site manda
+  `{ event, orderId, customer, total, message, … }` com `x-ondina-key` = `N8N_ORDERS_KEY`, nos eventos
+  `pedido-novo` (pelo site), `pagamento-aprovado`, `mensagem-cliente` e `aviso-estoque`. Falha do
+  n8n nunca impede o pedido.
+
+## Bolo esgotado: "Avise-me quando chegar"
+
+Com estoque **0**, o cartão do bolo mostra **Avise-me quando chegar**: o cliente deixa nome,
+WhatsApp e (opcional) quanto quer. No `/admin`, **Procura por bolos esgotados** mostra, por bolo,
+quantas pessoas esperam, os pedidos pendentes e a quantidade procurada — a demanda do que está em
+falta. Quando o estoque volta, o bolo aparece como **Voltou**; tocar no telefone do cliente abre o
+WhatsApp com a mensagem pronta, e o ✓ marca como avisado. Guardado em `ondina:stock-requests` (ou
+`.data/stock-requests.json`); regras em `src/lib/stock-requests.ts`.
 
 ## Frete
 

@@ -29,6 +29,7 @@ const input = (lines: PlaceOrderInput['lines'], method: 'pix' | 'cartao' | 'dinh
     customer: {
       fulfillment: 'entrega',
       name: 'Ana Souza',
+      phone: '(15) 99123-4567',
       city: 'São Miguel Arcanjo',
       address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', cep: '18230000' },
     },

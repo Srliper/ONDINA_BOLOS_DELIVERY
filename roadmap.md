@@ -8,6 +8,10 @@
 - [x] Checkout em etapas: endereço validado, forma de pagamento (Pix, cartão, dinheiro) e resumo.
 - [x] Pedido registrado no n8n e enviado pelo WhatsApp, com confete.
 - [x] Seção Administração (Ondina, Edgard e Kaique) e Instagram da loja.
+- [x] Cliente escolhe: pagar no site (Mercado Pago, Pix ou cartão) ou finalizar pelo WhatsApp.
+- [x] Página do pedido para o cliente, com status e conversa com a loja.
+- [x] Avisos no painel (pedido novo, para entregar, mensagens) e "Avise-me" para bolo esgotado.
+- [ ] Configurar `MERCADOPAGO_ACCESS_TOKEN` e o webhook do Mercado Pago na Vercel.
 - [ ] Fotos reais das camadas em `public/layers/<id>.png` (ou pelo painel `/admin`).
 - [ ] Confirmar preços das camadas do Monte seu Bolo.
 - [ ] Liberar o domínio do site no CORS do webhook do n8n.

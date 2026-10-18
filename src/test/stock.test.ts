@@ -20,7 +20,7 @@ function withStock(stock: Record<string, number | null>): Catalog {
 
 afterEach(() => applyCatalog(seedCatalog()))
 
-const retirada: CheckoutData['customer'] = fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana Souza', city: 'São Miguel Arcanjo' })
+const retirada: CheckoutData['customer'] = fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana Souza', city: 'São Miguel Arcanjo', phone: '5515991234567' })
 
 describe('estoque no catálogo', () => {
   it('começa sem controle e aceita catálogos salvos antes do estoque', () => {

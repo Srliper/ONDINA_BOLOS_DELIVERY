@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Palette,
   QrCode,
+  ShieldCheck,
   Store,
   Truck,
 } from 'lucide-react'
@@ -26,9 +27,11 @@ import {
   validateChange,
   type CheckoutData,
   type Fulfillment,
+  type OrderChannel,
   type PaymentMethod,
 } from '@/lib/checkout'
 import { formatBRL } from '@/lib/format'
+import { formatPhone } from '@/lib/phone'
 import { DELIVERY_CITY, DELIVERY_FEE, isDeliveryCity, shippingFee, STORE_ADDRESS } from '@/lib/shipping'
 import { lacksStock, pendingItems } from '@/lib/stock'
 import { MAPS_URL } from '@/lib/whatsapp'
@@ -39,7 +42,7 @@ export interface CheckoutStepperProps {
   total: number
   /** Volta para a lista do carrinho. */
   onBack: () => void
-  /** Pedido revisado e confirmado pelo cliente (registra no n8n e abre o WhatsApp). */
+  /** Pedido revisado e confirmado (WhatsApp: registra e abre a conversa; site: registra e abre o pagamento). */
   onConfirm: (data: CheckoutData) => Promise<void>
 }
 
@@ -49,6 +52,7 @@ const slide: Transition = { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
 interface FormValues {
   fulfillment: Fulfillment['fulfillment']
   name: string
+  phone: string
   city: string
   street: string
   number: string
@@ -61,6 +65,7 @@ interface FormValues {
 const EMPTY_FORM: FormValues = {
   fulfillment: 'entrega',
   name: '',
+  phone: '',
   // A maioria dos pedidos é da cidade; quem é de fora troca e vê só a retirada.
   city: DELIVERY_CITY,
   street: '',
@@ -80,10 +85,10 @@ const effectiveFulfillment = (values: FormValues): Fulfillment['fulfillment'] =>
   values.fulfillment === 'entrega' && values.city.trim() && !isDeliveryCity(values.city) ? 'retirada' : values.fulfillment
 
 function parseFulfillment(values: FormValues): { data?: Fulfillment; errors: FieldErrors } {
-  const { fulfillment: _chosen, name, city, ...address } = values
+  const { fulfillment: _chosen, name, phone, city, ...address } = values
   const fulfillment = effectiveFulfillment(values)
   const result = fulfillmentSchema.safeParse(
-    fulfillment === 'entrega' ? { fulfillment, name, city, address } : { fulfillment, name, city },
+    fulfillment === 'entrega' ? { fulfillment, name, phone, city, address } : { fulfillment, name, phone, city },
   )
   if (result.success) return { data: result.data, errors: {} }
   const errors: FieldErrors = {}
@@ -94,7 +99,12 @@ function parseFulfillment(values: FormValues): { data?: Fulfillment; errors: Fie
   return { errors }
 }
 
-const PAYMENT_ICONS: Record<PaymentMethod, typeof QrCode> = { pix: QrCode, cartao: CreditCard, dinheiro: Banknote }
+const PAYMENT_ICONS: Record<PaymentMethod, typeof QrCode> = {
+  pix: QrCode,
+  cartao: CreditCard,
+  dinheiro: Banknote,
+  online: ShieldCheck,
+}
 
 export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutStepperProps) {
   const [step, setStep] = useState(0)
@@ -102,7 +112,9 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
   const [values, setValues] = useState<FormValues>(EMPTY_FORM)
   const [showErrors, setShowErrors] = useState(false)
   const [customer, setCustomer] = useState<Fulfillment>()
+  const [channel, setChannel] = useState<OrderChannel>()
   const [method, setMethod] = useState<PaymentMethod>()
+  const [onlineAvailable, setOnlineAvailable] = useState(false)
   const [change, setChange] = useState('')
   const [paymentTried, setPaymentTried] = useState(false)
   const [sending, setSending] = useState(false)
@@ -113,6 +125,23 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
   const { errors } = useMemo(() => parseFulfillment(values), [values])
   const changeFor = parseMoney(change)
   const changeError = method === 'dinheiro' ? validateChange(changeFor, total) : undefined
+
+  // O pagamento pelo site só aparece quando o gateway está configurado no servidor.
+  useEffect(() => {
+    let active = true
+    import('@/lib/orders-server')
+      .then(({ getCheckoutOptions }) => getCheckoutOptions())
+      .then(options => active && setOnlineAvailable(options.onlinePayment))
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const chooseChannel = (next: OrderChannel) => {
+    setChannel(next)
+    setMethod(next === 'site' ? 'online' : undefined)
+  }
 
   // Leitores de tela e teclado acompanham a troca de etapa.
   useEffect(() => {
@@ -138,7 +167,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
 
   const submitPayment = () => {
     setPaymentTried(true)
-    if (!method || changeError) return
+    if (!channel || !method || changeError) return
     goTo(2)
   }
 
@@ -183,7 +212,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
                 {step === 0
                   ? 'Como você quer receber?'
                   : step === 1
-                    ? 'Como você quer pagar?'
+                    ? 'Como você quer finalizar?'
                     : pending
                       ? 'Confira seu pedido pendente'
                       : 'Confira seu pedido'}
@@ -207,12 +236,17 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
                 <PaymentStep
                   total={total}
                   fulfillment={customer.fulfillment}
+                  channel={channel}
+                  onChannel={chooseChannel}
+                  onlineAvailable={onlineAvailable}
+                  pending={pending}
                   method={method}
                   onMethod={setMethod}
                   change={change}
                   onChange={setChange}
                   changeError={paymentTried || change ? changeError : undefined}
                   missingMethod={paymentTried && !method}
+                  missingChannel={paymentTried && !channel}
                 />
               )}
               {step === 2 && customer && method && (
@@ -252,7 +286,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
         {step === 2 && customer && method && (
           <button
             type="button"
-            className="checkout-button checkout-send"
+            className={`checkout-button checkout-send${method === 'online' ? ' is-online' : ''}`}
             disabled={sending}
             aria-busy={sending}
             onClick={async () => {
@@ -265,8 +299,22 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
               }
             }}
           >
-            {sending ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <MessageCircle aria-hidden="true" />}
-            {sending ? 'Enviando pedido…' : pending ? 'Enviar pedido pendente pelo WhatsApp' : 'Enviar pedido pelo WhatsApp'}
+            {sending ? (
+              <Loader2 aria-hidden="true" className="checkout-spin" />
+            ) : method === 'online' ? (
+              <ShieldCheck aria-hidden="true" />
+            ) : (
+              <MessageCircle aria-hidden="true" />
+            )}
+            {sending
+              ? 'Enviando pedido…'
+              : method === 'online'
+                ? pending
+                  ? 'Registrar pedido pendente no site'
+                  : 'Ir para o pagamento seguro'
+                : pending
+                  ? 'Enviar pedido pendente pelo WhatsApp'
+                  : 'Enviar pedido pelo WhatsApp'}
           </button>
         )}
       </div>
@@ -339,6 +387,18 @@ function AddressStep({
         autoComplete="name"
         maxLength={60}
         placeholder="Nome e sobrenome"
+      />
+      <TextField
+        id="phone"
+        label="Seu WhatsApp"
+        type="tel"
+        value={values.phone}
+        onValue={onChange('phone')}
+        error={errors.phone}
+        autoComplete="tel-national"
+        inputMode="tel"
+        maxLength={20}
+        placeholder="(15) 99999-9999"
       />
 
       {isDelivery ? (
@@ -474,30 +534,83 @@ function TextField({
 function PaymentStep({
   total,
   fulfillment,
+  channel,
+  onChannel,
+  onlineAvailable,
+  pending,
   method,
   onMethod,
   change,
   onChange,
   changeError,
   missingMethod,
+  missingChannel,
 }: {
   total: number
   fulfillment: Fulfillment['fulfillment']
+  channel: OrderChannel | undefined
+  onChannel: (channel: OrderChannel) => void
+  onlineAvailable: boolean
+  pending: boolean
   method: PaymentMethod | undefined
   onMethod: (method: PaymentMethod) => void
   change: string
   onChange: (value: string) => void
   changeError?: string | undefined
   missingMethod: boolean
+  missingChannel: boolean
 }) {
   const changeId = useId()
   const hints: Record<PaymentMethod, string> = {
-    pix: 'Aprovação na hora',
+    pix: 'Chave enviada na conversa',
     cartao: 'Débito ou crédito na maquininha',
     dinheiro: 'Levamos troco',
+    online: 'Pix ou cartão',
   }
   return (
     <>
+      <div className="checkout-payments" role="radiogroup" aria-label="Onde finalizar o pedido">
+        <ChoiceCard
+          name="channel"
+          checked={channel === 'site'}
+          onSelect={() => onChannel('site')}
+          icon={<ShieldCheck />}
+          title="Pagar aqui no site"
+          hint={
+            onlineAvailable
+              ? pending
+                ? 'Pix ou cartão, quando o estoque for confirmado'
+                : 'Pix ou cartão, na página segura do Mercado Pago'
+              : 'Indisponível no momento'
+          }
+          disabled={!onlineAvailable}
+          wide
+        />
+        <ChoiceCard
+          name="channel"
+          checked={channel === 'whatsapp'}
+          onSelect={() => onChannel('whatsapp')}
+          icon={<MessageCircle />}
+          title="Finalizar pelo WhatsApp"
+          hint="Combine com a Ondina: Pix, cartão ou dinheiro"
+          wide
+        />
+      </div>
+      {missingChannel && (
+        <p className="checkout-error" role="alert">
+          Escolha onde finalizar o pedido.
+        </p>
+      )}
+      {channel === 'site' && (
+        <p className="checkout-notice" role="status">
+          Você acompanha o pedido e conversa com a Ondina pela página do pedido, aqui no site. O pagamento é
+          confirmado na hora e o pedido segue direto para o preparo.
+        </p>
+      )}
+
+      {channel === 'whatsapp' && (
+      <>
+      <p className="checkout-subtitle">Como você quer pagar?</p>
       <div className="checkout-payments" role="radiogroup" aria-label="Forma de pagamento">
         {PAYMENT_METHODS.map(option => {
           const Icon = PAYMENT_ICONS[option]
@@ -572,6 +685,8 @@ function PaymentStep({
           </motion.div>
         )}
       </AnimatePresence>
+      </>
+      )}
     </>
   )
 }
@@ -715,6 +830,10 @@ function ReviewStep({
           <dd>{customer.name}</dd>
         </div>
         <div>
+          <dt>WhatsApp</dt>
+          <dd>{formatPhone(customer.phone)}</dd>
+        </div>
+        <div>
           <dt>{customer.fulfillment === 'entrega' ? 'Entrega em' : 'Receber'}</dt>
           <dd>{formatAddress(customer)}</dd>
         </div>
@@ -741,9 +860,13 @@ function ReviewStep({
         <strong>{formatBRL(total + shippingFee(customer.fulfillment))}</strong>
       </div>
       <p className="checkout-review-note">
-        {pending
-          ? 'Nada é cobrado agora. A Ondina avisa pela conversa quando o bolo estiver disponível.'
-          : 'A Ondina confirma o pedido e o horário pela conversa.'}
+        {method === 'online'
+          ? pending
+            ? 'Nada é cobrado agora. Quando a Ondina confirmar o estoque, o botão de pagar aparece na página do pedido.'
+            : 'Você vai para a página segura do Mercado Pago. Depois do pagamento, volta para acompanhar o pedido aqui.'
+          : pending
+            ? 'Nada é cobrado agora. A Ondina avisa pela conversa quando o bolo estiver disponível.'
+            : 'A Ondina confirma o pedido e o horário pela conversa.'}
       </p>
     </div>
   )

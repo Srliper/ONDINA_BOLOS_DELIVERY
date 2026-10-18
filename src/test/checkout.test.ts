@@ -6,10 +6,12 @@ import {
   paymentLabel,
   validateChange,
 } from '@/lib/checkout'
+import { formatPhone } from '@/lib/phone'
 
 const delivery = {
   fulfillment: 'entrega' as const,
   name: '  Ana Souza ',
+  phone: ' (15) 99123-4567 ',
   city: 'São Miguel Arcanjo',
   address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', cep: '18230000', complement: '', reference: ' perto da praça ' },
 }
@@ -20,6 +22,7 @@ describe('fulfillmentSchema', () => {
     expect(result).toEqual({
       fulfillment: 'entrega',
       name: 'Ana Souza',
+      phone: '5515991234567',
       city: 'São Miguel Arcanjo',
       address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', cep: '18230-000', complement: undefined, reference: 'perto da praça' },
     })
@@ -59,9 +62,10 @@ describe('fulfillmentSchema', () => {
   })
 
   it('na retirada só pede nome e cidade', () => {
-    expect(fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul' })).toEqual({
+    expect(fulfillmentSchema.parse({ fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul', phone: '5515991234567' })).toEqual({
       fulfillment: 'retirada',
       name: 'Ana Souza',
+      phone: '5515991234567',
       city: 'Pilar do Sul',
     })
   })
@@ -81,6 +85,27 @@ describe('fulfillmentSchema', () => {
   })
 })
 
+describe('WhatsApp do cliente', () => {
+  it('aceita com ou sem DDI e máscara, e guarda só os dígitos com 55', () => {
+    for (const phone of ['(15) 99123-4567', '15991234567', '+55 15 99123-4567', '5515991234567']) {
+      expect(fulfillmentSchema.parse({ ...delivery, phone }).phone).toBe('5515991234567')
+    }
+    expect(fulfillmentSchema.parse({ ...delivery, phone: '(15) 3271-1234' }).phone).toBe('551532711234')
+  })
+
+  it('recusa número sem DDD ou curto demais', () => {
+    for (const phone of ['99123-4567', '123', '']) {
+      const result = fulfillmentSchema.safeParse({ ...delivery, phone })
+      expect(result.success ? undefined : result.error.issues[0]?.path).toEqual(['phone'])
+    }
+  })
+
+  it('formata para mostrar no painel', () => {
+    expect(formatPhone('5515991234567')).toBe('(15) 99123-4567')
+    expect(formatPhone('551532711234')).toBe('(15) 3271-1234')
+  })
+})
+
 describe('pagamento', () => {
   it('lê valores de troco e valida contra o total', () => {
     expect(parseMoney('')).toBeUndefined()
@@ -97,6 +122,7 @@ describe('pagamento', () => {
     expect(paymentLabel('cartao', 'entrega')).toBe('Cartão na entrega')
     expect(paymentLabel('cartao', 'retirada')).toBe('Cartão na retirada')
     expect(paymentLabel('pix', 'entrega')).toBe('Pix')
+    expect(paymentLabel('online', 'retirada')).toBe('Pagamento online (Pix ou cartão)')
   })
 })
 
@@ -105,6 +131,6 @@ describe('formatAddress', () => {
     expect(formatAddress(fulfillmentSchema.parse({ ...delivery, address: { ...delivery.address, number: 'sn' } }))).toBe(
       'Rua Tapixi, S/N — Vila Tomaz, São Miguel Arcanjo — CEP 18230-000 — Referência: perto da praça',
     )
-    expect(formatAddress({ fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul' })).toMatch(/^Retirada na loja \(Rua Tapixi, 412/)
+    expect(formatAddress({ fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul', phone: '5515991234567' })).toMatch(/^Retirada na loja \(Rua Tapixi, 412/)
   })
 })

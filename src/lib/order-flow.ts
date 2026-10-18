@@ -1,7 +1,14 @@
 import { z } from 'zod'
 import { LAYER_ORDER } from '@/data/bolo-layers'
 import { toBoloLayers, toProducts, type Catalog } from '@/lib/catalog'
-import { formatAddress, fulfillmentSchema, paymentLabel, PAYMENT_METHODS, type Fulfillment } from '@/lib/checkout'
+import {
+  ALL_PAYMENT_METHODS,
+  channelOf,
+  formatAddress,
+  fulfillmentSchema,
+  paymentLabel,
+  type Fulfillment,
+} from '@/lib/checkout'
 import { formatBRLPlain } from '@/lib/format'
 import { shippingFee } from '@/lib/shipping'
 
@@ -16,6 +23,8 @@ import { shippingFee } from '@/lib/shipping'
  * - Pedido PENDENTE não avança para nenhuma etapa (nem pelo seletor, nem pelo "Confirmar pagamento").
  *   Só sai dali por "Verificar estoque", depois que a equipe dá entrada no estoque — ou cancelando.
  * - Cancelar devolve ao estoque o que tinha sido reservado.
+ * - Pedido pelo site (pagamento online): o gateway confirma o pagamento sozinho e o pedido vai
+ *   para o preparo. Cliente e loja conversam pela página do pedido (mensagens guardadas aqui).
  */
 
 /* ---------- Status ---------- */
@@ -68,7 +77,7 @@ export type OrderLine = z.infer<typeof orderLineSchema>
 export const placeOrderSchema = z.object({
   customer: fulfillmentSchema,
   payment: z.object({
-    method: z.enum(PAYMENT_METHODS as unknown as ['pix', 'cartao', 'dinheiro']),
+    method: z.enum(ALL_PAYMENT_METHODS),
     changeFor: z.number().positive().max(100_000).optional(),
   }),
   lines: z.array(orderLineSchema).min(1, 'O carrinho está vazio.').max(30),
@@ -108,6 +117,23 @@ const historySchema = z.object({
   note: z.string().optional(),
 })
 
+const messageSchema = z.object({
+  at: z.string(),
+  from: z.enum(['cliente', 'loja']),
+  /** Quem da equipe escreveu (id). */
+  by: z.string().optional(),
+  text: z.string(),
+})
+
+const gatewaySchema = z.object({
+  provider: z.literal('mercadopago'),
+  preferenceId: z.string().optional(),
+  paymentId: z.string().optional(),
+  /** Status do pagamento no gateway (approved, pending, rejected…). */
+  status: z.string().optional(),
+  updatedAt: z.string(),
+})
+
 export const orderSchema = z.object({
   id: z.string(),
   createdAt: z.string(),
@@ -117,8 +143,14 @@ export const orderSchema = z.object({
   paidAt: z.string().optional(),
   /** O estoque destes itens já foi baixado (devolve ao cancelar). */
   stockReserved: z.boolean(),
+  /** Onde o cliente finalizou (pedidos antigos: WhatsApp). */
+  channel: z.enum(['whatsapp', 'site']).default('whatsapp'),
+  /** Chave da página de acompanhamento do cliente (/pedido/<id>?t=…). */
+  accessToken: z.string().optional(),
   customer: z.object({
     name: z.string(),
+    /** WhatsApp do cliente, só dígitos com 55 (pedidos antigos não têm). */
+    phone: z.string().optional(),
     fulfillment: z.enum(['entrega', 'retirada']),
     city: z.string(),
     /** Endereço em uma linha (ou "Retirada na loja …"). */
@@ -126,7 +158,7 @@ export const orderSchema = z.object({
     cep: z.string().optional(),
   }),
   payment: z.object({
-    method: z.enum(['pix', 'cartao', 'dinheiro']),
+    method: z.enum(ALL_PAYMENT_METHODS),
     label: z.string(),
     changeFor: z.number().optional(),
   }),
@@ -135,11 +167,17 @@ export const orderSchema = z.object({
   shippingFee: z.number(),
   total: z.number(),
   history: z.array(historySchema),
+  /** Conversa entre cliente e loja pela página do pedido. */
+  messages: z.array(messageSchema).default([]),
+  storeReadAt: z.string().optional(),
+  customerReadAt: z.string().optional(),
+  gateway: gatewaySchema.optional(),
 })
 
 export type Order = z.infer<typeof orderSchema>
 export type OrderItem = z.infer<typeof orderItemSchema>
 export type Shortage = z.infer<typeof shortageSchema>
+export type OrderMessage = z.infer<typeof messageSchema>
 
 export const ordersDocSchema = z.object({ orders: z.array(orderSchema) })
 export type OrdersDoc = z.infer<typeof ordersDocSchema>
@@ -248,6 +286,12 @@ export function shortageText(shortage: Shortage, unit: OrderItem['unit'] = 'kg')
 export const createOrderId = (now: Date) =>
   `OB-${now.getTime().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 4).toUpperCase()}`
 
+/** Chave aleatória (128 bits) da página de acompanhamento. */
+export function createAccessToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
 const cepOf = (customer: Fulfillment) => (customer.fulfillment === 'entrega' ? customer.address.cep : undefined)
 
 /**
@@ -259,6 +303,7 @@ export function createOrder(
   input: z.output<typeof placeOrderSchema>,
   now = new Date(),
   id = createOrderId(now),
+  accessToken = createAccessToken(),
 ): { order: Order; catalog: Catalog } {
   const items = resolveItems(catalog, input.lines)
   const shortages = findShortages(catalog, items)
@@ -275,8 +320,11 @@ export function createOrder(
     status: pending ? 'pendente' : 'aguardando_pagamento',
     paid: false,
     stockReserved: !pending,
+    channel: channelOf(payment.method),
+    accessToken,
     customer: {
       name: customer.name,
+      phone: customer.phone,
       fulfillment: customer.fulfillment,
       city: customer.city,
       address: formatAddress(customer),
@@ -301,6 +349,7 @@ export function createOrder(
         ...(pending ? { note: `Falta de estoque: ${shortages.map(s => shortageText(s, unitOf(items, s))).join('; ')}` } : {}),
       },
     ],
+    messages: [],
   }
   return { order, catalog: pending ? catalog : moveStock(catalog, items, -1, now) }
 }
@@ -432,4 +481,216 @@ export function findOrder(doc: OrdersDoc, id: string): Order {
   const order = doc.orders.find(entry => entry.id === id)
   if (!order) throw new OrderError(404, 'Pedido não encontrado.')
   return order
+}
+
+/* ---------- Pagamento online (gateway) ---------- */
+
+/** O cliente pode pagar pelo site agora: pedido do site, liberado (com estoque) e ainda não pago. */
+export const canPayOnline = (order: Order): boolean =>
+  order.payment.method === 'online' && order.status === 'aguardando_pagamento' && !order.paid
+
+/** Pagamento como o gateway informou (conferido direto na API dele, nunca pelo navegador). */
+export interface GatewayPayment {
+  id: string
+  status: string
+  amount: number
+  /** Id do pedido que foi pago (external_reference). */
+  orderId: string
+}
+
+/** Guarda a preferência de pagamento criada no gateway (para reabrir o mesmo link). */
+export function withPreference(order: Order, preferenceId: string, now = new Date()): Order {
+  return {
+    ...order,
+    updatedAt: now.toISOString(),
+    gateway: { ...order.gateway, provider: 'mercadopago', preferenceId, updatedAt: now.toISOString() },
+  }
+}
+
+/**
+ * Aplica o pagamento informado pelo gateway. Aprovado com o valor certo num pedido aguardando
+ * pagamento → pago e direto para o preparo. Repetir a mesma notificação não muda nada.
+ */
+export function applyGatewayPayment(
+  order: Order,
+  payment: GatewayPayment,
+  now = new Date(),
+): { order: Order; changed: boolean; approved: boolean } {
+  if (payment.orderId !== order.id) throw new OrderError(409, 'O pagamento é de outro pedido.')
+  if (order.gateway?.paymentId === payment.id && order.gateway.status === payment.status) {
+    return { order, changed: false, approved: false }
+  }
+  const at = now.toISOString()
+  const recorded: Order = {
+    ...order,
+    updatedAt: at,
+    gateway: { ...order.gateway, provider: 'mercadopago', paymentId: payment.id, status: payment.status, updatedAt: at },
+  }
+  if (payment.status !== 'approved' || order.paid) return { order: recorded, changed: true, approved: false }
+
+  if (payment.amount + 0.01 < order.total) {
+    const note = `Pagamento online de ${formatBRLPlain(payment.amount)} é menor que o total: confira no Mercado Pago.`
+    return { order: withHistory(recorded, {}, 'mercadopago', now, note), changed: true, approved: false }
+  }
+  const advance = order.status === 'aguardando_pagamento'
+  const note = advance
+    ? 'Pagamento online aprovado.'
+    : order.status === 'cancelado'
+      ? 'Pago online com o pedido cancelado: devolva o valor pelo Mercado Pago.'
+      : 'Pagamento online aprovado.'
+  return {
+    order: withHistory(
+      recorded,
+      { paid: true, paidAt: at, ...(advance ? { status: 'em_preparo' as const } : {}) },
+      'mercadopago',
+      now,
+      note,
+    ),
+    changed: true,
+    approved: true,
+  }
+}
+
+/* ---------- Conversa pela página do pedido ---------- */
+
+export const MAX_MESSAGE_LENGTH = 600
+export const MAX_MESSAGES = 200
+
+export const messageTextSchema = z
+  .string()
+  .trim()
+  .min(1, 'Escreva a mensagem.')
+  .max(MAX_MESSAGE_LENGTH, `Use no máximo ${MAX_MESSAGE_LENGTH} caracteres.`)
+
+/** Nova mensagem na conversa. Quem escreve já leu tudo o que veio antes. */
+export function addMessage(
+  order: Order,
+  from: OrderMessage['from'],
+  text: string,
+  by?: string,
+  now = new Date(),
+): Order {
+  const clean = messageTextSchema.safeParse(text)
+  if (!clean.success) throw new OrderError(400, clean.error.issues[0]?.message ?? 'Mensagem inválida.')
+  if (order.messages.length >= MAX_MESSAGES) {
+    throw new OrderError(409, 'A conversa deste pedido chegou ao limite. Continue pelo WhatsApp.')
+  }
+  const at = now.toISOString()
+  return {
+    ...order,
+    updatedAt: at,
+    messages: [...order.messages, { at, from, ...(by ? { by } : {}), text: clean.data }],
+    ...(from === 'loja' ? { storeReadAt: at } : { customerReadAt: at }),
+  }
+}
+
+const unreadFrom = (order: Order, from: OrderMessage['from'], readAt: string | undefined) =>
+  order.messages.filter(message => message.from === from && (!readAt || message.at > readAt)).length
+
+/** Mensagens do cliente que a equipe ainda não viu. */
+export const unreadForStore = (order: Order) => unreadFrom(order, 'cliente', order.storeReadAt)
+
+/** Mensagens da loja que o cliente ainda não viu. */
+export const unreadForCustomer = (order: Order) => unreadFrom(order, 'loja', order.customerReadAt)
+
+export function markRead(order: Order, who: OrderMessage['from'], now = new Date()): Order {
+  const unread = who === 'loja' ? unreadForStore(order) : unreadForCustomer(order)
+  if (unread === 0) return order
+  return { ...order, [who === 'loja' ? 'storeReadAt' : 'customerReadAt']: now.toISOString() }
+}
+
+/* ---------- Página do cliente ---------- */
+
+/** Página de acompanhamento do pedido (volta do pagamento e link para o cliente). */
+export const trackingPath = (order: Pick<Order, 'id' | 'accessToken'>) =>
+  `/pedido/${encodeURIComponent(order.id)}?t=${order.accessToken ?? ''}`
+
+/** Confere a chave da página do pedido sem atalhos (tempo igual para qualquer chave errada). */
+export function tokenMatches(order: Order, token: string): boolean {
+  const expected = order.accessToken
+  if (!expected || expected.length !== token.length) return false
+  let diff = 0
+  for (let index = 0; index < expected.length; index++) diff |= expected.charCodeAt(index) ^ token.charCodeAt(index)
+  return diff === 0
+}
+
+/** O que o cliente vê na página do pedido: sem telefone, endereço completo nem dados da equipe. */
+export interface TrackedOrder {
+  id: string
+  createdAt: string
+  status: OrderStatus
+  statusLabel: string
+  paid: boolean
+  channel: Order['channel']
+  fulfillment: Order['customer']['fulfillment']
+  firstName: string
+  address: string
+  paymentLabel: string
+  items: Pick<OrderItem, 'name' | 'detail' | 'unit' | 'quantity' | 'subtotal'>[]
+  shortages: string[]
+  shippingFee: number
+  total: number
+  canPay: boolean
+  /** Status do último pagamento online (approved, pending, rejected…). */
+  gatewayStatus?: string
+  messages: { at: string; from: OrderMessage['from']; text: string }[]
+}
+
+export function trackedView(order: Order): TrackedOrder {
+  return {
+    id: order.id,
+    createdAt: order.createdAt,
+    status: order.status,
+    statusLabel: statusLabel(order.status, order.customer.fulfillment),
+    paid: order.paid,
+    channel: order.channel,
+    fulfillment: order.customer.fulfillment,
+    firstName: order.customer.name.split(' ')[0] ?? order.customer.name,
+    address: order.customer.address,
+    paymentLabel: order.payment.label,
+    items: order.items.map(({ name, detail, unit, quantity, subtotal }) => ({
+      name,
+      ...(detail ? { detail } : {}),
+      unit,
+      quantity,
+      subtotal,
+    })),
+    shortages: order.shortages.map(shortage => shortage.name),
+    shippingFee: order.shippingFee,
+    total: order.total,
+    canPay: canPayOnline(order),
+    ...(order.gateway?.status ? { gatewayStatus: order.gateway.status } : {}),
+    messages: order.messages.map(({ at, from, text }) => ({ at, from, text })),
+  }
+}
+
+/* ---------- Resumo para os avisos do painel ---------- */
+
+export interface OrdersPulse {
+  /** Pedidos que ainda precisam de alguma ação. */
+  open: number
+  pending: number
+  awaitingPayment: number
+  /** Pagos (ou pagos na entrega) em preparo ou a caminho: precisam ser entregues. */
+  toDeliver: number
+  /** Mensagens de clientes ainda não lidas. */
+  unread: number
+  /** Ids dos pedidos em aberto, para o painel saber o que é novo. */
+  openIds: string[]
+  /** Ids dos pedidos a entregar (para avisar quando um pagamento online entra). */
+  toDeliverIds: string[]
+}
+
+export function ordersPulse(orders: readonly Order[]): OrdersPulse {
+  const open = orders.filter(order => order.status !== 'entregue' && order.status !== 'cancelado')
+  const toDeliver = open.filter(order => order.status === 'em_preparo' || order.status === 'saiu_para_entrega')
+  return {
+    open: open.length,
+    pending: open.filter(order => order.status === 'pendente').length,
+    awaitingPayment: open.filter(order => order.status === 'aguardando_pagamento').length,
+    toDeliver: toDeliver.length,
+    unread: orders.reduce((sum, order) => sum + unreadForStore(order), 0),
+    openIds: open.map(order => order.id),
+    toDeliverIds: toDeliver.map(order => order.id),
+  }
 }
