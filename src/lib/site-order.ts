@@ -50,7 +50,9 @@ export function recentOrders(): RememberedOrder[] {
 const browserDeps = (): SiteOrderDeps => ({
   register: async (lines, checkout) => {
     const { placeOrder } = await import('@/lib/orders-server')
-    const result = await placeOrder({ data: { lines, customer: checkout.customer, payment: checkout.payment } })
+    const result = await placeOrder({
+      data: { lines, customer: checkout.customer, payment: checkout.payment, schedule: checkout.schedule },
+    })
     if (!result.ok) throw new Error(result.error)
     return result
   },

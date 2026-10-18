@@ -1,4 +1,11 @@
-import { formatAddress, paymentLabel, PENDING_PAYMENT_NOTE, type CheckoutData, type PaymentMethod } from '@/lib/checkout'
+import {
+  formatAddress,
+  paymentLabel,
+  PENDING_PAYMENT_NOTE,
+  scheduleLabel,
+  type CheckoutData,
+  type PaymentMethod,
+} from '@/lib/checkout'
 import { celebrate } from '@/lib/confetti'
 import { MAPS_URL, WHATSAPP_NUMBER } from '@/lib/contact'
 import { formatBRLPlain } from '@/lib/format'
@@ -113,6 +120,7 @@ export function buildOrderMessage(order: OrderInput): string {
     '',
     `👤 *Nome:* ${checkout.customer.name}`,
     `📍 *Endereço:* ${formatAddress(checkout.customer)}`,
+    ...(checkout.schedule ? [`📅 *Para quando:* ${scheduleLabel(checkout.schedule)}`] : []),
     `💳 *Forma de Pagamento:* ${paymentText(checkout, pending)}`,
     `🗺️ *Referência do mapa:* ${MAPS_URL}`,
     ...(registered?.trackingUrl ? [`🔗 *Acompanhe o pedido:* ${registered.trackingUrl}`] : []),
@@ -140,6 +148,8 @@ export interface OrderPayload {
     details?: DeliveryCustomer['address']
   }
   payment: { method: PaymentMethod; label: string; changeFor?: number }
+  /** Para quando o cliente quer o pedido. */
+  schedule?: { date: string; period: string; label: string }
   shipping: { method: CheckoutData['customer']['fulfillment']; fee: number; city: string }
   items: {
     type: CartItem['type']
@@ -190,6 +200,9 @@ export function buildOrderPayload(order: OrderInput, message: string, now = new 
       ...(missing.includes(item) ? { outOfStock: true as const } : {}),
       ...(item.type === 'custom' ? { layers: item.customConfig } : {}),
     })),
+    ...(order.checkout.schedule
+      ? { schedule: { ...order.checkout.schedule, label: scheduleLabel(order.checkout.schedule) } }
+      : {}),
     shipping: { method: customer.fulfillment, fee: shippingFee(customer.fulfillment), city: customer.city },
     total: order.total + shippingFee(customer.fulfillment),
     message,
@@ -213,7 +226,9 @@ export interface SendDeps {
 const browserDeps = (): SendDeps => ({
   register: async (lines, checkout) => {
     const { placeOrder } = await import('@/lib/orders-server')
-    const result = await placeOrder({ data: { lines, customer: checkout.customer, payment: checkout.payment } })
+    const result = await placeOrder({
+      data: { lines, customer: checkout.customer, payment: checkout.payment, schedule: checkout.schedule },
+    })
     if (!result.ok) throw new Error(result.error)
     return {
       orderId: result.orderId,

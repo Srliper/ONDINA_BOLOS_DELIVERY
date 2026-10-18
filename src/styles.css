@@ -1045,3 +1045,14 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
   .track-card h1 { font-size:26px; }
   .chat-form { flex-direction:column; align-items:stretch; }
 }
+
+/* ---------- Para quando (checkout) ---------- */
+.checkout-schedule { display:grid; gap:10px; margin:6px 0 4px; padding:12px; border:1px solid var(--border); border-radius:16px; background:var(--card); }
+.checkout-schedule legend { padding:0 4px; font-size:13px; font-weight:700; }
+.checkout-periods { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.checkout-periods .checkout-choice { padding:10px 8px; flex-direction:column; align-items:flex-start; gap:4px; }
+.checkout-periods .checkout-choice-check { display:none; }
+.checkout-periods .checkout-choice-text small { font-size:11px; }
+.checkout-hint { font-size:11.5px; color:var(--muted-foreground); }
+.admin-order-schedule { display:flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; color:var(--gold-ink); }
+.admin-order-schedule svg { width:13px; height:13px; }

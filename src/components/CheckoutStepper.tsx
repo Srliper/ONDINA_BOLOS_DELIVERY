@@ -10,10 +10,13 @@ import {
   Loader2,
   MapPin,
   MessageCircle,
+  Moon,
   Palette,
   QrCode,
   ShieldCheck,
   Store,
+  Sun,
+  SunMedium,
   Truck,
 } from 'lucide-react'
 import {
@@ -25,10 +28,19 @@ import {
   PENDING_PAYMENT_NOTE,
   PICKUP_ADDRESS,
   validateChange,
+  addDays,
+  DELIVERY_PERIOD_IDS,
+  DELIVERY_PERIODS,
+  MAX_SCHEDULE_DAYS,
+  scheduleError,
+  scheduleLabel,
+  storeToday,
   type CheckoutData,
+  type DeliveryPeriod,
   type Fulfillment,
   type OrderChannel,
   type PaymentMethod,
+  type Schedule,
 } from '@/lib/checkout'
 import { formatBRL } from '@/lib/format'
 import { formatPhone } from '@/lib/phone'
@@ -60,6 +72,9 @@ interface FormValues {
   cep: string
   complement: string
   reference: string
+  /** Para quando: "AAAA-MM-DD" e a faixa de horário. */
+  date: string
+  period: DeliveryPeriod | ''
 }
 
 const EMPTY_FORM: FormValues = {
@@ -74,6 +89,8 @@ const EMPTY_FORM: FormValues = {
   cep: '',
   complement: '',
   reference: '',
+  date: '',
+  period: '',
 }
 
 type FieldName = Exclude<keyof FormValues, 'fulfillment'>
@@ -85,7 +102,7 @@ const effectiveFulfillment = (values: FormValues): Fulfillment['fulfillment'] =>
   values.fulfillment === 'entrega' && values.city.trim() && !isDeliveryCity(values.city) ? 'retirada' : values.fulfillment
 
 function parseFulfillment(values: FormValues): { data?: Fulfillment; errors: FieldErrors } {
-  const { fulfillment: _chosen, name, phone, city, ...address } = values
+  const { fulfillment: _chosen, name, phone, city, date: _date, period: _period, ...address } = values
   const fulfillment = effectiveFulfillment(values)
   const result = fulfillmentSchema.safeParse(
     fulfillment === 'entrega' ? { fulfillment, name, phone, city, address } : { fulfillment, name, phone, city },
@@ -97,6 +114,13 @@ function parseFulfillment(values: FormValues): { data?: Fulfillment; errors: Fie
     errors[field] ??= issue.message
   }
   return { errors }
+}
+
+/** Valida data e horário (mesmas regras do servidor). */
+function parseSchedule(values: FormValues): { data?: Schedule; errors: FieldErrors } {
+  const error = scheduleError({ date: values.date, period: values.period })
+  if (error) return { errors: { [error.field]: error.message } }
+  return { data: { date: values.date, period: values.period as DeliveryPeriod }, errors: {} }
 }
 
 const PAYMENT_ICONS: Record<PaymentMethod, typeof QrCode> = {
@@ -112,6 +136,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
   const [values, setValues] = useState<FormValues>(EMPTY_FORM)
   const [showErrors, setShowErrors] = useState(false)
   const [customer, setCustomer] = useState<Fulfillment>()
+  const [schedule, setSchedule] = useState<Schedule>()
   const [channel, setChannel] = useState<OrderChannel>()
   const [method, setMethod] = useState<PaymentMethod>()
   const [onlineAvailable, setOnlineAvailable] = useState(false)
@@ -122,7 +147,10 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
   const missing = pendingItems(items)
   const pending = missing.length > 0
 
-  const { errors } = useMemo(() => parseFulfillment(values), [values])
+  const errors = useMemo(
+    () => ({ ...parseSchedule(values).errors, ...parseFulfillment(values).errors }),
+    [values],
+  )
   const changeFor = parseMoney(change)
   const changeError = method === 'dinheiro' ? validateChange(changeFor, total) : undefined
 
@@ -155,13 +183,15 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
 
   const submitAddress = () => {
     const parsed = parseFulfillment(values)
+    const when = parseSchedule(values)
     setShowErrors(true)
-    if (!parsed.data) {
-      const first = Object.keys(parsed.errors)[0]
+    if (!parsed.data || !when.data) {
+      const first = Object.keys({ ...parsed.errors, ...when.errors })[0]
       if (first) document.getElementById(`checkout-${first}`)?.focus()
       return
     }
     setCustomer(parsed.data)
+    setSchedule(when.data)
     goTo(1)
   }
 
@@ -251,6 +281,7 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
               )}
               {step === 2 && customer && method && (
                 <ReviewStep
+                  schedule={schedule}
                   items={items}
                   total={total}
                   customer={customer}
@@ -293,7 +324,11 @@ export function CheckoutStepper({ items, total, onBack, onConfirm }: CheckoutSte
               if (sending) return
               setSending(true)
               try {
-                await onConfirm({ customer, payment: { method, changeFor: method === 'dinheiro' ? changeFor : undefined } })
+                await onConfirm({
+                  customer,
+                  payment: { method, changeFor: method === 'dinheiro' ? changeFor : undefined },
+                  schedule,
+                })
               } finally {
                 setSending(false)
               }
@@ -471,6 +506,8 @@ function AddressStep({
         </>
       ) : null}
 
+      <ScheduleFields values={values} errors={errors} onChange={onChange} isDelivery={isDelivery} />
+
       <a className="checkout-map" href={MAPS_URL} target="_blank" rel="noreferrer">
         <MapPin aria-hidden="true" />
         <span>
@@ -480,6 +517,59 @@ function AddressStep({
         <span className="checkout-map-cta">Abrir mapa</span>
       </a>
     </>
+  )
+}
+
+/** Data e faixa de horário da entrega ou retirada (domingo fechado; noite só no sábado). */
+function ScheduleFields({
+  values,
+  errors,
+  onChange,
+  isDelivery,
+}: {
+  values: FormValues
+  errors: FieldErrors
+  onChange: (field: keyof FormValues) => (value: string) => void
+  isDelivery: boolean
+}) {
+  const today = storeToday()
+  const icons: Record<DeliveryPeriod, ReactNode> = { manha: <Sun />, tarde: <SunMedium />, noite: <Moon /> }
+  return (
+    <fieldset className="checkout-schedule">
+      <legend>{isDelivery ? 'Para quando é a entrega?' : 'Para quando é a retirada?'}</legend>
+      <TextField
+        id="date"
+        label="Data"
+        type="date"
+        value={values.date}
+        onValue={onChange('date')}
+        error={errors.date}
+        min={today}
+        max={addDays(today, MAX_SCHEDULE_DAYS)}
+      />
+      <div className="checkout-periods" role="radiogroup" aria-label="Horário" id="checkout-period" tabIndex={-1}>
+        {DELIVERY_PERIOD_IDS.map(id => {
+          const period = DELIVERY_PERIODS[id]
+          return (
+            <ChoiceCard
+              key={id}
+              name="period"
+              checked={values.period === id}
+              onSelect={() => onChange('period')(id)}
+              icon={icons[id]}
+              title={period.label.replace(/ \(.*\)$/, '')}
+              hint={`${period.from}h às ${period.to}h${id === 'noite' ? ' · sáb.' : ''}`}
+            />
+          )
+        })}
+      </div>
+      {errors.period && (
+        <p className="checkout-error" role="alert">
+          {errors.period}
+        </p>
+      )}
+      <p className="checkout-hint">Segunda a sexta, 8h às 18h · sábado até 20h · domingo fechado.</p>
+    </fieldset>
   )
 }
 
@@ -785,6 +875,7 @@ function SimulatedQr({ seed }: { seed: number }) {
 /* ---------- Etapa 3: resumo ---------- */
 
 function ReviewStep({
+  schedule,
   items,
   total,
   customer,
@@ -792,6 +883,7 @@ function ReviewStep({
   changeFor,
   pending,
 }: {
+  schedule: Schedule | undefined
   items: readonly CartItem[]
   total: number
   customer: Fulfillment
@@ -837,6 +929,12 @@ function ReviewStep({
           <dt>{customer.fulfillment === 'entrega' ? 'Entrega em' : 'Receber'}</dt>
           <dd>{formatAddress(customer)}</dd>
         </div>
+        {schedule && (
+          <div>
+            <dt>Para quando</dt>
+            <dd>{scheduleLabel(schedule)}</dd>
+          </div>
+        )}
         <div>
           <dt>Frete</dt>
           <dd>

@@ -7,6 +7,8 @@ import {
   formatAddress,
   fulfillmentSchema,
   paymentLabel,
+  scheduleLabel,
+  scheduleSchema,
   type Fulfillment,
 } from '@/lib/checkout'
 import { formatBRLPlain } from '@/lib/format'
@@ -81,6 +83,8 @@ export const placeOrderSchema = z.object({
     changeFor: z.number().positive().max(100_000).optional(),
   }),
   lines: z.array(orderLineSchema).min(1, 'O carrinho está vazio.').max(30),
+  /** Para quando (o checkout sempre pede; opcional para navegadores com a versão antiga do site). */
+  schedule: scheduleSchema.optional(),
 })
 
 export type PlaceOrderInput = z.input<typeof placeOrderSchema>
@@ -163,6 +167,8 @@ export const orderSchema = z.object({
     changeFor: z.number().optional(),
   }),
   items: z.array(orderItemSchema),
+  /** Para quando o cliente quer (data AAAA-MM-DD, faixa e o texto pronto). */
+  schedule: z.object({ date: z.string(), period: z.enum(['manha', 'tarde', 'noite']), label: z.string() }).optional(),
   shortages: z.array(shortageSchema),
   shippingFee: z.number(),
   total: z.number(),
@@ -338,6 +344,7 @@ export function createOrder(
       ...(payment.changeFor !== undefined ? { changeFor: payment.changeFor } : {}),
     },
     items,
+    ...(input.schedule ? { schedule: { ...input.schedule, label: scheduleLabel(input.schedule) } } : {}),
     shortages,
     shippingFee: fee,
     total: subtotal + fee,
@@ -674,6 +681,8 @@ export interface TrackedOrder {
   firstName: string
   address: string
   paymentLabel: string
+  /** "sábado, 25/10 — tarde (12h às 18h)". */
+  scheduleLabel?: string
   items: Pick<OrderItem, 'name' | 'detail' | 'unit' | 'quantity' | 'subtotal'>[]
   shortages: string[]
   shippingFee: number
@@ -699,6 +708,7 @@ export function trackedView(order: Order, now?: Date): TrackedOrder {
     firstName: order.customer.name.split(' ')[0] ?? order.customer.name,
     address: order.customer.address,
     paymentLabel: order.payment.label,
+    ...(order.schedule ? { scheduleLabel: order.schedule.label } : {}),
     items: order.items.map(({ name, detail, unit, quantity, subtotal }) => ({
       name,
       ...(detail ? { detail } : {}),

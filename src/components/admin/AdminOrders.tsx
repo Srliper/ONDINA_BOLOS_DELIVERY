@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
   BadgeCheck,
+  CalendarClock,
   CircleDollarSign,
   Globe,
   Hourglass,
@@ -418,6 +419,11 @@ function OrderCard({
         </span>
       </p>
       <p className="admin-order-address">{order.customer.address}</p>
+      {order.schedule && (
+        <p className="admin-order-schedule">
+          <CalendarClock aria-hidden="true" /> Para {order.schedule.label}
+        </p>
+      )}
       {order.customer.phone && (
         <p className="admin-order-contact">
           <a href={customerWhatsAppUrl(order.customer.phone, whatsappText)} target="_blank" rel="noreferrer">

@@ -136,7 +136,17 @@ export function OrderTracking({ id, token, paymentId }: { id: string; token: str
             <section className="track-card" aria-labelledby="track-title">
               <p className="track-id">Pedido {order.id}</p>
               <h1 id="track-title">Olá, {order.firstName}!</h1>
-              <p className="admin-muted">Feito em {formatDate(order.createdAt)}</p>
+              <p className="admin-muted">
+                Feito em {formatDate(order.createdAt)}
+                {order.scheduleLabel && (
+                  <>
+                    {' · '}
+                    <strong>
+                      {order.fulfillment === 'entrega' ? 'Entrega' : 'Retirada'}: {order.scheduleLabel}
+                    </strong>
+                  </>
+                )}
+              </p>
               <StatusBlock order={order} paying={paying} onPay={pay} />
             </section>
 
