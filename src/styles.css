@@ -935,6 +935,8 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 /* Celular deitado: pouca altura, o texto desce e não esconde o bolo */
 @media (max-height:500px) { .intro-captions { padding-bottom:56px; } .intro-caption small { margin-bottom:4px; } }
 @media (prefers-reduced-motion: reduce) { .intro { height:auto; } .intro-stage { position:relative; height:min(100svh, 760px); } }
+/* Celular: um frame parado, mais baixo, e o cardápio logo abaixo (mesma regra de STATIC_QUERY no ScrollIntro) */
+@media (max-width:700px), (pointer:coarse) and (max-height:500px) { .intro { height:auto; } .intro-stage { position:relative; height:min(72svh, 600px); } .intro-loader { display:none; } }
 
 /* Enquanto a intro ocupa a tela, o WhatsApp flutuante espera (ScrollIntro marca data-intro no <html>) */
 .wa-widget { transition:opacity .3s ease, visibility .3s; }

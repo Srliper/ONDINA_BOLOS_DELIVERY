@@ -17,6 +17,12 @@ import {
 /** 0–1: quanto o frame exibido anda em direção ao da rolagem a cada quadro (menor = mais suave). */
 const SMOOTHING = 0.16
 const CONCURRENCY = 6
+/**
+ * Intro parada (um frame só, sem prender a tela): "reduzir movimento" e celular.
+ * No celular a sequência rolada pesava (frames deitados numa tela em pé, fundo desfocado
+ * redesenhado a cada quadro e 4 telas de rolagem antes do cardápio).
+ */
+const STATIC_QUERY = '(prefers-reduced-motion: reduce), (max-width: 700px), (pointer: coarse) and (max-height: 500px)'
 
 const CAPTIONS = [
   { from: 0, to: 0.24, kicker: 'Feito à mão', line: 'Do nosso forno', accent: 'pra sua mesa.' },
@@ -38,8 +44,8 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
 
 /**
  * Intro do topo: a sequência de frames do naked cake troca conforme o cliente rola,
- * com o palco preso na tela. Desenha em canvas; com "reduzir movimento", mostra só o frame
- * do bolo inteiro, sem baixar a sequência.
+ * com o palco preso na tela. Desenha em canvas; com "reduzir movimento" ou no celular, mostra só o
+ * frame do bolo inteiro, sem baixar a sequência.
  */
 export function ScrollIntro() {
   const sectionRef = useRef<HTMLElement>(null)
@@ -59,15 +65,11 @@ export function ScrollIntro() {
     if (!section || !stage || !canvas || !backdrop || !loader || !ctx || !bctx) return
 
     const captions = [...section.querySelectorAll<HTMLElement>('.intro-caption')]
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const staticMode = window.matchMedia(STATIC_QUERY)
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
     const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
-    // Celular ou pouca memória: um frame sim, outro não. Cada frame decodificado ocupa alguns MB,
-    // e a sequência inteira pode derrubar o Safari do iPhone.
-    const lowMemory =
-      (deviceMemory !== undefined && deviceMemory <= 4) ||
-      connection?.saveData === true ||
-      window.matchMedia('(max-width: 700px)').matches
+    // Pouca memória: um frame sim, outro não. Cada frame decodificado ocupa alguns MB.
+    const lowMemory = (deviceMemory !== undefined && deviceMemory <= 4) || connection?.saveData === true
     const numbers = frameNumbers(INTRO_FRAME_COUNT, lowMemory ? 2 : 1)
     const images: (HTMLImageElement | null)[] = numbers.map(() => null)
 
@@ -158,7 +160,7 @@ export function ScrollIntro() {
     const onScroll = () => {
       // Enquanto a intro cobre a maior parte da tela, o WhatsApp flutuante fica escondido (ver styles.css)
       document.documentElement.dataset['intro'] = section.getBoundingClientRect().bottom > window.innerHeight * 0.5 ? 'on' : 'off'
-      if (reducedMotion.matches) return
+      if (staticMode.matches) return
       const p = progress()
       target = p * (numbers.length - 1)
       captions.forEach((el, i) => el.classList.toggle('is-visible', p >= CAPTIONS[i]!.from && p < CAPTIONS[i]!.to))
@@ -167,7 +169,7 @@ export function ScrollIntro() {
     }
 
     const applyMode = async () => {
-      if (reducedMotion.matches) {
+      if (staticMode.matches) {
         captions.forEach((el, i) => el.classList.toggle('is-visible', i === 0))
         setLoaded(1)
         staticImage = (await loadImage(introFramePath(INTRO_STATIC_FRAME))) ?? (await loadImage(introFramePath(1)))
@@ -187,7 +189,7 @@ export function ScrollIntro() {
     })
     observer.observe(stage)
     window.addEventListener('scroll', onScroll, { passive: true })
-    reducedMotion.addEventListener('change', applyMode)
+    staticMode.addEventListener('change', applyMode)
     resize()
     void applyMode()
 
@@ -196,7 +198,7 @@ export function ScrollIntro() {
       cancelAnimationFrame(raf)
       observer.disconnect()
       window.removeEventListener('scroll', onScroll)
-      reducedMotion.removeEventListener('change', applyMode)
+      staticMode.removeEventListener('change', applyMode)
       delete document.documentElement.dataset['intro']
     }
   }, [])
