@@ -162,6 +162,12 @@ confeitaria com folga). Nada roda no computador da loja.
 
 ## Avisos para a equipe
 
+- **Celular, mesmo com o painel fechado (push):** gere as chaves com `bunx web-push generate-vapid-keys`
+  e configure `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` na Vercel. No `/admin`, cada pessoa toca em
+  **Ligar notificações** no próprio celular. Pedido novo (site ou WhatsApp), pagamento aprovado,
+  mensagem de cliente, "avise-me" e bolo esgotado chegam como notificação do aparelho. No **iPhone**,
+  antes abra o `/admin` no Safari → *Compartilhar* → **Adicionar à Tela de Início** e ligue por lá
+  (exigência da Apple). Aparelhos inscritos ficam em `ondina:push-subs`.
 - **Painel aberto** (celular ou computador): o quadro **Avisos** no `/admin` confere a cada 30 s e
   toca um aviso quando chega pedido novo, pagamento aprovado (**pedido para entregar**), mensagem de
   cliente ou pedido de "avise-me". Com **Ligar notificações**, o aparelho mostra a notificação mesmo
@@ -171,6 +177,27 @@ confeitaria com folga). Nada roda no computador da loja.
   `{ event, orderId, customer, total, message, … }` com `x-ondina-key` = `N8N_ORDERS_KEY`, nos eventos
   `pedido-novo` (pelo site), `pagamento-aprovado`, `mensagem-cliente` e `aviso-estoque`. Falha do
   n8n nunca impede o pedido.
+
+## Prazo para pagar, trava de estoque e limites
+
+- **Pedido pago no site tem 2 horas para ser pago** (contadas de quando ele fica "Aguardando
+  pagamento"). O link do Mercado Pago vence junto. Sem pagamento, 15 minutos depois do prazo o
+  pedido é cancelado sozinho e o estoque reservado volta — a conferência roda sempre que alguém
+  abre o painel, a página de um pedido ou faz um pedido novo (não precisa de tarefa agendada).
+- **Dois clientes nunca levam o mesmo último bolo**, mesmo com várias cópias do site no ar: toda
+  gravação de pedidos, estoque e cardápio passa por uma trava no Upstash (`ondina:lock:write`,
+  expira sozinha em 15 s). Código: `src/lib/redis-guard.server.ts`.
+- **Limite contra abuso** por IP (pedidos, mensagens, avise-me) contado no Upstash, valendo para
+  todas as cópias do site.
+
+## Data e horário, relatório e "Meus pedidos"
+
+- O checkout pede **para quando**: data (até 60 dias, domingo fechado) e faixa — manhã (8h–12h),
+  tarde (12h–18h) ou noite (18h–20h, só sábado). Aparece no resumo, no painel, na página do pedido,
+  na mensagem do WhatsApp e no n8n (`schedule`). Regras em `src/lib/checkout.ts`.
+- **Vendas** no `/admin`: vendido (pago), pedidos, ticket médio, a receber, vendas por dia, site ×
+  WhatsApp e os bolos que mais venderam, em 7, 30 ou 90 dias (`src/lib/sales-report.ts`).
+- **Meus pedidos** no topo do site: os últimos 5 pedidos feitos no aparelho, com o link de cada um.
 
 ## Bolo esgotado: "Avise-me quando chegar"
 

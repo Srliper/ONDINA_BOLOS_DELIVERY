@@ -67,10 +67,7 @@ export function BoloBuilder({ onClose, onAddToCart }: BoloBuilderProps) {
 
   const category: LayerCategory | undefined = LAYER_ORDER[step]
   const isSummary = step === SUMMARY_STEP
-  const total = useMemo(
-    () => LAYER_ORDER.reduce((sum, key) => sum + (selection[key]?.price ?? 0), 0),
-    [selection],
-  )
+  const total = useMemo(() => LAYER_ORDER.reduce((sum, key) => sum + (selection[key]?.price ?? 0), 0), [selection])
   const canAdvance = category ? selection[category] !== undefined : false
 
   const goTo = (next: number) => {
@@ -105,9 +102,7 @@ export function BoloBuilder({ onClose, onAddToCart }: BoloBuilderProps) {
             <p className="bolo-builder-eyebrow">
               <Sparkles aria-hidden="true" /> Monte seu bolo
             </p>
-            <h2 id="bolo-builder-title">
-              {isSummary || !category ? 'Seu bolo está pronto!' : STEP_TITLES[category]}
-            </h2>
+            <h2 id="bolo-builder-title">{isSummary || !category ? 'Seu bolo está pronto!' : STEP_TITLES[category]}</h2>
           </div>
           <button type="button" className="bolo-builder-close" onClick={onClose} aria-label="Fechar o Monte seu Bolo">
             <X aria-hidden="true" />

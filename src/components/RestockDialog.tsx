@@ -9,7 +9,15 @@ import type { Product } from '@/types/product'
  * "Avise-me quando chegar" num bolo esgotado: o cliente deixa nome e WhatsApp e a equipe vê no
  * painel quantas pessoas esperam esse bolo, com o contato para avisar.
  */
-export function RestockDialog({ product, open, onOpenChange }: { product: Product; open: boolean; onOpenChange: (open: boolean) => void }) {
+export function RestockDialog({
+  product,
+  open,
+  onOpenChange,
+}: {
+  product: Product
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [quantity, setQuantity] = useState('')
@@ -62,7 +70,13 @@ export function RestockDialog({ product, open, onOpenChange }: { product: Produc
         <form id={formId} className="restock-form" onSubmit={submit} noValidate>
           <label>
             Seu nome
-            <input value={name} onChange={event => setName(event.target.value)} autoComplete="name" maxLength={60} required />
+            <input
+              value={name}
+              onChange={event => setName(event.target.value)}
+              autoComplete="name"
+              maxLength={60}
+              required
+            />
           </label>
           <label>
             Seu WhatsApp
@@ -79,7 +93,12 @@ export function RestockDialog({ product, open, onOpenChange }: { product: Produc
           </label>
           <label>
             Quanto você quer? <span>(opcional, em {unit})</span>
-            <input value={quantity} onChange={event => setQuantity(event.target.value)} inputMode="numeric" maxLength={2} />
+            <input
+              value={quantity}
+              onChange={event => setQuantity(event.target.value)}
+              inputMode="numeric"
+              maxLength={2}
+            />
           </label>
           {error && (
             <p className="checkout-error" role="alert">

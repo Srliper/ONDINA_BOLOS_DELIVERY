@@ -25,7 +25,14 @@ const checkout: CheckoutData = {
     name: 'Ana Souza',
     phone: '(15) 99123-4567',
     city: 'São Miguel Arcanjo',
-    address: { street: 'Rua Tapixi', number: '412', district: 'Vila Tomaz', cep: '18230-000', complement: '', reference: '' },
+    address: {
+      street: 'Rua Tapixi',
+      number: '412',
+      district: 'Vila Tomaz',
+      cep: '18230-000',
+      complement: '',
+      reference: '',
+    },
   }),
   payment: { method: 'dinheiro', changeFor: 200 },
 }
@@ -37,7 +44,12 @@ describe('buildOrderMessage', () => {
       items,
       total: getCartTotal(items),
       checkout,
-      registered: { orderId: 'OB-1', status: 'aguardando_pagamento', shortages: [], trackingUrl: 'https://ondinabolos.com.br/pedido/OB-1?t=abc' },
+      registered: {
+        orderId: 'OB-1',
+        status: 'aguardando_pagamento',
+        shortages: [],
+        trackingUrl: 'https://ondinabolos.com.br/pedido/OB-1?t=abc',
+      },
     })
     expect(message).toContain('🧾 *Pedido:* OB-1')
     expect(message.split('\n').at(-1)).toBe('🔗 *Acompanhe o pedido:* https://ondinabolos.com.br/pedido/OB-1?t=abc')
@@ -72,7 +84,10 @@ describe('buildOrderMessage', () => {
     const message = buildOrderMessage({
       items: [item('prestigio', 1)],
       total: 60,
-      checkout: { customer: { fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul', phone: '5515991234567' }, payment: { method: 'cartao' } },
+      checkout: {
+        customer: { fulfillment: 'retirada', name: 'Ana Souza', city: 'Pilar do Sul', phone: '5515991234567' },
+        payment: { method: 'cartao' },
+      },
     })
     expect(message).toContain('📍 *Endereço:* Retirada na loja (Rua Tapixi, 412')
     expect(message).toContain('💳 *Forma de Pagamento:* Cartão na retirada')
@@ -94,7 +109,16 @@ describe('buildOrderPayload', () => {
       source: 'site',
       customer: { name: 'Ana Souza', fulfillment: 'entrega', details: { street: 'Rua Tapixi', number: '412' } },
       payment: { method: 'dinheiro', label: 'Dinheiro (troco para R$ 200,00)', changeFor: 200 },
-      items: [{ type: 'custom', name: 'Bolo Personalizado', quantity: 2, unitPrice: 78, subtotal: 156, layers: { base: 'Base Red Velvet' } }],
+      items: [
+        {
+          type: 'custom',
+          name: 'Bolo Personalizado',
+          quantity: 2,
+          unitPrice: 78,
+          subtotal: 156,
+          layers: { base: 'Base Red Velvet' },
+        },
+      ],
       total: 156,
       message: 'msg',
     })
@@ -147,11 +171,15 @@ describe('processOrderAndSend', () => {
     expect(body).toMatchObject({ orderId: 'OB-SERVIDOR-01', status: 'pendente', items: [{ outOfStock: true }] })
     expect(body.message).toContain('🧾 *Pedido:* OB-SERVIDOR-01')
     expect(body.message).toContain('⏳ *PEDIDO PENDENTE (falta de estoque):* Prestígio.')
-    expect(body.message).toContain('💳 *Forma de Pagamento:* Dinheiro (troco para R$ 200,00) — depois da confirmação do estoque')
+    expect(body.message).toContain(
+      '💳 *Forma de Pagamento:* Dinheiro (troco para R$ 200,00) — depois da confirmação do estoque',
+    )
   })
 
   it('manda as camadas do bolo montado por id', async () => {
-    const register = vi.fn<SendDeps['register']>(() => Promise.resolve({ orderId: 'OB-1', status: 'aguardando_pagamento', shortages: [] }))
+    const register = vi.fn<SendDeps['register']>(() =>
+      Promise.resolve({ orderId: 'OB-1', status: 'aguardando_pagamento', shortages: [] }),
+    )
     const { deps } = setup(() => Promise.resolve(new Response('{}')), {} as Window, register)
     const result = await processOrderAndSend(toCartItems([{ custom: CUSTOM, quantity: 2 }]), 156, checkout, deps)
     expect(register).toHaveBeenCalledWith([{ custom: CUSTOM, quantity: 2 }], checkout)
@@ -228,11 +256,16 @@ describe('cartActions', () => {
 
     const raw = JSON.parse(localStorage.getItem('ondina-bolos:cart:v1') ?? '[]')
     const items = toCartItems(raw)
-    expect(items.map(i => [i.id, i.quantity])).toEqual([['prestigio', 2], ['fuba-goiabada', 1]])
+    expect(items.map(i => [i.id, i.quantity])).toEqual([
+      ['prestigio', 2],
+      ['fuba-goiabada', 1],
+    ])
     expect(getCartTotal(items)).toBe(145)
 
     cartActions.setQuantity('prestigio', 0)
-    expect(JSON.parse(localStorage.getItem('ondina-bolos:cart:v1')!)).toEqual([{ productId: 'fuba-goiabada', quantity: 1 }])
+    expect(JSON.parse(localStorage.getItem('ondina-bolos:cart:v1')!)).toEqual([
+      { productId: 'fuba-goiabada', quantity: 1 },
+    ])
 
     cartActions.clear()
     expect(JSON.parse(localStorage.getItem('ondina-bolos:cart:v1')!)).toEqual([])

@@ -125,6 +125,14 @@ export function getStockRequestsStorage(): CatalogStorage {
   return fileStorage(`${localDataDir()}stock-requests.json`)
 }
 
+/** Aparelhos da equipe inscritos nas notificações push (mesmo banco). */
+export function getPushStorage(): CatalogStorage {
+  const upstash = upstashConfig()
+  if (upstash) return upstashStorage(upstash.url, upstash.token, fetch, 'ondina:push-subs')
+  if (isEphemeralServer()) return noStorage
+  return fileStorage(`${localDataDir()}push-subs.json`)
+}
+
 /** Sem banco na Vercel (disco temporário): nada pode ser guardado. */
 export const isEphemeralServer = () => Boolean(env('VERCEL'))
 

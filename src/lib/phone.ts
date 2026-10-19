@@ -9,10 +9,7 @@ export const phoneSchema = z
   .string()
   .trim()
   .transform(value => value.replace(/\D/g, ''))
-  .refine(
-    digits => /^(55)?[1-9]{2}9?\d{8}$/.test(digits),
-    'Informe o WhatsApp com DDD (ex.: (15) 99711-5450).',
-  )
+  .refine(digits => /^(55)?[1-9]{2}9?\d{8}$/.test(digits), 'Informe o WhatsApp com DDD (ex.: (15) 99711-5450).')
   .transform(digits => (digits.length <= 11 ? `55${digits}` : digits))
 
 /** "5515997115450" → "(15) 99711-5450". */

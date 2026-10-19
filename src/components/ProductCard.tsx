@@ -84,10 +84,20 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         />
         {photos.length > 1 && (
           <>
-            <button type="button" className="cake-photo-nav is-prev" onClick={() => step(-1)} aria-label={`Foto anterior de ${product.name}`}>
+            <button
+              type="button"
+              className="cake-photo-nav is-prev"
+              onClick={() => step(-1)}
+              aria-label={`Foto anterior de ${product.name}`}
+            >
               <ChevronLeft aria-hidden="true" />
             </button>
-            <button type="button" className="cake-photo-nav is-next" onClick={() => step(1)} aria-label={`Próxima foto de ${product.name}`}>
+            <button
+              type="button"
+              className="cake-photo-nav is-next"
+              onClick={() => step(1)}
+              aria-label={`Próxima foto de ${product.name}`}
+            >
               <ChevronRight aria-hidden="true" />
             </button>
             <div className="cake-photo-dots" role="group" aria-label={`Fotos de ${product.name}`}>

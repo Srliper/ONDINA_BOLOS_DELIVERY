@@ -7,7 +7,7 @@ export const INTRO_FRAME_COUNT = 240
 /** Frame mostrado parado com "reduzir movimento" (o bolo inteiro). */
 export const INTRO_STATIC_FRAME = 96
 
-export const introFramePath = (n: number) => `/intro/frames/frame-${String(n).padStart(4, '0')}.jpg`
+export const introFramePath = (n: number) => `/intro/frames/frame-${String(n).padStart(4, '0')}.webp`
 
 /** Números dos frames em uso, de `step` em `step`; o último sempre entra. */
 export function frameNumbers(count: number, step: number): number[] {
@@ -47,7 +47,13 @@ export function nearestLoaded<T>(items: readonly (T | null)[], i: number): T | n
 export type FitMode = 'cover' | 'contain'
 
 /** [x, y, largura, altura] para desenhar a imagem preservando a proporção. */
-export function fitRect(iw: number, ih: number, cw: number, ch: number, mode: FitMode): [number, number, number, number] {
+export function fitRect(
+  iw: number,
+  ih: number,
+  cw: number,
+  ch: number,
+  mode: FitMode,
+): [number, number, number, number] {
   const scale = mode === 'cover' ? Math.max(cw / iw, ch / ih) : Math.min(cw / iw, ch / ih)
   const w = iw * scale
   const h = ih * scale

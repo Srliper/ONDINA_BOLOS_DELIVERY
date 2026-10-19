@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Hourglass, MessageCircle, Minus, Palette, PartyPopper, Plus, ShoppingBag, Trash2 } from 'lucide-react'
+import {
+  ArrowRight,
+  Hourglass,
+  MessageCircle,
+  Minus,
+  Palette,
+  PartyPopper,
+  Plus,
+  ShoppingBag,
+  Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { CheckoutStepper } from '@/components/CheckoutStepper'
 import { StackedCake } from '@/components/StackedCake'
@@ -67,10 +77,10 @@ export function CartDrawer() {
             {sent
               ? 'Falta só um toque: envie a mensagem na conversa do WhatsApp.'
               : cart.isEmpty
-              ? 'Nenhum bolo escolhido ainda.'
-              : showCheckout
-                ? 'Três passos rápidos: pague aqui no site ou envie pelo WhatsApp.'
-                : 'Confira os itens e finalize: pagamento no site ou pedido pelo WhatsApp.'}
+                ? 'Nenhum bolo escolhido ainda.'
+                : showCheckout
+                  ? 'Três passos rápidos: pague aqui no site ou envie pelo WhatsApp.'
+                  : 'Confira os itens e finalize: pagamento no site ou pedido pelo WhatsApp.'}
           </SheetDescription>
         </SheetHeader>
 
@@ -156,12 +166,21 @@ function CartLine({ item, index }: { item: CartItem; index: number }) {
   const { increment, decrement, remove } = useCart()
   const isCustom = item.type === 'custom'
   const step =
-    item.type !== 'ready' ? 'bolo' : item.product.unit === 'kg' ? 'quilo' : item.product.category === 'sobremesas' ? 'unidade' : 'bolo'
+    item.type !== 'ready'
+      ? 'bolo'
+      : item.product.unit === 'kg'
+        ? 'quilo'
+        : item.product.category === 'sobremesas'
+          ? 'unidade'
+          : 'bolo'
   const quantityLabel =
     item.type === 'ready' ? formatQuantity(item.product, quantity) : `${quantity} ${quantity === 1 ? 'bolo' : 'bolos'}`
 
   return (
-    <li className={`cart-line${isCustom ? ' is-custom' : ''}`} style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}>
+    <li
+      className={`cart-line${isCustom ? ' is-custom' : ''}`}
+      style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
+    >
       {item.type === 'custom' ? (
         <span className="cart-thumb cart-thumb-custom">
           <StackedCake layers={item.layers} width={56} />
@@ -176,10 +195,22 @@ function CartLine({ item, index }: { item: CartItem; index: number }) {
         </p>
         {item.type === 'custom' ? (
           <dl className="cart-custom-layers" aria-label="Camadas escolhidas">
-            <div><dt>Base</dt><dd>{item.customConfig.base}</dd></div>
-            <div><dt>Recheio</dt><dd>{item.customConfig.recheio}</dd></div>
-            <div><dt>Cobertura</dt><dd>{item.customConfig.cobertura}</dd></div>
-            <div><dt>Decoração</dt><dd>{item.customConfig.decoracao}</dd></div>
+            <div>
+              <dt>Base</dt>
+              <dd>{item.customConfig.base}</dd>
+            </div>
+            <div>
+              <dt>Recheio</dt>
+              <dd>{item.customConfig.recheio}</dd>
+            </div>
+            <div>
+              <dt>Cobertura</dt>
+              <dd>{item.customConfig.cobertura}</dd>
+            </div>
+            <div>
+              <dt>Decoração</dt>
+              <dd>{item.customConfig.decoracao}</dd>
+            </div>
           </dl>
         ) : null}
         <p className="cart-line-meta">
@@ -205,7 +236,12 @@ function CartLine({ item, index }: { item: CartItem; index: number }) {
       </div>
       <div className="cart-line-end">
         <strong>{formatBRL(price * quantity)}</strong>
-        <button type="button" className="cart-remove" onClick={() => remove(id)} aria-label={`Remover ${name} do pedido`}>
+        <button
+          type="button"
+          className="cart-remove"
+          onClick={() => remove(id)}
+          aria-label={`Remover ${name} do pedido`}
+        >
           <Trash2 aria-hidden="true" />
         </button>
       </div>

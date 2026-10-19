@@ -7,6 +7,8 @@ import {
   formatAddress,
   fulfillmentSchema,
   paymentLabel,
+  scheduleLabel,
+  scheduleSchema,
   type Fulfillment,
 } from '@/lib/checkout'
 import { formatBRLPlain } from '@/lib/format'
@@ -62,7 +64,10 @@ const paysOnHandover = (order: Order) => order.payment.method === 'dinheiro' || 
 
 /* ---------- O que o site manda ao finalizar ---------- */
 
-const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(60)
+const slug = z
+  .string()
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  .max(60)
 
 export const orderLineSchema = z.union([
   z.object({ productId: slug, quantity: z.number().int().min(1).max(50) }),
@@ -81,6 +86,8 @@ export const placeOrderSchema = z.object({
     changeFor: z.number().positive().max(100_000).optional(),
   }),
   lines: z.array(orderLineSchema).min(1, 'O carrinho está vazio.').max(30),
+  /** Para quando (o checkout sempre pede; opcional para navegadores com a versão antiga do site). */
+  schedule: scheduleSchema.optional(),
 })
 
 export type PlaceOrderInput = z.input<typeof placeOrderSchema>
@@ -91,7 +98,9 @@ const orderItemSchema = z.object({
   /** Id do bolo pronto; ausente no bolo montado. */
   productId: z.string().optional(),
   /** Ids das camadas do bolo montado. */
-  layerIds: z.object({ base: z.string(), recheio: z.string(), cobertura: z.string(), decoracao: z.string() }).optional(),
+  layerIds: z
+    .object({ base: z.string(), recheio: z.string(), cobertura: z.string(), decoracao: z.string() })
+    .optional(),
   name: z.string(),
   /** "Base Red Velvet · Morango com Ninho · …" no bolo montado. */
   detail: z.string().optional(),
@@ -163,6 +172,8 @@ export const orderSchema = z.object({
     changeFor: z.number().optional(),
   }),
   items: z.array(orderItemSchema),
+  /** Para quando o cliente quer (data AAAA-MM-DD, faixa e o texto pronto). */
+  schedule: z.object({ date: z.string(), period: z.enum(['manha', 'tarde', 'noite']), label: z.string() }).optional(),
   shortages: z.array(shortageSchema),
   shippingFee: z.number(),
   total: z.number(),
@@ -204,7 +215,8 @@ export function resolveItems(catalog: Catalog, lines: readonly OrderLine[]): Ord
   return lines.map(line => {
     if ('productId' in line) {
       const product = products.get(line.productId)
-      if (!product) throw new OrderError(409, 'Um dos bolos do carrinho saiu do cardápio. Atualize a página e confira o pedido.')
+      if (!product)
+        throw new OrderError(409, 'Um dos bolos do carrinho saiu do cardápio. Atualize a página e confira o pedido.')
       return {
         productId: product.id,
         name: product.name,
@@ -267,9 +279,7 @@ function moveStock(catalog: Catalog, items: readonly OrderItem[], sign: 1 | -1, 
     changed = true
     return { ...product, stock: Math.max(0, product.stock + sign * quantity) }
   })
-  return changed
-    ? { ...catalog, products, version: catalog.version + 1, updated_at: now.toISOString() }
-    : catalog
+  return changed ? { ...catalog, products, version: catalog.version + 1, updated_at: now.toISOString() } : catalog
 }
 
 const amount = (unit: OrderItem['unit'], quantity: number) => (unit === 'kg' ? `${quantity} kg` : `${quantity} un.`)
@@ -338,6 +348,7 @@ export function createOrder(
       ...(payment.changeFor !== undefined ? { changeFor: payment.changeFor } : {}),
     },
     items,
+    ...(input.schedule ? { schedule: { ...input.schedule, label: scheduleLabel(input.schedule) } } : {}),
     shortages,
     shippingFee: fee,
     total: subtotal + fee,
@@ -346,7 +357,9 @@ export function createOrder(
         at,
         status: pending ? 'pendente' : 'aguardando_pagamento',
         by: 'site',
-        ...(pending ? { note: `Falta de estoque: ${shortages.map(s => shortageText(s, unitOf(items, s))).join('; ')}` } : {}),
+        ...(pending
+          ? { note: `Falta de estoque: ${shortages.map(s => shortageText(s, unitOf(items, s))).join('; ')}` }
+          : {}),
       },
     ],
     messages: [],
@@ -406,7 +419,13 @@ export function changeStatus(
   if (to === 'cancelado') {
     const restored = order.stockReserved ? moveStock(catalog, order.items, 1, now) : catalog
     return {
-      order: withHistory(order, { status: 'cancelado', stockReserved: false }, by, now, order.stockReserved ? 'Estoque devolvido.' : undefined),
+      order: withHistory(
+        order,
+        { status: 'cancelado', stockReserved: false },
+        by,
+        now,
+        order.stockReserved ? 'Estoque devolvido.' : undefined,
+      ),
       catalog: restored,
     }
   }
@@ -466,7 +485,8 @@ export function addOrder(doc: OrdersDoc, order: Order): OrdersDoc {
   const orders = [order, ...doc.orders]
   while (orders.length > MAX_STORED_ORDERS) {
     let oldestDone = orders.length - 1
-    while (oldestDone > 0 && orders[oldestDone]!.status !== 'entregue' && orders[oldestDone]!.status !== 'cancelado') oldestDone--
+    while (oldestDone > 0 && orders[oldestDone]!.status !== 'entregue' && orders[oldestDone]!.status !== 'cancelado')
+      oldestDone--
     // Nenhum finalizado: sai o mais antigo de todos.
     orders.splice(oldestDone > 0 ? oldestDone : orders.length - 1, 1)
   }
@@ -486,8 +506,57 @@ export function findOrder(doc: OrdersDoc, id: string): Order {
 /* ---------- Pagamento online (gateway) ---------- */
 
 /** O cliente pode pagar pelo site agora: pedido do site, liberado (com estoque) e ainda não pago. */
-export const canPayOnline = (order: Order): boolean =>
-  order.payment.method === 'online' && order.status === 'aguardando_pagamento' && !order.paid
+/** Prazo para pagar um pedido online; depois disso ele é cancelado e o estoque volta. */
+export const PAYMENT_WINDOW_MS = 2 * 60 * 60_000
+/** Folga antes de cancelar (quem abriu o pagamento no último minuto ainda consegue terminar). */
+export const PAYMENT_GRACE_MS = 15 * 60_000
+
+/** Até quando o pedido online espera o pagamento (conta de quando foi liberado para pagar). */
+export function paymentDeadline(order: Order): Date | undefined {
+  if (order.payment.method !== 'online' || order.status !== 'aguardando_pagamento' || order.paid) return undefined
+  const since =
+    [...order.history].reverse().find(entry => entry.status === 'aguardando_pagamento')?.at ?? order.createdAt
+  return new Date(Date.parse(since) + PAYMENT_WINDOW_MS)
+}
+
+/** O cliente pode pagar pelo site agora: pedido do site, liberado (com estoque), não pago e no prazo. */
+export const canPayOnline = (order: Order, now?: Date): boolean => {
+  const deadline = paymentDeadline(order)
+  return Boolean(deadline) && (!now || now < deadline!)
+}
+
+/** Passou do prazo (+ folga) sem pagamento. */
+export const isPaymentExpired = (order: Order, now = new Date()): boolean => {
+  const deadline = paymentDeadline(order)
+  return Boolean(deadline) && now.getTime() >= deadline!.getTime() + PAYMENT_GRACE_MS
+}
+
+/**
+ * Pedidos online que passaram do prazo (+ folga) sem pagamento: cancela e devolve o estoque.
+ * Devolve o mesmo doc/catálogo quando nada venceu.
+ */
+export function expireUnpaid(
+  doc: OrdersDoc,
+  catalog: Catalog,
+  now = new Date(),
+): { doc: OrdersDoc; catalog: Catalog; expired: Order[] } {
+  const expired: Order[] = []
+  let current = catalog
+  const orders = doc.orders.map(order => {
+    if (!isPaymentExpired(order, now)) return order
+    if (order.stockReserved) current = moveStock(current, order.items, 1, now)
+    const cancelled = withHistory(
+      order,
+      { status: 'cancelado', stockReserved: false },
+      'sistema',
+      now,
+      'Pagamento online não feito no prazo de 2 h: pedido cancelado e estoque devolvido.',
+    )
+    expired.push(cancelled)
+    return cancelled
+  })
+  return expired.length ? { doc: { orders }, catalog: current, expired } : { doc, catalog, expired }
+}
 
 /** Pagamento como o gateway informou (conferido direto na API dele, nunca pelo navegador). */
 export interface GatewayPayment {
@@ -524,7 +593,13 @@ export function applyGatewayPayment(
   const recorded: Order = {
     ...order,
     updatedAt: at,
-    gateway: { ...order.gateway, provider: 'mercadopago', paymentId: payment.id, status: payment.status, updatedAt: at },
+    gateway: {
+      ...order.gateway,
+      provider: 'mercadopago',
+      paymentId: payment.id,
+      status: payment.status,
+      updatedAt: at,
+    },
   }
   if (payment.status !== 'approved' || order.paid) return { order: recorded, changed: true, approved: false }
 
@@ -626,17 +701,22 @@ export interface TrackedOrder {
   firstName: string
   address: string
   paymentLabel: string
+  /** "sábado, 25/10 — tarde (12h às 18h)". */
+  scheduleLabel?: string
   items: Pick<OrderItem, 'name' | 'detail' | 'unit' | 'quantity' | 'subtotal'>[]
   shortages: string[]
   shippingFee: number
   total: number
   canPay: boolean
+  /** Até quando dá para pagar online (ISO). */
+  payBy?: string
   /** Status do último pagamento online (approved, pending, rejected…). */
   gatewayStatus?: string
   messages: { at: string; from: OrderMessage['from']; text: string }[]
 }
 
-export function trackedView(order: Order): TrackedOrder {
+export function trackedView(order: Order, now?: Date): TrackedOrder {
+  const deadline = paymentDeadline(order)
   return {
     id: order.id,
     createdAt: order.createdAt,
@@ -648,6 +728,7 @@ export function trackedView(order: Order): TrackedOrder {
     firstName: order.customer.name.split(' ')[0] ?? order.customer.name,
     address: order.customer.address,
     paymentLabel: order.payment.label,
+    ...(order.schedule ? { scheduleLabel: order.schedule.label } : {}),
     items: order.items.map(({ name, detail, unit, quantity, subtotal }) => ({
       name,
       ...(detail ? { detail } : {}),
@@ -658,7 +739,8 @@ export function trackedView(order: Order): TrackedOrder {
     shortages: order.shortages.map(shortage => shortage.name),
     shippingFee: order.shippingFee,
     total: order.total,
-    canPay: canPayOnline(order),
+    canPay: canPayOnline(order, now),
+    ...(deadline ? { payBy: deadline.toISOString() } : {}),
     ...(order.gateway?.status ? { gatewayStatus: order.gateway.status } : {}),
     messages: order.messages.map(({ at, from, text }) => ({ at, from, text })),
   }

@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { AlertTriangle, BellRing, ImageUp, Loader2, Minus, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -65,7 +74,9 @@ export function CatalogManager() {
 
   const load = useCallback(async () => {
     try {
-      const [products, fillings, layers] = await Promise.all(ENTITY_NAMES.map(entity => request<AnyItem[]>(api(entity))))
+      const [products, fillings, layers] = await Promise.all(
+        ENTITY_NAMES.map(entity => request<AnyItem[]>(api(entity))),
+      )
       setLists({ products, fillings, layers } as Lists)
       setLoadError('')
     } catch (error) {
@@ -156,9 +167,8 @@ export function CatalogManager() {
 
       {storage === 'none' && (
         <p className="admin-warning" role="status">
-          <AlertTriangle aria-hidden="true" />
-          O banco de dados ainda não está ligado no servidor: dá para ver o cardápio, mas não salvar. Conecte o Upstash
-          Redis na Vercel (passo a passo no README).
+          <AlertTriangle aria-hidden="true" />O banco de dados ainda não está ligado no servidor: dá para ver o
+          cardápio, mas não salvar. Conecte o Upstash Redis na Vercel (passo a passo no README).
         </p>
       )}
 
@@ -221,7 +231,11 @@ export function CatalogManager() {
               />
             )}
             <div className="admin-item-actions">
-              <button type="button" onClick={() => setEditing({ entity: tab, item })} aria-label={`Editar ${item.name}`}>
+              <button
+                type="button"
+                onClick={() => setEditing({ entity: tab, item })}
+                aria-label={`Editar ${item.name}`}
+              >
                 <Pencil aria-hidden="true" />
               </button>
               <button type="button" onClick={() => void remove(tab, item)} aria-label={`Excluir ${item.name}`}>
@@ -275,7 +289,11 @@ function initialState(entity: EntityName, item?: AnyItem): FormState {
     description: item?.description ?? '',
     image_url: item?.image_url ?? '',
     category:
-      entity === 'products' ? (product?.category ?? 'festas') : entity === 'layers' ? ((item as CatalogLayer | undefined)?.category ?? 'base') : '',
+      entity === 'products'
+        ? (product?.category ?? 'festas')
+        : entity === 'layers'
+          ? ((item as CatalogLayer | undefined)?.category ?? 'base')
+          : '',
     price_unit: product?.price_unit ?? 'o quilo',
     unit: product?.unit ?? 'kg',
     featured: product?.featured ?? false,
@@ -327,7 +345,10 @@ function ItemForm({
   const [saving, setSaving] = useState(false)
   const formId = useId()
 
-  const set = <K extends keyof FormState>(key: K) => (value: FormState[K]) => setForm(prev => ({ ...prev, [key]: value }))
+  const set =
+    <K extends keyof FormState>(key: K) =>
+    (value: FormState[K]) =>
+      setForm(prev => ({ ...prev, [key]: value }))
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -361,7 +382,10 @@ function ItemForm({
       )}
     </div>
   )
-  const text = (key: 'id' | 'name' | 'price' | 'image_url' | 'price_unit' | 'stock', extra: Record<string, unknown> = {}) => (
+  const text = (
+    key: 'id' | 'name' | 'price' | 'image_url' | 'price_unit' | 'stock',
+    extra: Record<string, unknown> = {},
+  ) => (
     <input
       id={`${formId}-${key}`}
       value={form[key]}
@@ -413,7 +437,12 @@ function ItemForm({
         {field('name', 'Nome', text('name', { maxLength: 80, required: true }))}
         {field('price', 'Preço (R$)', text('price', { inputMode: 'decimal', placeholder: '0,00' }))}
         {creating &&
-          field('id', 'Id (opcional)', text('id', { placeholder: 'gerado a partir do nome', maxLength: 60 }), 'Não muda depois: carrinhos e pedidos usam o id.')}
+          field(
+            'id',
+            'Id (opcional)',
+            text('id', { placeholder: 'gerado a partir do nome', maxLength: 60 }),
+            'Não muda depois: carrinhos e pedidos usam o id.',
+          )}
 
         {entity === 'products' && (
           <>
@@ -442,8 +471,8 @@ function ItemForm({
               '0 = esgotado: o cliente só deixa pedido pendente. Vazio = sempre disponível.',
             )}
             <label className="admin-check">
-              <input type="checkbox" checked={form.featured} onChange={e => set('featured')(e.target.checked)} /> Destaque no
-              cardápio
+              <input type="checkbox" checked={form.featured} onChange={e => set('featured')(e.target.checked)} />{' '}
+              Destaque no cardápio
             </label>
           </>
         )}
@@ -495,7 +524,13 @@ function ItemForm({
             {uploading ? <Loader2 aria-hidden="true" className="checkout-spin" /> : <ImageUp aria-hidden="true" />}
             {uploading ? 'Enviando foto…' : 'Enviar foto do celular ou computador'}
           </button>
-          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" hidden onChange={upload} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic"
+            hidden
+            onChange={upload}
+          />
           {field(
             'image_url',
             'Ou cole o endereço da imagem (image_url)',
@@ -540,10 +575,13 @@ function StockControl({
     product.unit === 'kg'
       ? 'kg'
       : product.category === 'sobremesas'
-        ? product.stock === 1 ? 'unidade' : 'unidades'
-        : product.stock === 1 ? 'bolo' : 'bolos'
-  const label =
-    product.stock === null ? 'Sem controle' : product.stock === 0 ? 'Esgotado' : `${product.stock} ${unit}`
+        ? product.stock === 1
+          ? 'unidade'
+          : 'unidades'
+        : product.stock === 1
+          ? 'bolo'
+          : 'bolos'
+  const label = product.stock === null ? 'Sem controle' : product.stock === 0 ? 'Esgotado' : `${product.stock} ${unit}`
   return (
     <div
       className={`admin-stock${product.stock === 0 ? ' is-out' : ''}`}
@@ -560,7 +598,12 @@ function StockControl({
         <Minus aria-hidden="true" />
       </button>
       <output aria-live="polite">{busy ? <Loader2 aria-hidden="true" className="checkout-spin" /> : label}</output>
-      <button type="button" onClick={() => onChange(1)} disabled={busy} aria-label={`Aumentar o estoque de ${product.name}`}>
+      <button
+        type="button"
+        onClick={() => onChange(1)}
+        disabled={busy}
+        aria-label={`Aumentar o estoque de ${product.name}`}
+      >
         <Plus aria-hidden="true" />
       </button>
     </div>

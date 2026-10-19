@@ -1,13 +1,13 @@
 /*
- * Animação de rolagem com sequência de imagens (frame-0001.jpg … frame-0240.jpg).
+ * Animação de rolagem com sequência de imagens (frame-0001.webp … frame-0240.webp).
  * O palco fica preso na tela (position: sticky) e o frame acompanha a rolagem da seção.
  */
-(() => {
+;(() => {
   'use strict'
 
   const CONFIG = {
     frameCount: 240,
-    framePath: (n) => `../public/intro/frames/frame-${String(n).padStart(4, '0')}.jpg`,
+    framePath: n => `../public/intro/frames/frame-${String(n).padStart(4, '0')}.webp`,
     /** Frame mostrado parado quando o usuário pede movimento reduzido (bolo inteiro). */
     staticFrame: 96,
     /** 0–1: quanto o frame exibido anda em direção ao alvo a cada quadro (menor = mais suave). */
@@ -26,7 +26,7 @@
   const loaderFill = document.getElementById('loader-fill')
   const loaderText = document.getElementById('loader-text')
   const scrollHint = document.getElementById('scroll-hint')
-  const captions = [...section.querySelectorAll('.caption')].map((el) => ({
+  const captions = [...section.querySelectorAll('.caption')].map(el => ({
     el,
     from: Number(el.dataset.from),
     to: Number(el.dataset.to),
@@ -61,12 +61,16 @@
   /* ------------------------------ Carregamento ------------------------------ */
 
   function loadImage(src) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const img = new Image()
       img.decoding = 'async'
       img.onload = () => {
         // decode() evita travadas na primeira vez que o frame é desenhado
-        if (img.decode) img.decode().then(() => resolve(img), () => resolve(img))
+        if (img.decode)
+          img.decode().then(
+            () => resolve(img),
+            () => resolve(img),
+          )
         else resolve(img)
       }
       img.onerror = () => resolve(null) // frame com problema é pulado, nunca imagem quebrada
@@ -83,7 +87,10 @@
     const seen = new Set(order)
     for (const stride of [10, 1]) {
       for (let i = 0; i < frameNumbers.length; i += stride) {
-        if (!seen.has(i)) { seen.add(i); order.push(i) }
+        if (!seen.has(i)) {
+          seen.add(i)
+          order.push(i)
+        }
       }
     }
     return order
@@ -251,7 +258,10 @@
   }
 
   window.addEventListener('scroll', onScroll, { passive: true })
-  new ResizeObserver(() => { resizeCanvases(); onScroll() }).observe(stage)
+  new ResizeObserver(() => {
+    resizeCanvases()
+    onScroll()
+  }).observe(stage)
   reducedMotion.addEventListener('change', applyMode)
 
   resizeCanvases()

@@ -11,7 +11,10 @@ import { phoneSchema } from '@/lib/phone'
  */
 
 export const restockInputSchema = z.object({
-  productId: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(60),
+  productId: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .max(60),
   name: z
     .string()
     .trim()
@@ -101,7 +104,12 @@ export function addStockRequest(
   return { doc: { requests }, request, waiting }
 }
 
-export function markNotified(doc: StockRequestsDoc, ids: readonly string[], by: string, now = new Date()): StockRequestsDoc {
+export function markNotified(
+  doc: StockRequestsDoc,
+  ids: readonly string[],
+  by: string,
+  now = new Date(),
+): StockRequestsDoc {
   const set = new Set(ids)
   if (!doc.requests.some(entry => set.has(entry.id))) throw new StockRequestError(404, 'Aviso não encontrado.')
   return {
@@ -133,7 +141,11 @@ export interface ProductDemand {
 }
 
 /** Demanda dos esgotados, do bolo mais procurado para o menos. */
-export function demandByProduct(catalog: Catalog, requests: readonly StockRequest[], orders: readonly Order[]): ProductDemand[] {
+export function demandByProduct(
+  catalog: Catalog,
+  requests: readonly StockRequest[],
+  orders: readonly Order[],
+): ProductDemand[] {
   const map = new Map<string, ProductDemand>()
   const entry = (productId: string, fallbackName: string) => {
     let demand = map.get(productId)

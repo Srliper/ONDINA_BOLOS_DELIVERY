@@ -5,7 +5,7 @@ No app, a mesma intro é o componente `src/components/ScrollIntro.tsx`.
 
 ## Onde ficam os frames
 
-Os frames são os mesmos da intro do app: `public/intro/frames/frame-0001.jpg` … `frame-0240.jpg`
+Os frames são os mesmos da intro do app: `public/intro/frames/frame-0001.webp` … `frame-0240.webp`
 (240 frames, 18 MB). A sequência original tinha 300 arquivos, mas 60 eram cópias idênticas do frame
 anterior (conversão de 24 para 30 quadros por segundo); elas foram removidas e os demais renumerados.
 Para mudar a pasta ou a quantidade de frames, edite `CONFIG` no início do `script.js`.
