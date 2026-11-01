@@ -151,6 +151,10 @@ contato.
    (O site já informa esse endereço em cada pagamento; a assinatura confere que a notificação veio
    do Mercado Pago.)
 
+No `/admin`, o quadro **Pagamento online (Mercado Pago)** mostra se está ligado (produção ou teste), o que
+falta configurar, o endereço do webhook para copiar e atalhos para os pagamentos recebidos; o tutorial do painel
+explica como o cliente paga e como usar a conta do Mercado Pago.
+
 O dinheiro cai na conta do Mercado Pago da loja. Se um pedido pago online for cancelado, devolva o
 valor pelo painel do Mercado Pago (o histórico do pedido avisa). Código: `src/lib/payment-gateway.ts`
 (API do Mercado Pago), `src/lib/payment-webhook.server.ts` (notificações), `src/lib/site-order.ts`

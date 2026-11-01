@@ -15,6 +15,8 @@ import {
   MessageCircle,
   Tag,
   Users,
+  Wallet,
+  Smartphone,
 } from 'lucide-react'
 
 interface Lesson {
@@ -231,6 +233,74 @@ const LESSONS: Lesson[] = [
       <>
         Se um pedido pago online for cancelado, devolva o valor pelo painel do Mercado Pago (o histórico do pedido
         lembra você).
+      </>
+    ),
+  },
+  {
+    id: 'cliente-paga',
+    icon: Smartphone,
+    title: 'Como o cliente paga pelo site',
+    steps: [
+      <>
+        O cliente monta o carrinho e toca em <strong>Finalizar pedido</strong>. Na etapa <strong>Endereço</strong>{' '}
+        preenche nome, WhatsApp, cidade, entrega ou retirada e o dia/horário.
+      </>,
+      <>
+        Na etapa <strong>Pagamento</strong>, escolhe <strong>Pagar aqui no site</strong> (“Pix ou cartão, na página
+        segura do Mercado Pago”). Se aparecer “Indisponível no momento”, o pagamento online está desligado: veja o
+        quadro <strong>Pagamento online</strong> aqui no painel.
+      </>,
+      <>
+        Em <strong>Resumo</strong>, confere tudo e toca em <strong>Ir para o pagamento seguro</strong>. O pedido já é
+        registrado aqui no painel (Aguardando pagamento) e o estoque fica reservado.
+      </>,
+      <>
+        O site abre a página do <strong>Mercado Pago</strong> com os bolos, o frete e o total. Lá o cliente paga com{' '}
+        <strong>Pix</strong> (QR Code ou copia e cola) ou <strong>cartão</strong> (até 3 vezes). Na fatura aparece{' '}
+        <strong>ONDINA BOLOS</strong>.
+      </>,
+      <>
+        Pago, ele volta sozinho para a <strong>página do pedido</strong> no site, que mostra <strong>Pago</strong> e o
+        andamento. O pedido aparece aqui como <strong>Pago / Em preparo</strong> e toca o aviso.
+      </>,
+      <>
+        Se fechar sem pagar, a página do pedido tem o botão <strong>Pagar agora</strong> (fica também em{' '}
+        <strong>Meus pedidos</strong>, no topo do site) por até 2 horas.
+      </>,
+    ],
+    tip: (
+      <>
+        Para ver na prática sem cobrar ninguém, quem cuida do site pode usar o Access Token de teste (TEST-…) e cartões
+        de teste do Mercado Pago.
+      </>
+    ),
+  },
+  {
+    id: 'mercado-pago',
+    icon: Wallet,
+    title: 'Ver os pagamentos e o dinheiro no Mercado Pago',
+    steps: [
+      <>
+        No quadro <strong>Pagamento online</strong>, toque em <strong>Ver pagamentos recebidos</strong> (ou abra o
+        aplicativo do Mercado Pago no celular) e entre com a <strong>conta da loja</strong>.
+      </>,
+      <>
+        Em <strong>Atividades</strong> aparece cada pagamento do site, com valor, data e situação (aprovado, pendente ou
+        recusado). Nos detalhes do pagamento está o número do pedido <strong>OB-…</strong>, o mesmo do painel.
+      </>,
+      <>
+        O dinheiro fica no <strong>saldo</strong> da conta. Pix entra na hora; o cartão fica disponível no prazo de
+        liberação escolhido na conta do Mercado Pago. Para passar para o banco, use <strong>Transferir</strong>.
+      </>,
+      <>
+        Para devolver um pagamento (pedido cancelado): Atividades → toque no pagamento →{' '}
+        <strong>Devolver dinheiro</strong>. Depois, cancele o pedido aqui no painel para o estoque voltar.
+      </>,
+    ],
+    tip: (
+      <>
+        Para o Pix aparecer na página de pagamento, a conta do Mercado Pago precisa ter uma <strong>chave Pix</strong>{' '}
+        cadastrada (no app: Pix → Minhas chaves).
       </>
     ),
   },

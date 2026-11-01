@@ -7,7 +7,7 @@ import { notifyStore } from '@/lib/catalog-deps.server'
 import { getOrdersStorage, loadCatalog } from '@/lib/catalog-store'
 import { listLegacyOrders } from '@/lib/order-store'
 import type { LegacyOrder } from '@/lib/orders'
-import { configuredGateway } from '@/lib/payment-gateway'
+import { configuredGateway, paymentSetup, type PaymentSetup } from '@/lib/payment-gateway'
 import type { SoldOutProduct } from '@/lib/stock-alert'
 import {
   attempt,
@@ -229,6 +229,22 @@ async function requireMember(): Promise<string> {
   if (!session) throw new OrderError(401, 'Sessão expirada. Entre de novo.')
   return session.memberId
 }
+
+/** Situação do pagamento online para o painel (só com sessão; o token nunca sai do servidor). */
+export const getPaymentSetup = createServerFn({ method: 'GET' }).handler((): Promise<Result<{ setup: PaymentSetup }>> =>
+  attempt(async () => {
+    await requireMember()
+    const setup = paymentSetup(
+      {
+        token: process.env['MERCADOPAGO_ACCESS_TOKEN'],
+        webhookSecret: process.env['MERCADOPAGO_WEBHOOK_SECRET'],
+      },
+      getOrdersStorage().kind !== 'none',
+      siteOrigin(),
+    )
+    return { setup }
+  }),
+)
 
 export const listOrders = createServerFn({ method: 'GET' }).handler(
   (): Promise<Result<{ orders: Order[]; legacy: LegacyOrder[]; storage: 'upstash' | 'file' | 'none' }>> =>
