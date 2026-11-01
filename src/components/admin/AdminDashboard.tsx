@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import logo from '@/assets/ondina_logo.png'
 import { AdminNotifier } from '@/components/admin/AdminNotifier'
 import { AdminOrders } from '@/components/admin/AdminOrders'
+import { AdminPayments } from '@/components/admin/AdminPayments'
 import { AdminStockDemand } from '@/components/admin/AdminStockDemand'
 import { AdminTutorial } from '@/components/admin/AdminTutorial'
 import { CatalogManager } from '@/components/admin/CatalogManager'
@@ -102,6 +103,8 @@ export function AdminDashboard({ memberId, onLogout }: { memberId: string; onLog
         </section>
 
         <AdminOrders />
+
+        <AdminPayments />
 
         <AdminStockDemand />
 

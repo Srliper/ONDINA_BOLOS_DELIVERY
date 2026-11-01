@@ -732,6 +732,20 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 .admin-card h2 { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:700; margin-bottom:8px; }
 .admin-card h2 svg { width:18px; height:18px; color:var(--rose-ink); }
 .admin-card>p { font-size:13px; line-height:1.55; color:var(--muted-foreground); }
+.admin-payments-mode { display:inline-flex; margin:4px 0 8px; padding:4px 12px; border-radius:999px; font-size:12.5px; font-weight:700; background:oklch(0.93 0 0); color:oklch(0.4 0 0); }
+.admin-payments-mode.is-producao { background:oklch(0.95 0.05 150); color:#0b4f2c; }
+.admin-payments-mode.is-teste { background:oklch(0.93 0.09 85); color:oklch(0.38 0.09 65); }
+.admin-payments-checks { display:grid; gap:10px; margin:14px 0 4px; }
+.admin-payments-checks li { display:flex; gap:10px; align-items:flex-start; font-size:13.5px; }
+.admin-payments-checks svg { flex-shrink:0; width:18px; height:18px; margin-top:1px; }
+.admin-payments-checks .is-ok svg { color:#0b7a43; }
+.admin-payments-checks .is-missing svg { color:oklch(0.6 0.15 65); }
+.admin-payments-checks span { display:grid; gap:2px; min-width:0; }
+.admin-payments-checks small { font-size:12.5px; color:var(--muted-foreground); overflow-wrap:anywhere; }
+.admin-payments .admin-action { border-color:var(--border); background:var(--secondary); color:var(--foreground); }
+.admin-payments .admin-action.is-primary { border-color:#009ee3; background:#009ee3; color:#fff; }
+.admin-payments-webhook { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; font-size:12.5px; }
+.admin-payments-webhook code { min-width:0; overflow-wrap:anywhere; padding:3px 8px; border-radius:8px; background:var(--secondary); }
 .admin-link { display:inline-flex; align-items:center; gap:6px; margin-top:12px; font-size:13.5px; font-weight:600; color:var(--rose-ink); }
 .admin-link svg { width:15px; height:15px; }
 .admin-list, .admin-team { list-style:none; padding:0; display:grid; gap:8px; }
@@ -841,7 +855,7 @@ button.checkout-button:disabled { opacity:.75; cursor:progress; }
 
 /* ---------- Tutorial do painel ---------- */
 .admin-lessons { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:8px; margin-top:10px; align-items:start; }
-.admin-lesson { border:1px solid var(--border); border-radius:14px; background:var(--background); }
+.admin-lesson { scroll-margin-top:96px; border:1px solid var(--border); border-radius:14px; background:var(--background); }
 .admin-lesson summary { display:flex; align-items:center; gap:8px; min-height:46px; padding:8px 12px; font-size:13.5px; font-weight:600; cursor:pointer; list-style:none; }
 .admin-lesson summary::-webkit-details-marker { display:none; }
 .admin-lesson summary::after { content:"+"; margin-left:auto; font-size:18px; color:var(--muted-foreground); }

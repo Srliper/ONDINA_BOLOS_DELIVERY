@@ -149,3 +149,37 @@ export async function validWebhookSignature(
   for (let index = 0; index < expected.length; index++) diff |= expected.charCodeAt(index) ^ v1.charCodeAt(index)
   return diff === 0
 }
+
+/** O que o painel mostra sobre o pagamento online — nunca o token, só se ele existe e de que tipo é. */
+export interface PaymentSetup {
+  /** O checkout oferece "Pagar aqui no site" (token + banco de pedidos). */
+  enabled: boolean
+  mode: 'producao' | 'teste' | 'desligado'
+  /** Banco de pedidos ligado (sem ele não há onde guardar o pedido pago). */
+  storage: boolean
+  /** Assinatura secreta das notificações configurada. */
+  webhookSecret: boolean
+  /** Endereço público do site e se é https (o Mercado Pago só volta e notifica em https). */
+  siteUrl: string
+  publicUrl: boolean
+  webhookUrl: string
+}
+
+export function paymentSetup(
+  env: { token?: string | undefined; webhookSecret?: string | undefined },
+  storage: boolean,
+  siteUrl: string,
+): PaymentSetup {
+  const token = env.token?.trim() ?? ''
+  const mode = !token ? 'desligado' : token.startsWith('TEST-') ? 'teste' : 'producao'
+  const base = siteUrl.replace(/\/+$/, '')
+  return {
+    enabled: mode !== 'desligado' && storage,
+    mode,
+    storage,
+    webhookSecret: Boolean(env.webhookSecret?.trim()),
+    siteUrl: base,
+    publicUrl: base.startsWith('https://'),
+    webhookUrl: `${base}/api/payments/webhook`,
+  }
+}
