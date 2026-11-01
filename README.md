@@ -13,13 +13,13 @@ bun install
 bun run dev        # http://localhost:3000
 ```
 
-| Comando             | O que faz                                |
-| ------------------- | ---------------------------------------- |
-| `bun run dev`       | Servidor de desenvolvimento              |
-| `bun run build`     | Gera a versão de produção em `.output/`  |
-| `bun run start`     | Roda a versão de produção (Node)         |
-| `bun run test`      | Testes (mensagem do WhatsApp e carrinho) |
-| `bun run typecheck` | Checagem de tipos do TypeScript          |
+| Comando             | O que faz                                  |
+| ------------------- | ------------------------------------------ |
+| `bun run dev`       | Servidor de desenvolvimento                |
+| `bun run build`     | Gera a versão de produção em `.output/`    |
+| `bun run start`     | Roda a versão de produção (Node)           |
+| `bun run test`      | Testes (mensagem do WhatsApp e carrinho)   |
+| `bun run typecheck` | Checagem de tipos do TypeScript            |
 
 ## Publicar (deploy)
 
@@ -29,7 +29,7 @@ O build usa o [Nitro](https://nitro.build), que detecta o provedor automaticamen
 
 1. Suba este projeto para um repositório no GitHub.
 2. Em [vercel.com/new](https://vercel.com/new), importe o repositório. O framework é detectado sozinho; não precisa mudar nada.
-3. Em _Settings → Environment Variables_, adicione `VITE_SITE_URL`.
+3. Em *Settings → Environment Variables*, adicione `VITE_SITE_URL`.
 4. Cada `git push` na branch `main` publica uma nova versão.
 
 ### Netlify
@@ -51,21 +51,21 @@ Sem Docker: `NITRO_PRESET=node_server bun run build && bun run start`.
 
 ## Onde mudar as coisas
 
-| O quê                                | Arquivo                                       |
-| ------------------------------------ | --------------------------------------------- |
-| Bolos com foto, preços e descrições  | `src/data/products.ts`                        |
-| Lista completa de sabores            | `src/lib/bakery-menu.ts`                      |
-| Número do WhatsApp e texto do pedido | `src/lib/whatsapp.ts`                         |
-| Endereço, telefone e horários        | `src/lib/site.ts`                             |
-| Depoimentos de clientes (reais)      | `src/data/testimonials.ts`                    |
-| Cores, fontes e animações            | `src/styles.css`                              |
-| Logo                                 | `src/assets/ondina_logo.png`                  |
-| Camadas do Monte seu Bolo e preços   | `src/data/bolo-layers.ts`                     |
-| Fotos reais das camadas              | `public/layers/<id>.png` ou o painel `/admin` |
-| Equipe (Administração) e fotos       | `src/data/team.ts`, `src/assets/team/`        |
-| Instagram da loja                    | `src/lib/site.ts`                             |
-| Mensagem do pedido e envio ao n8n    | `src/lib/whatsapp.ts`                         |
-| Checkout (endereço e pagamento)      | `src/lib/checkout.ts`                         |
+| O quê                                 | Arquivo                       |
+| ------------------------------------- | ----------------------------- |
+| Bolos com foto, preços e descrições   | `src/data/products.ts`        |
+| Lista completa de sabores             | `src/lib/bakery-menu.ts`      |
+| Número do WhatsApp e texto do pedido  | `src/lib/whatsapp.ts`         |
+| Endereço, telefone e horários         | `src/lib/site.ts`             |
+| Depoimentos de clientes (reais)       | `src/data/testimonials.ts`    |
+| Cores, fontes e animações             | `src/styles.css`              |
+| Logo                                  | `src/assets/ondina_logo.png`  |
+| Camadas do Monte seu Bolo e preços    | `src/data/bolo-layers.ts`     |
+| Fotos reais das camadas               | `public/layers/<id>.png` ou o painel `/admin` |
+| Equipe (Administração) e fotos        | `src/data/team.ts`, `src/assets/team/` |
+| Instagram da loja                     | `src/lib/site.ts`             |
+| Mensagem do pedido e envio ao n8n     | `src/lib/whatsapp.ts`         |
+| Checkout (endereço e pagamento)       | `src/lib/checkout.ts`         |
 
 A seção de depoimentos só aparece quando há pelo menos um depoimento real cadastrado.
 
@@ -77,8 +77,8 @@ provisórias. Para colocar a foto real, escolha um dos dois:
 
 - **Trocar o arquivo:** salve a foto com o **mesmo nome** em `public/layers/` (ex.: substitua
   `base-red-velvet.png`). Vale para o site todo depois de publicar.
-- **Pelo painel:** em `/admin` → _Cardápio do site_ → _Camadas_ ou _Recheios_ → _Editar_, cole o
-  endereço da foto em _Endereço da imagem_.
+- **Pelo painel:** em `/admin` → *Cardápio do site* → *Camadas* ou *Recheios* → *Editar*, cole o
+  endereço da foto em *Endereço da imagem*.
 
 Se uma foto cadastrada não carregar, o site volta para a imagem padrão; nunca aparece imagem quebrada.
 
@@ -94,7 +94,7 @@ Se o n8n falhar ou demorar mais de 2,5 s, o WhatsApp abre do mesmo jeito. Config
 
 Entrada com senha para a família (Ondina, Edgard e Kaique), com atalhos para o WhatsApp da
 empresa, o n8n, o Instagram e a tabela de preços. A senha **não fica no código**: configure a
-variável `ADMIN_PASSWORD` no provedor (na Vercel: _Settings → Environment Variables_) e, no
+variável `ADMIN_PASSWORD` no provedor (na Vercel: *Settings → Environment Variables*) e, no
 computador, num arquivo `.env` (que não vai para o GitHub). Sem a variável, ninguém entra.
 Cinco senhas erradas seguidas bloqueiam o acesso por 5 minutos.
 
@@ -105,10 +105,10 @@ Upstash Redis na Vercel, ou `.data/orders-v2.json` no computador) antes de abrir
 pagamento online. O servidor
 recalcula os preços pelo catálogo e confere o estoque:
 
-| Situação ao finalizar                            | Status do pedido                | Estoque       |
-| ------------------------------------------------ | ------------------------------- | ------------- |
-| Tudo em estoque (ou bolo sem controle / montado) | **Aguardando pagamento**        | baixa na hora |
-| Faltou algum bolo                                | **PENDENTE (Falta de estoque)** | não mexe      |
+| Situação ao finalizar | Status do pedido | Estoque |
+| --- | --- | --- |
+| Tudo em estoque (ou bolo sem controle / montado) | **Aguardando pagamento** | baixa na hora |
+| Faltou algum bolo | **PENDENTE (Falta de estoque)** | não mexe |
 
 No `/admin`, em **Pedidos do site**, a equipe vê cliente, endereço com CEP, itens e total, e muda o
 **status da entrega**: Aguardando pagamento → Pago / Em preparo → Saiu para entrega (ou Pronto para
@@ -142,11 +142,11 @@ contato.
 
 **Configurar o Mercado Pago** (sem isso, o checkout mostra só o WhatsApp):
 
-1. Em [mercadopago.com.br/developers](https://www.mercadopago.com.br/developers) → _Suas
-   integrações_ → crie uma aplicação (Checkout Pro) e copie o **Access Token** de produção
+1. Em [mercadopago.com.br/developers](https://www.mercadopago.com.br/developers) → *Suas
+   integrações* → crie uma aplicação (Checkout Pro) e copie o **Access Token** de produção
    (`APP_USR-…`). Para testar sem cobrar, use o de teste (`TEST-…`).
 2. Na Vercel, adicione `MERCADOPAGO_ACCESS_TOKEN` (e `VITE_SITE_URL` com o endereço do site).
-3. Opcional, mas recomendado: em _Webhooks_, cadastre `https://<seu-site>/api/payments/webhook`
+3. Opcional, mas recomendado: em *Webhooks*, cadastre `https://<seu-site>/api/payments/webhook`
    com o evento **Pagamentos** e copie a **assinatura secreta** para `MERCADOPAGO_WEBHOOK_SECRET`.
    (O site já informa esse endereço em cada pagamento; a assinatura confere que a notificação veio
    do Mercado Pago.)
@@ -170,14 +170,14 @@ confeitaria com folga). Nada roda no computador da loja.
   e configure `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` na Vercel. No `/admin`, cada pessoa toca em
   **Ligar notificações** no próprio celular. Pedido novo (site ou WhatsApp), pagamento aprovado,
   mensagem de cliente, "avise-me" e bolo esgotado chegam como notificação do aparelho. No **iPhone**,
-  antes abra o `/admin` no Safari → _Compartilhar_ → **Adicionar à Tela de Início** e ligue por lá
+  antes abra o `/admin` no Safari → *Compartilhar* → **Adicionar à Tela de Início** e ligue por lá
   (exigência da Apple). Aparelhos inscritos ficam em `ondina:push-subs`.
 - **Painel aberto** (celular ou computador): o quadro **Avisos** no `/admin` confere a cada 30 s e
   toca um aviso quando chega pedido novo, pagamento aprovado (**pedido para entregar**), mensagem de
   cliente ou pedido de "avise-me". Com **Ligar notificações**, o aparelho mostra a notificação mesmo
   com outra aba na frente; o título da aba mostra quantas coisas precisam de atenção.
-- **Painel fechado** (opcional): configure `N8N_STORE_ALERT_URL` com um webhook do n8n (_Webhook
-  POST_ → nó do WhatsApp enviando `{{ $json.body.message }}` para o número da loja). O site manda
+- **Painel fechado** (opcional): configure `N8N_STORE_ALERT_URL` com um webhook do n8n (*Webhook
+  POST* → nó do WhatsApp enviando `{{ $json.body.message }}` para o número da loja). O site manda
   `{ event, orderId, customer, total, message, … }` com `x-ondina-key` = `N8N_ORDERS_KEY`, nos eventos
   `pedido-novo` (pelo site), `pagamento-aprovado`, `mensagem-cliente` e `aviso-estoque`. Falha do
   n8n nunca impede o pedido.
@@ -227,13 +227,13 @@ WhatsApp) usa o que estiver salvo; enquanto ninguém editou, vale o cardápio pa
 
 API REST (JSON):
 
-| Método | Rota                                        | Quem pode                 |
-| ------ | ------------------------------------------- | ------------------------- |
-| GET    | `/api/catalog/{products\|fillings\|layers}` | todos (o site usa)        |
-| GET    | `/api/catalog/{entidade}/{id}`              | todos                     |
-| POST   | `/api/catalog/{entidade}`                   | equipe logada no `/admin` |
-| PUT    | `/api/catalog/{entidade}/{id}`              | equipe logada no `/admin` |
-| DELETE | `/api/catalog/{entidade}/{id}`              | equipe logada no `/admin` |
+| Método | Rota | Quem pode |
+| ------ | ---- | --------- |
+| GET    | `/api/catalog/{products\|fillings\|layers}` | todos (o site usa) |
+| GET    | `/api/catalog/{entidade}/{id}` | todos |
+| POST   | `/api/catalog/{entidade}` | equipe logada no `/admin` |
+| PUT    | `/api/catalog/{entidade}/{id}` | equipe logada no `/admin` |
+| DELETE | `/api/catalog/{entidade}/{id}` | equipe logada no `/admin` |
 
 Escritas exigem a sessão do `/admin`, `Content-Type: application/json` e a mesma origem do site.
 Erros de validação voltam com `400` e `issues` por campo. Não dá para apagar a última opção de uma
@@ -241,8 +241,8 @@ etapa do Monte seu Bolo (`409`).
 
 **Onde fica guardado:**
 
-- **Site publicado (Vercel):** conecte um banco **Upstash Redis** em _Vercel → Storage →
-  Marketplace (Upstash for Redis)_ e ligue ao projeto. A Vercel cria `KV_REST_API_URL` e
+- **Site publicado (Vercel):** conecte um banco **Upstash Redis** em *Vercel → Storage →
+  Marketplace (Upstash for Redis)* e ligue ao projeto. A Vercel cria `KV_REST_API_URL` e
   `KV_REST_API_TOKEN` sozinha (também aceita `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`).
   Sem isso, o site funciona com o cardápio padrão e o painel avisa que não dá para salvar.
 - **No computador:** arquivo `.data/catalog.json` (fora do Git), criado na primeira edição.
@@ -250,14 +250,14 @@ etapa do Monte seu Bolo (`409`).
 ## Estoque e pedido pendente
 
 Cada bolo do cardápio tem um **estoque** (em kg para bolos de festa, em bolos para os de café),
-marcado pela equipe no `/admin` → _Cardápio do site_ → _Bolos_ (botões **−**/**+** ou _Editar →
-Estoque_). Vazio = sem controle (sempre disponível).
+marcado pela equipe no `/admin` → *Cardápio do site* → *Bolos* (botões **−**/**+** ou *Editar →
+Estoque*). Vazio = sem controle (sempre disponível).
 
 - Estoque **0** (ou pedido acima do estoque): o site mostra **Esgotado**, mas o cliente ainda pode
   deixar o pedido. Ele escolhe a forma de pagamento normalmente, mas o pedido é criado como
   **PENDENTE (Falta de estoque)** e a mensagem do WhatsApp chega como **⏳ PEDIDO PENDENTE** — nada
   é cobrado antes da confirmação do estoque. No n8n, o pedido vai com `status: "pendente"`.
-- O estoque baixa sozinho quando um pedido do site é feito com tudo disponível (veja _Pedidos no painel_).
+- O estoque baixa sozinho quando um pedido do site é feito com tudo disponível (veja *Pedidos no painel*).
 - Bolos montados no Monte seu Bolo são sempre sob encomenda (sem estoque).
 
 Regras em `src/lib/stock.ts` (testes em `src/test/stock.test.ts`).
@@ -266,16 +266,16 @@ Regras em `src/lib/stock.ts` (testes em `src/test/stock.test.ts`).
 
 Os pedidos guardados pela versão anterior do painel (Upstash: lista `ondina:orders` e hash
 `ondina:orders:confirmed`; no computador, `.data/orders.json`) continuam aparecendo em
-_Pedidos do site_ → **Pedidos antigos**, só para consulta. Os pedidos novos ficam em
-`ondina:orders:v2` (ou `.data/orders-v2.json`), no fluxo com status descrito em _Pedidos no painel_.
+*Pedidos do site* → **Pedidos antigos**, só para consulta. Os pedidos novos ficam em
+`ondina:orders:v2` (ou `.data/orders-v2.json`), no fluxo com status descrito em *Pedidos no painel*.
 
 ### Aviso de bolo esgotado no WhatsApp
 
 Quando um bolo chega a 0 (pelo − no painel ou quando um pedido do site leva o último), o painel mostra **Esgotou** com o botão
 **Avisar no WhatsApp**, que abre a conversa com o número da loja e a mensagem pronta. A faixa
-_Esgotados agora_ no cardápio tem o mesmo atalho.
+*Esgotados agora* no cardápio tem o mesmo atalho.
 
-Aviso automático (opcional): crie no n8n um fluxo _Webhook (POST)_ → nó do WhatsApp que envia
+Aviso automático (opcional): crie no n8n um fluxo *Webhook (POST)* → nó do WhatsApp que envia
 `{{ $json.body.message }}` para o número da loja, e configure na Vercel `N8N_STOCK_ALERT_URL` com o
 endereço desse webhook. O site manda `{ event: "estoque-esgotado", products, message, by }` com o
 cabeçalho `x-ondina-key` = `N8N_ORDERS_KEY`. Se o n8n falhar, o estoque é salvo do mesmo jeito.
