@@ -129,6 +129,27 @@ describe('pagamento confirmado pelo gateway', () => {
     expect(() => applyGatewayPayment(onlineOrder(), { ...approved, orderId: 'OB-OUTRO' }, LATER)).toThrow(OrderError)
   })
 
+  it('devolução ou chargeback depois de pago: tira o pago e avisa a loja', () => {
+    const paid = applyGatewayPayment(onlineOrder(), approved, LATER).order
+    for (const status of ['refunded', 'charged_back']) {
+      const result = applyGatewayPayment(paid, { ...approved, status }, LATER)
+      expect(result).toMatchObject({ changed: true, approved: false })
+      expect(result.order).toMatchObject({ paid: false, status: 'em_preparo', gateway: { paymentId: '123', status } })
+      expect(result.order.paidAt).toBeUndefined()
+      expect(result.order.history.at(-1)?.note).toMatch(/não está mais pago/)
+      expect(applyGatewayPayment(result.order, { ...approved, status }, LATER).changed).toBe(false)
+    }
+  })
+
+  it('segundo pagamento aprovado num pedido já pago: só anota para devolver, uma vez', () => {
+    const paid = applyGatewayPayment(onlineOrder(), approved, LATER).order
+    const second = applyGatewayPayment(paid, { ...approved, id: '456' }, LATER)
+    expect(second.order).toMatchObject({ paid: true, gateway: { paymentId: '123', status: 'approved' } })
+    expect(second.order.history.at(-1)?.note).toMatch(/nº 456.*devolva/)
+    expect(applyGatewayPayment(second.order, { ...approved, id: '456' }, LATER).changed).toBe(false)
+    expect(applyGatewayPayment(paid, { ...approved, id: '789', status: 'rejected' }, LATER).changed).toBe(false)
+  })
+
   it('pago com o pedido cancelado: marca pago e lembra de devolver', () => {
     const cancelled = changeStatus(onlineOrder(), seedCatalog(), 'cancelado', 'ondina', NOW).order
     const result = applyGatewayPayment(cancelled, approved, LATER)

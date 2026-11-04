@@ -589,6 +589,7 @@ export function applyGatewayPayment(
   if (order.gateway?.paymentId === payment.id && order.gateway.status === payment.status) {
     return { order, changed: false, approved: false }
   }
+  if (order.paid) return afterPaid(order, payment, now)
   const at = now.toISOString()
   const recorded: Order = {
     ...order,
@@ -601,7 +602,7 @@ export function applyGatewayPayment(
       updatedAt: at,
     },
   }
-  if (payment.status !== 'approved' || order.paid) return { order: recorded, changed: true, approved: false }
+  if (payment.status !== 'approved') return { order: recorded, changed: true, approved: false }
 
   if (payment.amount + 0.01 < order.total) {
     const note = `Pagamento online de ${formatBRLPlain(payment.amount)} é menor que o total: confira no Mercado Pago.`
@@ -624,6 +625,44 @@ export function applyGatewayPayment(
     changed: true,
     approved: true,
   }
+}
+
+/** Status do Mercado Pago em que o dinheiro de um pagamento aprovado voltou ao cliente. */
+const REVERSED_STATUSES = new Set(['refunded', 'charged_back'])
+
+/**
+ * Notícia sobre um pedido que já estava pago. Devolução ou chargeback do pagamento dele tira o
+ * "pago"; outro pagamento aprovado (pagou duas vezes, ou já tinha pago por fora) só fica anotado
+ * para a loja devolver — o pagamento que confirmou o pedido continua guardado.
+ */
+function afterPaid(order: Order, payment: GatewayPayment, now: Date): ReturnType<typeof applyGatewayPayment> {
+  const unchanged = { order, changed: false, approved: false }
+  const at = now.toISOString()
+  if (order.gateway?.paymentId === payment.id) {
+    const recorded: Order = {
+      ...order,
+      updatedAt: at,
+      gateway: { ...order.gateway, status: payment.status, updatedAt: at },
+    }
+    if (payment.status === 'in_mediation') {
+      const note = 'O cliente abriu uma reclamação do pagamento no Mercado Pago: responda por lá.'
+      return { order: withHistory(recorded, {}, 'mercadopago', now, note), changed: true, approved: false }
+    }
+    if (!REVERSED_STATUSES.has(payment.status)) return { order: recorded, changed: true, approved: false }
+    const note =
+      payment.status === 'charged_back'
+        ? 'O cliente contestou o pagamento no cartão (chargeback): o pedido não está mais pago.'
+        : 'Pagamento online devolvido pelo Mercado Pago: o pedido não está mais pago.'
+    const { paidAt: _paidAt, ...rest } = recorded
+    return {
+      order: withHistory({ ...rest, paid: false }, {}, 'mercadopago', now, note),
+      changed: true,
+      approved: false,
+    }
+  }
+  if (payment.status !== 'approved' || order.history.some(entry => entry.note?.includes(payment.id))) return unchanged
+  const note = `Outro pagamento online aprovado (nº ${payment.id}, ${formatBRLPlain(payment.amount)}) com o pedido já pago: devolva pelo Mercado Pago.`
+  return { order: withHistory(order, {}, 'mercadopago', now, note), changed: true, approved: false }
 }
 
 /* ---------- Conversa pela página do pedido ---------- */
