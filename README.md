@@ -181,6 +181,10 @@ confeitaria com folga). Nada roda no computador da loja.
   `{ event, orderId, customer, total, message, … }` com `x-ondina-key` = `N8N_ORDERS_KEY`, nos eventos
   `pedido-novo` (pelo site), `pagamento-aprovado`, `mensagem-cliente` e `aviso-estoque`. Falha do
   n8n nunca impede o pedido.
+  Em `pedido-novo` e `pagamento-aprovado`, `details` traz o pedido inteiro (itens, dia, endereço,
+  WhatsApp do cliente, pagamento) e já vem dentro de `message`: assim o pedido pago chega completo no
+  WhatsApp da loja. Sem o n8n, a página do pedido pago tem o botão **Enviar o pedido no WhatsApp**, que
+  abre a conversa com a loja já com o pedido escrito.
 
 ## Prazo para pagar, trava de estoque e limites
 

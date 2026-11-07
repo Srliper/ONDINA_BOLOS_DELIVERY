@@ -9,6 +9,7 @@ import { listLegacyOrders } from '@/lib/order-store'
 import type { LegacyOrder } from '@/lib/orders'
 import { configuredGateway, paymentSetup, type PaymentSetup } from '@/lib/payment-gateway'
 import type { SoldOutProduct } from '@/lib/stock-alert'
+import { orderDetails } from '@/lib/store-alert'
 import {
   attempt,
   createRateLimit,
@@ -95,6 +96,7 @@ export const placeOrder = createServerFn({ method: 'POST' })
         total: created.total,
         status: created.status,
         channel: created.channel,
+        details: orderDetails(created),
       })
       const { id, status, shortages, total, accessToken = '' } = created
       return { orderId: id, status, shortages, total, accessToken }

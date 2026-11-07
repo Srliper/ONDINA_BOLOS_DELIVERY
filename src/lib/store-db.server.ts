@@ -13,6 +13,7 @@ import {
 } from '@/lib/order-flow'
 import type { PaymentGateway } from '@/lib/payment-gateway'
 import type { SoldOutProduct } from '@/lib/stock-alert'
+import { orderDetails } from '@/lib/store-alert'
 import { exclusive } from '@/lib/redis-guard.server'
 import { StockRequestError, stockRequestsDocSchema, type StockRequestsDoc } from '@/lib/stock-requests'
 
@@ -102,6 +103,7 @@ export async function syncGatewayPayment(
         orderId: order.id,
         customer: order.customer.name,
         total: order.total,
+        details: orderDetails(result.order),
       })
     }
     return result.order
