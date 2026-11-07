@@ -10,7 +10,14 @@ import { celebrate } from '@/lib/confetti'
 import { MAPS_URL, WHATSAPP_NUMBER } from '@/lib/contact'
 import { formatBRLPlain } from '@/lib/format'
 import { DELIVERY_CITY, shippingFee } from '@/lib/shipping'
-import { createOrderId, trackingPath, type OrderLine, type OrderStatus, type Shortage } from '@/lib/order-flow'
+import {
+  createOrderId,
+  trackingPath,
+  type OrderLine,
+  type OrderStatus,
+  type Shortage,
+  type TrackedOrder,
+} from '@/lib/order-flow'
 import { rememberOrder, type RememberedOrder } from '@/lib/my-orders'
 import { lacksStock } from '@/lib/stock'
 import type { CartItem } from '@/types/product'
@@ -126,6 +133,42 @@ export function buildOrderMessage(order: OrderInput): string {
     ...(registered?.trackingUrl ? [`🔗 *Acompanhe o pedido:* ${registered.trackingUrl}`] : []),
   ].join('\n')
 }
+
+/* ---------- Pedido feito pelo site, mandado no WhatsApp da loja ---------- */
+
+const quantityText = (item: TrackedOrder['items'][number]) =>
+  item.unit === 'kg' ? `${item.quantity} kg` : `${item.quantity}x`
+
+/**
+ * Pedido feito (e pago) pelo site, para o cliente mandar no WhatsApp da loja pela página do pedido.
+ * Usa só o que a página do pedido já mostra (primeiro nome, sem telefone).
+ */
+export function trackedOrderMessage(order: TrackedOrder, trackingUrl?: string): string {
+  const pickup = order.fulfillment === 'retirada'
+  return [
+    'Olá, Ondina Bolos! Fiz um pedido pelo site.',
+    `🧾 *Pedido:* ${order.id}`,
+    order.paid ? '✅ *Pagamento:* pago pelo site (Mercado Pago)' : `⏳ *Situação:* ${order.statusLabel}`,
+    '',
+    '🎂 *Itens:*',
+    ...order.items.flatMap(item => [
+      `• ${quantityText(item)} ${item.name} - ${formatBRLPlain(item.subtotal)}`,
+      ...(item.detail ? [`   ◦ ${item.detail}`] : []),
+    ]),
+    '',
+    `🚚 *Frete:* ${pickup ? 'Retirada no Local (sem frete)' : order.shippingFee > 0 ? formatBRLPlain(order.shippingFee) : 'grátis'}`,
+    `💰 *Total:* ${formatBRLPlain(order.total)}`,
+    '',
+    `👤 *Nome:* ${order.firstName}`,
+    ...(order.scheduleLabel ? [`📅 *Para quando:* ${order.scheduleLabel}`] : []),
+    `${pickup ? '🏠 *Retirada:*' : '📍 *Entrega em:*'} ${order.address}`,
+    ...(trackingUrl ? [`🔗 *Pedido no site:* ${trackingUrl}`] : []),
+  ].join('\n')
+}
+
+/** Link do WhatsApp da loja com o pedido feito pelo site. */
+export const trackedOrderWhatsAppUrl = (order: TrackedOrder, trackingUrl?: string) =>
+  orderWhatsAppUrl(trackedOrderMessage(order, trackingUrl))
 
 /* ---------- Dados enviados ao n8n ---------- */
 

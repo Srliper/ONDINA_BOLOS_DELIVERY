@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 import logo from '@/assets/ondina_logo.png'
 import { formatBRL } from '@/lib/format'
 import { MAX_MESSAGE_LENGTH, type OrderStatus, type TrackedOrder } from '@/lib/order-flow'
-import { generateContactLink } from '@/lib/whatsapp'
+import { generateContactLink, trackedOrderWhatsAppUrl } from '@/lib/whatsapp'
 
 /** Com a página aberta, confere novidades (status, pagamento, respostas da loja) de tempo em tempo. */
 const POLL_MS = 20_000
@@ -48,6 +48,9 @@ export function OrderTracking({ id, token, paymentId }: { id: string; token: str
   const [sending, setSending] = useState(false)
   const firstLoad = useRef(true)
   const chatEnd = useRef<HTMLDivElement>(null)
+  // Link desta página sem o retorno do pagamento (para mandar no WhatsApp da loja).
+  const trackingUrl =
+    typeof window === 'undefined' ? '' : `${window.location.origin}/pedido/${encodeURIComponent(id)}?t=${token}`
 
   const load = useCallback(async () => {
     try {
@@ -157,7 +160,7 @@ export function OrderTracking({ id, token, paymentId }: { id: string; token: str
                   </>
                 )}
               </p>
-              <StatusBlock order={order} paying={paying} onPay={pay} />
+              <StatusBlock order={order} paying={paying} onPay={pay} trackingUrl={trackingUrl} />
             </section>
 
             <section className="track-card" aria-labelledby="track-chat-title">
@@ -247,7 +250,17 @@ export function OrderTracking({ id, token, paymentId }: { id: string; token: str
   )
 }
 
-function StatusBlock({ order, paying, onPay }: { order: TrackedOrder; paying: boolean; onPay: () => void }) {
+function StatusBlock({
+  order,
+  paying,
+  onPay,
+  trackingUrl,
+}: {
+  order: TrackedOrder
+  paying: boolean
+  onPay: () => void
+  trackingUrl: string
+}) {
   const pickup = order.fulfillment === 'retirada'
 
   if (order.status === 'cancelado') {
@@ -291,6 +304,22 @@ function StatusBlock({ order, paying, onPay }: { order: TrackedOrder; paying: bo
           <BadgeCheck aria-hidden="true" /> Pagamento confirmado.
           {order.status === 'em_preparo' && ' Seu bolo está sendo preparado!'}
         </p>
+      )}
+
+      {order.paid && order.channel === 'site' && (
+        <div className="track-pay">
+          <a
+            className="checkout-button"
+            href={trackedOrderWhatsAppUrl(order, trackingUrl)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MessageCircle aria-hidden="true" /> Enviar o pedido no WhatsApp
+          </a>
+          <p className="track-help">
+            A Ondina já recebeu o pedido pelo site. Mande no WhatsApp se quiser combinar algo.
+          </p>
+        </div>
       )}
 
       {order.canPay && (

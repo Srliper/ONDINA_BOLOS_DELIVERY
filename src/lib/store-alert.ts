@@ -5,9 +5,19 @@
  * Falha do n8n nunca impede o pedido, o pagamento ou a mensagem.
  */
 
+import type { Order } from '@/lib/order-flow'
+
 export type StoreEvent =
-  | { event: 'pedido-novo'; orderId: string; customer: string; total: number; status: string; channel: string }
-  | { event: 'pagamento-aprovado'; orderId: string; customer: string; total: number }
+  | {
+      event: 'pedido-novo'
+      orderId: string
+      customer: string
+      total: number
+      status: string
+      channel: string
+      details?: string
+    }
+  | { event: 'pagamento-aprovado'; orderId: string; customer: string; total: number; details?: string }
   | { event: 'mensagem-cliente'; orderId: string; customer: string; text: string }
   | { event: 'aviso-estoque'; productId: string; productName: string; customer: string; waiting: number }
 
@@ -25,6 +35,29 @@ export function storeEventMessage(alert: StoreEvent): string {
   }
 }
 
+/**
+ * O pedido inteiro em texto (itens, dia, endereço, telefone), para o n8n repassar no WhatsApp da loja.
+ * Fica fora do push, que só mostra a linha curta.
+ */
+export function orderDetails(order: Order): string {
+  const pickup = order.customer.fulfillment === 'retirada'
+  return [
+    ...order.items.map(
+      item =>
+        `🎂 ${item.unit === 'kg' ? `${item.quantity} kg` : `${item.quantity}x`} ${item.name}${item.detail ? ` (${item.detail})` : ''}`,
+    ),
+    ...(order.schedule ? [`📅 Para quando: ${order.schedule.label}`] : []),
+    `${pickup ? '🏠 Retirada' : '📍 Entrega'}: ${order.customer.address}`,
+    ...(order.customer.phone ? [`📞 WhatsApp do cliente: ${order.customer.phone}`] : []),
+    `💳 ${order.payment.label}`,
+  ].join('\n')
+}
+
+const alertText = (alert: StoreEvent) => {
+  const details = 'details' in alert ? alert.details : undefined
+  return details ? `${storeEventMessage(alert)}\n\n${details}` : storeEventMessage(alert)
+}
+
 export type StoreNotifier = (alert: StoreEvent) => Promise<void>
 
 export function createStoreNotifier(
@@ -40,7 +73,7 @@ export function createStoreNotifier(
       const response = await fetchImpl(config.url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(config.key ? { 'x-ondina-key': config.key } : {}) },
-        body: JSON.stringify({ ...alert, at: new Date().toISOString(), message: storeEventMessage(alert) }),
+        body: JSON.stringify({ ...alert, at: new Date().toISOString(), message: alertText(alert) }),
         signal: controller.signal,
       })
       if (!response.ok) console.error(`[avisos] n8n respondeu ${response.status} ao aviso "${alert.event}"`)

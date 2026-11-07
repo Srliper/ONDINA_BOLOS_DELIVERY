@@ -189,8 +189,9 @@ const LESSONS: Lesson[] = [
     steps: [
       <>
         Pedido pelo WhatsApp chega no <strong>WhatsApp da empresa</strong> com um número <strong>OB-…</strong>. Use{' '}
-        <strong>Abrir conversas (WhatsApp Web)</strong> no computador. Pedido pago no site não passa pelo WhatsApp: fica
-        só aqui.
+        <strong>Abrir conversas (WhatsApp Web)</strong> no computador. Pedido pago no site chega aqui; no WhatsApp, só
+        se a cliente tocar em <strong>Enviar o pedido no WhatsApp</strong> ou se o aviso automático (n8n) estiver
+        ligado.
       </>,
       <>
         Em <strong>Pedidos do site</strong> ficam todos os pedidos, com cliente, endereço (com CEP), itens e total. Use
@@ -262,6 +263,10 @@ const LESSONS: Lesson[] = [
       <>
         Pago, ele volta sozinho para a <strong>página do pedido</strong> no site, que mostra <strong>Pago</strong> e o
         andamento. O pedido aparece aqui como <strong>Pago / Em preparo</strong> e toca o aviso.
+      </>,
+      <>
+        Na página do pedido aparece o botão <strong>Enviar o pedido no WhatsApp</strong>: se a cliente tocar, o pedido
+        completo (número, itens, total, dia e endereço) chega no WhatsApp da loja.
       </>,
       <>
         Se fechar sem pagar, a página do pedido tem o botão <strong>Pagar agora</strong> (fica também em{' '}
